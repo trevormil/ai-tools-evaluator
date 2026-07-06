@@ -50,7 +50,11 @@ export type ScanRunClose = {
 export type InternalClient = {
   getCap(): Promise<CapInfo>;
   listQueuedSubmissions(limit: number): Promise<Submission[]>;
-  publishItem(evaluation: Evaluation, submissionId?: string): Promise<PublishResult>;
+  publishItem(
+    evaluation: Evaluation,
+    submissionId?: string,
+    readmeMd?: string,
+  ): Promise<PublishResult>;
   patchSubmission(
     id: string | number,
     body: { status: SubmissionStatus; reason?: string; itemId?: string },
@@ -96,10 +100,12 @@ export function createInternalClient(opts: {
       return SubmissionsSchema.parse(data).submissions;
     },
 
-    async publishItem(evaluation, submissionId) {
+    async publishItem(evaluation, submissionId, readmeMd) {
       const data = await req("/api/internal/items", {
         method: "POST",
-        body: JSON.stringify({ evaluation, submissionId }),
+        // README travels alongside the evaluation so the item page can show
+        // what the repo says about itself (cap matches the server's).
+        body: JSON.stringify({ evaluation, submissionId, readmeMd: readmeMd?.slice(0, 200_000) }),
       });
       return PublishSchema.parse(data);
     },

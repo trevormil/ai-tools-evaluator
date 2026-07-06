@@ -57,6 +57,9 @@ export const items = sqliteTable(
     evaluationJson: text("evaluation_json").notNull(), // full Evaluation
     mediaJson: text("media_json").notNull().default("[]"),
     coverImageUrl: text("cover_image_url"),
+    // The repo's own README (markdown), shown alongside our evaluation.
+    // null = never fetched, "" = fetched-and-absent; capped on write.
+    readmeMd: text("readme_md"),
     evaluatedBy: text("evaluated_by").notNull().default("ai"),
     model: text("model"),
     postedById: text("posted_by_id").references(() => users.id),

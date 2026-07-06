@@ -32,6 +32,14 @@ test("item detail renders verdict, sections, scorecard, audience", async ({ page
   await expect(page.getByText("Novelty", { exact: true })).toBeVisible(); // a scorecard metric label
 });
 
+test("item page shows the repo's own README, expandable", async ({ page }) => {
+  await page.goto("/item/ripgrep");
+  await expect(page.getByText("In their own words")).toBeVisible();
+  await expect(page.getByText(/Why should I use ripgrep/i)).toBeVisible();
+  await page.getByRole("button", { name: /read the full readme/i }).click();
+  await expect(page.getByRole("button", { name: /collapse readme/i })).toBeVisible();
+});
+
 test("leaderboard has a complexity-trap hall of shame", async ({ page }) => {
   await page.goto("/leaderboard");
   await expect(page.getByText(/Hall of Shame/i)).toBeVisible();

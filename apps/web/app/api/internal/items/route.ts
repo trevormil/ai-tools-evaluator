@@ -11,6 +11,8 @@ export const dynamic = "force-dynamic";
 const Body = z.object({
   evaluation: Evaluation,
   submissionId: z.string().optional(),
+  /** The repo's own README (markdown) — displayed alongside the evaluation. */
+  readmeMd: z.string().max(200_000).optional(),
 });
 
 /**
@@ -29,7 +31,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { evaluation, submissionId } = parsed.data;
+  const { evaluation, submissionId, readmeMd } = parsed.data;
   const db = getDb();
 
   const kind = evaluation.source.kind;
@@ -75,6 +77,7 @@ export async function POST(req: Request) {
         mediaJson: JSON.stringify(evaluation.media),
         coverImageUrl: cover ? (cover.cachedUrl ?? cover.url) : existing.coverImageUrl,
         evaluatedBy: evaluation.evaluatedBy,
+        readmeMd: readmeMd ?? existing.readmeMd,
         model: evaluation.model ?? null,
         scoreStatus: "scored",
         score: hotScore(existing.upvotes, existing.createdAt),
@@ -108,6 +111,7 @@ export async function POST(req: Request) {
       mediaJson: JSON.stringify(evaluation.media),
       coverImageUrl: cover ? (cover.cachedUrl ?? cover.url) : null,
       evaluatedBy: evaluation.evaluatedBy,
+      readmeMd: readmeMd ?? null,
       model: evaluation.model ?? null,
       published: true,
       score: hotScore(0, nowSec),

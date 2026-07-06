@@ -93,7 +93,7 @@ beforeAll(async () => {
 });
 
 test("publishing upgrades the pending item in place (same id + slug, comments intact)", async () => {
-  const res = await post({ evaluation: validEvaluation() });
+  const res = await post({ evaluation: validEvaluation(), readmeMd: "# Up Tool\n\nTheir words." });
   expect(res.status).toBe(200);
   const data = (await res.json()) as { item: { id: string; slug: string; scoreStatus: string } };
   expect(data.item.id).toBe(pendingId); // SAME row
@@ -107,6 +107,7 @@ test("the upgraded item keeps its social data and scores render real values", as
   expect(item.scoreStatus).toBe("scored");
   expect(item.overallScore).toBe(80);
   expect(item.verdict).toBe("worthwhile");
+  expect(item.readmeMd).toContain("Their words"); // README persisted at publish
   const comments = db
     .select()
     .from(schema.comments)

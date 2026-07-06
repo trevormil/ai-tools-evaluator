@@ -18,6 +18,9 @@ import { TakeComposer } from "@/components/take-composer";
 import { TakeCard } from "@/components/take-card";
 import { CommentForm } from "@/components/comment-form";
 import { CommentThread } from "@/components/comment-thread";
+import { ReadmeSection } from "@/components/readme-section";
+import { getOrFetchReadme, prepareReadme } from "@/lib/github-readme";
+import { renderMarkdown } from "@/lib/markdown";
 import type { StackStatus } from "@/lib/stack-types";
 
 export const dynamic = "force-dynamic";
@@ -55,6 +58,11 @@ export default async function ItemPage({ params }: { params: Params }) {
   const usingCount = (stack.byStatus["using"] ?? 0) + (stack.byStatus["trying"] ?? 0);
   const itemReposts = repostCount("item", item.id);
   const iReposted = user ? hasReposted(user.id, "item", item.id) : false;
+
+  // The repo's own README — stored at publish time, lazy-fetched for
+  // pending/legacy GitHub items (best-effort).
+  const readmeMd = await getOrFetchReadme(item);
+  const readmeHtml = readmeMd ? renderMarkdown(prepareReadme(readmeMd, item.externalId)) : null;
 
   return (
     <article className="flex flex-col gap-8">
@@ -171,6 +179,8 @@ export default async function ItemPage({ params }: { params: Params }) {
           </section>
         </>
       )}
+
+      {readmeHtml && <ReadmeSection html={readmeHtml} />}
 
       <section className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center justify-between gap-2">

@@ -71,7 +71,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
           continue;
         }
         const evaluation = await evaluate(d);
-        const res = await client.publishItem(evaluation, String(sub.id));
+        const res = await client.publishItem(evaluation, String(sub.id), d.readme);
         if (res.duplicate) {
           skippedDuplicate++;
           const itemId = res.item?.["id"];
@@ -99,7 +99,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         if (published >= budget) break;
         discovered++;
         const evaluation = await evaluate(d);
-        const res = await client.publishItem(evaluation);
+        const res = await client.publishItem(evaluation, undefined, d.readme);
         if (res.duplicate) {
           skippedDuplicate++;
           continue;

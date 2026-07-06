@@ -1010,6 +1010,32 @@ function seed() {
     inserted++;
   }
 
+  // --- Repo README (shown "in their own words" on the item page). Seeded for
+  // ripgrep so local/e2e runs render the section without a network fetch.
+  const RIPGREP_README = `# ripgrep (rg)
+
+ripgrep is a line-oriented search tool that recursively searches the current
+directory for a regex pattern. By default, ripgrep will respect gitignore rules
+and automatically skip hidden files/directories and binary files.
+
+## Quick example
+
+\`\`\`bash
+rg 'fn run' --type rust
+\`\`\`
+
+## Why should I use ripgrep?
+
+- It can replace many use cases served by other search tools because it
+  contains most of their features and is generally faster.
+- It respects your .gitignore out of the box.
+- It is Unicode-aware while remaining fast.
+`;
+  db.update(items)
+    .set({ readmeMd: RIPGREP_README })
+    .where(and(eq(items.slug, "ripgrep"), eq(items.published, true)))
+    .run();
+
   // --- Social feed: only seed once (idempotent on the demo user having no posts).
   const hasPosts = db.select().from(posts).where(eq(posts.authorId, demoId)).get();
   let socialInserted = 0;

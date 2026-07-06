@@ -26,3 +26,5 @@ export { InlineReply } from "./inline-reply";
 export { TakeCard } from "./take-card";
 export { TakeComposer } from "./take-composer";
 export { UseThisButton } from "./use-this-button";
+export { ReadmeSection } from "./readme-section";
+export { NavLinks } from "./nav-links";
