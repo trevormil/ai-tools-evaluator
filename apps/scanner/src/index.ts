@@ -64,7 +64,10 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         await client.patchSubmission(sub.id, { status: "processing" });
         const d = await resolveSubmission(sub.url);
         if (!d) {
-          await client.patchSubmission(sub.id, { status: "failed", reason: "could not resolve url" });
+          await client.patchSubmission(sub.id, {
+            status: "failed",
+            reason: "could not resolve url",
+          });
           continue;
         }
         const evaluation = await evaluate(d);
@@ -80,7 +83,9 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         }
         published++;
         await deps.writeArtifact(evaluation);
-        log.info(`published (queue) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`);
+        log.info(
+          `published (queue) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
+        );
       }
     }
 
@@ -101,15 +106,28 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         }
         published++;
         await deps.writeArtifact(evaluation);
-        log.info(`published (trending) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`);
+        log.info(
+          `published (trending) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
+        );
       }
     }
 
-    await client.closeScanRun(runId, { status: "ok", discovered, published, skippedDuplicate });
+    await client.closeScanRun(runId, {
+      status: "success",
+      discovered,
+      published,
+      skippedDuplicate,
+    });
     return { discovered, published, skippedDuplicate };
   } catch (err) {
     await client
-      .closeScanRun(runId, { status: "error", discovered, published, skippedDuplicate, error: String(err) })
+      .closeScanRun(runId, {
+        status: "error",
+        discovered,
+        published,
+        skippedDuplicate,
+        error: String(err),
+      })
       .catch(() => {});
     throw err;
   }
@@ -123,7 +141,9 @@ async function runDry(deps: RunDeps): Promise<RunResult> {
   for (const d of candidates.slice(0, cap)) {
     const evaluation = await evaluate(d);
     evaluated++;
-    log.info(`[dry-run] ${evaluation.slug} — ${evaluation.verdict} (${evaluation.overallScore}) — ${evaluation.tagline}`);
+    log.info(
+      `[dry-run] ${evaluation.slug} — ${evaluation.verdict} (${evaluation.overallScore}) — ${evaluation.tagline}`,
+    );
     console.log(
       JSON.stringify(
         {
@@ -183,7 +203,10 @@ async function main(): Promise<void> {
   const resolveSubmission = async (url: string): Promise<Discovered | null> =>
     (await github.resolveUrl(url)) ?? (await arxiv.resolveUrl(url));
 
-  const client = createInternalClient({ baseUrl: env.AIX_WEB_URL, token: env.AIX_INTERNAL_TOKEN ?? "" });
+  const client = createInternalClient({
+    baseUrl: env.AIX_WEB_URL,
+    token: env.AIX_INTERNAL_TOKEN ?? "",
+  });
 
   const result = await run({
     client,

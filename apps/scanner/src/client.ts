@@ -37,15 +37,10 @@ export type PublishResult = z.infer<typeof PublishSchema>;
 
 const ScanRunSchema = z.object({ id: z.union([z.string(), z.number()]) });
 
-export type SubmissionStatus =
-  | "processing"
-  | "published"
-  | "duplicate"
-  | "rejected"
-  | "failed";
+export type SubmissionStatus = "processing" | "published" | "duplicate" | "rejected" | "failed";
 
 export type ScanRunClose = {
-  status: "ok" | "error";
+  status: "success" | "error";
   discovered: number;
   published: number;
   skippedDuplicate: number;

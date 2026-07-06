@@ -59,6 +59,13 @@ function fakeClient(opts: {
       return 1;
     },
     async closeScanRun(_id, body) {
+      // Mirror the server contract (scan-runs/[id] validates z.enum(["success","error"]))
+      // so a drifting status literal fails here the way it fails in production.
+      if (body.status !== "success" && body.status !== "error") {
+        throw new Error(
+          `PATCH /api/internal/scan-runs/1 -> 400 invalid status ${String(body.status)}`,
+        );
+      }
       calls.push({ op: "closeRun", arg: body });
     },
   };
@@ -103,7 +110,10 @@ describe("run loop", () => {
         client,
         resolveSubmission: async (url) =>
           resolveMap[url] ? trendingDiscovered(resolveMap[url]!) : null,
-        discoverTrending: async () => [trendingDiscovered("trend/a"), trendingDiscovered("trend/b")],
+        discoverTrending: async () => [
+          trendingDiscovered("trend/a"),
+          trendingDiscovered("trend/b"),
+        ],
       }),
     );
 
@@ -133,8 +143,7 @@ describe("run loop", () => {
         cap: 10,
         resolveSubmission: async () => trendingDiscovered("q/one"),
         // plenty of trending, but the cap must stop us at 2 total
-        discoverTrending: async () =>
-          ["t/a", "t/b", "t/c", "t/d"].map(trendingDiscovered),
+        discoverTrending: async () => ["t/a", "t/b", "t/c", "t/d"].map(trendingDiscovered),
       }),
     );
     expect(result.published).toBe(2);
@@ -158,6 +167,18 @@ describe("run loop", () => {
     expect(client.publishedOrder).toEqual(["t/new"]);
     expect(result.skippedDuplicate).toBe(1);
     expect(result.published).toBe(1);
+  });
+
+  test("closes a successful run with the server-accepted 'success' status", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    await run(
+      baseDeps({
+        client,
+        discoverTrending: async () => [trendingDiscovered("t/a")],
+      }),
+    );
+    const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
+    expect(close.status).toBe("success");
   });
 
   test("closes the scan-run with error and rethrows on failure", async () => {
