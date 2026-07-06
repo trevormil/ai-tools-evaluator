@@ -50,6 +50,8 @@ function make(input: {
   scores: Record<MetricKey, Score>;
   tagline: string;
   body: Eval["body"];
+  quickstart?: Eval["quickstart"];
+  decision?: Eval["decision"];
   evaluatedAt: string;
 }): Eval {
   const overallScore = computeOverall(input.scores);
@@ -67,6 +69,8 @@ function make(input: {
     overallScore,
     tagline: input.tagline,
     body: input.body,
+    quickstart: input.quickstart,
+    decision: input.decision,
     media: [],
     evaluatedBy: "human",
     evaluatedAt: input.evaluatedAt,
@@ -158,6 +162,21 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
         steelman:
           "But the gitignore-awareness alone changes agent behavior for the better, and the speed removes a real reason to under-search. It's the rare tool that's both boring and genuinely load-bearing. Adopt it and forget about it.",
       },
+      quickstart: {
+        install: "brew install ripgrep",
+        requires: ["macOS/Linux (or cargo/choco on others)"],
+      },
+      decision: {
+        adoptIf: [
+          "Your agent or you grep large repos many times an hour",
+          "You want node_modules/.git noise gone with zero config",
+        ],
+        skipIf: [
+          "You only search a handful of files in locked-down environments",
+          "You can't install binaries where your agent runs",
+        ],
+        insteadOf: "grep / ack / ag",
+      },
       evaluatedAt: at(1),
     }),
   },
@@ -233,6 +252,21 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "The pushback: for tiny scripts, Zod is overkill — a JSON.parse and a couple of `if` checks are lighter and have zero dependencies. At scale, Zod's inference can balloon TypeScript compile times and its runtime isn't free on hot paths. There are leaner alternatives (Valibot, ArkType) with smaller bundles, so 'reach for Zod reflexively' can be its own trap. And a capable agent can generate correct validators by hand, so the library is a convenience, not a capability the model lacks.",
         steelman:
           "Still, the single-source-of-truth property is worth the weight for anything that ships. The moment your data has more than a couple of shapes, hand-rolled guards become the liability Zod was built to remove.",
+      },
+      quickstart: {
+        install: "bun add zod",
+        requires: ["TypeScript project"],
+      },
+      decision: {
+        adoptIf: [
+          "You accept LLM/tool-call JSON and act on it",
+          "Your app has more than a couple of data shapes crossing boundaries",
+        ],
+        skipIf: [
+          "It's a tiny script — JSON.parse and two ifs are lighter",
+          "Bundle size or hot-path validation cost is your constraint",
+        ],
+        insteadOf: "hand-rolled type guards / joi / yup",
       },
       evaluatedAt: at(2),
     }),
@@ -828,6 +862,22 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "This is the archetypal complexity trap, so the devil's advocate is the whole case. LangChain sells the feeling of productivity — look how few lines to a working agent — while quietly making the important work harder. The abstractions are leaky: to do anything non-trivial you must understand both your problem and LangChain's model of it, then fight the framework when they disagree. Its version churn has repeatedly broken production code. And the core value proposition erodes every month, because the thing it orchestrates — reasoning, tool use, planning — is exactly what frontier models keep absorbing natively. The tell is how many experienced teams describe their architecture as 'we started with LangChain and then ripped it out.' For most projects, writing the loop yourself is less code, more debuggable, and more durable.",
         steelman:
           "In fairness: for rapid prototyping, teaching, or gluing together many exotic integrations you don't want to write connectors for, LangChain's breadth is a genuine shortcut, and LangGraph is a more honest attempt at real orchestration. As disposable scaffolding it can earn a place — the trap is mistaking it for the foundation.",
+      },
+      quickstart: {
+        install: "pip install langchain",
+        requires: ["Python 3.9+", "provider API key (OpenAI/Anthropic/…)"],
+      },
+      decision: {
+        adoptIf: [
+          "You're prototyping and need many exotic integrations glued fast",
+          "You're teaching LLM app concepts and want ready-made scaffolding",
+        ],
+        skipIf: [
+          "You're building anything you intend to keep — write the loop",
+          "You need to debug what actually happens on each model call",
+          "Version churn in a core dependency is unacceptable to you",
+        ],
+        insteadOf: "the raw provider SDK + a loop",
       },
       evaluatedAt: at(9),
     }),

@@ -138,6 +138,33 @@ export const Evaluation = z.object({
     steelman: z.string().max(1200).optional(),
   }),
 
+  /**
+   * Decision layer (optional, ticket 0039) — everything an engineer needs to
+   * adopt-or-skip in one look. Extracted from the README by the evaluator.
+   */
+  quickstart: z
+    .object({
+      /** The exact one-line install/run command. One line, no prose. */
+      install: z
+        .string()
+        .min(2)
+        .max(200)
+        .refine((s) => !s.includes("\n"), "install must be a single line"),
+      /** Hidden prerequisites: API keys, accounts, runtimes, Docker, etc. */
+      requires: z.array(z.string().min(2).max(80)).max(6).optional(),
+    })
+    .optional(),
+  decision: z
+    .object({
+      /** "Adopt if…" — concrete situations where this earns its keep. */
+      adoptIf: z.array(z.string().min(5).max(140)).min(1).max(4),
+      /** "Skip if…" — concrete situations where it's noise for you. */
+      skipIf: z.array(z.string().min(5).max(140)).min(1).max(4),
+      /** The incumbent it replaces ("grep", "joi", "raw SDK + a loop"). */
+      insteadOf: z.string().min(2).max(120).optional(),
+    })
+    .optional(),
+
   media: z.array(MediaAsset).max(6).default([]),
 
   /** Provenance of this evaluation. */

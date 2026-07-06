@@ -3,6 +3,7 @@ import { CATEGORY_LABELS, type Category, type Evaluation } from "@aix/core";
 import type { Item } from "@aix/db";
 import { VerdictBadge } from "./verdict-badge";
 import { SegMeter } from "./seg-meter";
+import { CopyButton } from "./copy-button";
 
 /**
  * One frame of the shuffle deck (ticket 0038): a full-height digest of a
@@ -87,6 +88,21 @@ export function DiscoveryCard({
             <p className="line-clamp-3 text-sm leading-relaxed text-muted sm:line-clamp-4">
               {evaluation.body.devilsAdvocate}
             </p>
+          </div>
+        )}
+
+        {evaluation?.quickstart && (
+          <div
+            className="flex items-center gap-2 rounded-lg border px-2.5 py-2"
+            style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
+          >
+            <span aria-hidden className="data text-xs text-faint">
+              $
+            </span>
+            <code className="data min-w-0 flex-1 truncate text-xs">
+              {evaluation.quickstart.install}
+            </code>
+            <CopyButton text={evaluation.quickstart.install} />
           </div>
         )}
 

@@ -20,8 +20,11 @@ import { CommentForm } from "@/components/comment-form";
 import { CommentThread } from "@/components/comment-thread";
 import { ReadmeSection } from "@/components/readme-section";
 import { SegMeter } from "@/components/seg-meter";
+import { CopyButton } from "@/components/copy-button";
+import { IntegrationDiagram } from "@/components/integration-diagram";
 import { getOrFetchReadme, prepareReadme } from "@/lib/github-readme";
 import { renderMarkdown } from "@/lib/markdown";
+import { timeAgo } from "@/lib/format";
 import type { StackStatus } from "@/lib/stack-types";
 
 export const dynamic = "force-dynamic";
@@ -273,6 +276,23 @@ export default async function ItemPage({ params }: { params: Params }) {
                       <span className="data text-xs">★ {evaluation.source.stars}</span>
                     </SpecRow>
                   )}
+                  {evaluation?.source.language && (
+                    <SpecRow label="language">
+                      <span className="data text-xs">{evaluation.source.language}</span>
+                    </SpecRow>
+                  )}
+                  {evaluation?.source.license && (
+                    <SpecRow label="license">
+                      <span className="data text-xs">{evaluation.source.license}</span>
+                    </SpecRow>
+                  )}
+                  {evaluation?.source.pushedAt && (
+                    <SpecRow label="last push">
+                      <span className="data text-xs">
+                        {timeAgo(Math.floor(Date.parse(evaluation.source.pushedAt) / 1000))} ago
+                      </span>
+                    </SpecRow>
+                  )}
                   <SpecRow label="source">
                     <a
                       href={item.url}
@@ -287,6 +307,77 @@ export default async function ItemPage({ params }: { params: Params }) {
               </div>
             )}
           </div>
+          {evaluation && (evaluation.decision || evaluation.quickstart) && (
+            <div className="card flex flex-col gap-3 p-4">
+              <p className="eyebrow">Make the call</p>
+              {evaluation.quickstart && (
+                <div className="flex flex-col gap-1.5">
+                  <div
+                    className="flex items-center gap-2 rounded-lg border px-2.5 py-2"
+                    style={{ borderColor: "var(--border)", background: "var(--surface-2)" }}
+                  >
+                    <code className="data min-w-0 flex-1 truncate text-xs">
+                      {evaluation.quickstart.install}
+                    </code>
+                    <CopyButton text={evaluation.quickstart.install} />
+                  </div>
+                  {evaluation.quickstart.requires && evaluation.quickstart.requires.length > 0 && (
+                    <p className="text-[11px] text-faint">
+                      needs: {evaluation.quickstart.requires.join(" · ")}
+                    </p>
+                  )}
+                </div>
+              )}
+              {evaluation.decision && (
+                <>
+                  <div>
+                    <p className="data mb-1 text-[11px] uppercase tracking-wider text-[var(--band-strong)]">
+                      Adopt if
+                    </p>
+                    <ul className="flex flex-col gap-1 text-sm text-muted">
+                      {evaluation.decision.adoptIf.map((line) => (
+                        <li key={line} className="flex gap-1.5">
+                          <span aria-hidden className="text-[var(--band-strong)]">
+                            +
+                          </span>
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div>
+                    <p className="data mb-1 text-[11px] uppercase tracking-wider text-[var(--band-weak)]">
+                      Skip if
+                    </p>
+                    <ul className="flex flex-col gap-1 text-sm text-muted">
+                      {evaluation.decision.skipIf.map((line) => (
+                        <li key={line} className="flex gap-1.5">
+                          <span aria-hidden className="text-[var(--band-weak)]">
+                            −
+                          </span>
+                          {line}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  {evaluation.decision.insteadOf && (
+                    <p className="text-xs text-muted">
+                      <span className="data uppercase tracking-wider text-faint">instead of</span>{" "}
+                      {evaluation.decision.insteadOf}
+                    </p>
+                  )}
+                </>
+              )}
+            </div>
+          )}
+
+          {!pending && (
+            <div className="card flex flex-col gap-2 p-4">
+              <p className="eyebrow">Where it sits</p>
+              <IntegrationDiagram integration={item.integration} title={item.title} />
+            </div>
+          )}
+
           <div className="card flex flex-col gap-1.5 p-4 text-sm">
             <p className="eyebrow mb-1">In the field</p>
             <SpecRow label="use it daily">

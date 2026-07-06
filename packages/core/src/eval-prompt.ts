@@ -54,6 +54,13 @@ ${readme.slice(0, 12000)}
 - tagline: one line, <=160 chars, states the verdict's reasoning
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
 - body: { whatItIs, vsVanilla, surfaceArea, devilsAdvocate, steelman? }
+- quickstart (include when the README shows how to install/run): { install: THE exact one-line
+    install or run command copied/adapted from the README (one line, no prose), requires?: up to 6
+    hidden prerequisites a reader must already have (API key, account, Docker, runtime version) }
+- decision: { adoptIf: 1-4 concrete situations (<=140 chars each) where this earns its keep,
+    skipIf: 1-4 concrete situations where it is noise for the reader, insteadOf?: the incumbent
+    it replaces ("grep", "joi", "raw SDK + a loop") }. Write these for a reader deciding in ten
+    seconds — situational and specific, never marketing.
 
 Return raw JSON only, no code fences, no commentary.`;
 }

@@ -32,6 +32,24 @@ test("item detail renders verdict, sections, scorecard, audience", async ({ page
   await expect(page.getByText("Novelty", { exact: true })).toBeVisible(); // a scorecard metric label
 });
 
+test("item page shows the decision layer: install, adopt-if/skip-if, health, schematic", async ({
+  page,
+}) => {
+  await page.goto("/item/ripgrep");
+  // Make the call: the exact install one-liner + situational bullets.
+  await expect(page.getByText("Make the call")).toBeVisible();
+  await expect(page.locator("code", { hasText: "brew install ripgrep" })).toBeVisible();
+  await expect(page.getByText("Adopt if")).toBeVisible();
+  await expect(page.getByText("Skip if")).toBeVisible();
+  await expect(page.getByText(/instead of/i).first()).toBeVisible();
+  await expect(page.getByText(/grep \/ ack \/ ag/)).toBeVisible();
+  // Health facts from source signals.
+  await expect(page.getByText("Rust", { exact: true }).first()).toBeVisible();
+  await expect(page.getByText("MIT", { exact: true }).first()).toBeVisible();
+  // The integration schematic names where it sits.
+  await expect(page.getByText("Where it sits")).toBeVisible();
+});
+
 test("item page shows the repo's own README, expandable", async ({ page }) => {
   await page.goto("/item/ripgrep");
   await expect(page.getByText("In their own words")).toBeVisible();

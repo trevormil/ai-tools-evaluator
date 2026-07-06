@@ -87,6 +87,40 @@ describe("schema", () => {
     expect(() => Evaluation.parse(bad)).toThrow();
   });
 
+  test("decision layer blocks are optional and backward-compatible (ticket 0039)", () => {
+    // Old artifacts (no quickstart/decision) still validate — `sample` has neither.
+    expect(Evaluation.safeParse(sample).success).toBe(true);
+
+    const withDecision = Evaluation.parse({
+      ...sample,
+      quickstart: {
+        install: "npx -y @acme/some-mcp-server",
+        requires: ["Node 18+", "MCP-capable client"],
+      },
+      decision: {
+        adoptIf: ["You run agents in a sandbox without native file tools"],
+        skipIf: ["Your agent already has first-class file access", "You want zero moving parts"],
+        insteadOf: "native file tools",
+      },
+    });
+    expect(withDecision.quickstart?.install).toContain("npx");
+    expect(withDecision.decision?.adoptIf).toHaveLength(1);
+
+    // Bounds are enforced: at most 4 bullets per side, install is one line.
+    expect(
+      Evaluation.safeParse({
+        ...sample,
+        decision: { adoptIf: ["a", "b", "c", "d", "e"], skipIf: ["x"] },
+      }).success,
+    ).toBe(false);
+    expect(
+      Evaluation.safeParse({
+        ...sample,
+        quickstart: { install: "line one\nline two" },
+      }).success,
+    ).toBe(false);
+  });
+
   test("rejects non-kebab slug", () => {
     expect(() => Evaluation.parse({ ...sample, slug: "Not Kebab" })).toThrow();
   });
