@@ -18,6 +18,7 @@ import { ArticleList } from "@/components/article-list";
 import { ProfileTabs, type ProfileTab } from "@/components/profile-tabs";
 import { ProfileLinks } from "@/components/profile-links";
 import { ProfileLinksEditor } from "@/components/profile-links-editor";
+import { EditProfile } from "@/components/edit-profile";
 import { getUserStack } from "@/lib/stack";
 import { listArticlesByAuthor } from "@/lib/articles";
 import { getProfileLinks } from "@/lib/profile-links";
@@ -122,6 +123,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <ProfileLinks links={links} />
             {isSelf && <ProfileLinksEditor initial={linksByKind} />}
+            {isSelf && <EditProfile displayName={profile.displayName ?? ""} bio={profile.bio ?? ""} />}
           </div>
         </div>
         <div className="flex items-center gap-2">
