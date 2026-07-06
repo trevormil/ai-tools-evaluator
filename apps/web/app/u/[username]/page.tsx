@@ -12,6 +12,8 @@ import {
 import { PostCard } from "@/components/post-card";
 import { ItemCard } from "@/components/item-card";
 import { FollowButton } from "@/components/follow-button";
+import { StackSection } from "@/components/stack-section";
+import { getUserStack } from "@/lib/stack";
 import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -26,6 +28,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
   const viewer = await getCurrentUser();
   const isSelf = viewer?.id === profile.id;
   const posts = listPostsByAuthor(profile.id);
+  const stack = getUserStack(profile.id);
   const submittedItems = listItemsByPoster(profile.id);
   const submissions = isSelf ? listSubmissionsByUser(profile.id) : [];
   const counts = followCounts(profile.id);
@@ -77,6 +80,8 @@ export default async function ProfilePage({ params }: { params: Params }) {
           )}
         </section>
       )}
+
+      <StackSection stack={stack} isSelf={isSelf} username={profile.username} />
 
       {submittedItems.length > 0 && (
         <section>

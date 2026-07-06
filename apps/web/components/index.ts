@@ -14,3 +14,5 @@ export { PostCard } from "./post-card";
 export { PostComposer } from "./post-composer";
 export { Filters } from "./filters";
 export { NewsletterForm } from "./newsletter-form";
+export { StackSection } from "./stack-section";
+export { StackEditor, StackDeleteButton } from "./stack-editor";

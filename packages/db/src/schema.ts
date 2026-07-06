@@ -193,6 +193,35 @@ export const subscribers = sqliteTable(
   (t) => [index("subscribers_status_idx").on(t.status), uniqueIndex("subscribers_token_idx").on(t.token)],
 );
 
+/* ------------------------------------------------------------ my stack */
+
+/**
+ * A user's curated stack: tools they run, with a personal take. Either a
+ * catalogued directory item (`itemId`) OR a free-form `toolName` for something
+ * not yet in the directory. `status` captures current usage; `take` is their
+ * honest opinion. One entry per (user, item) and per (user, toolName).
+ */
+export const stackItems = sqliteTable(
+  "stack_items",
+  {
+    id: cuid(),
+    userId: text("user_id").notNull().references(() => users.id),
+    itemId: text("item_id").references(() => items.id),
+    toolName: text("tool_name"), // set when the tool isn't a catalogued item
+    status: text("status", { enum: ["using", "trying", "want-to-try", "dropped"] }).notNull().default("using"),
+    take: text("take"),
+    rating: integer("rating"), // 1..5, optional
+    createdAt: integer("created_at").notNull().default(now),
+    updatedAt: integer("updated_at").notNull().default(now),
+  },
+  (t) => [
+    index("stack_user_idx").on(t.userId),
+    index("stack_item_idx").on(t.itemId),
+    uniqueIndex("stack_user_item_idx").on(t.userId, t.itemId),
+    uniqueIndex("stack_user_tool_idx").on(t.userId, t.toolName),
+  ],
+);
+
 /* ------------------------------------------------------ auth sessions */
 
 export const sessions = sqliteTable("sessions", {
@@ -208,3 +237,4 @@ export type Submission = typeof submissions.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Subscriber = typeof subscribers.$inferSelect;
+export type StackItem = typeof stackItems.$inferSelect;
