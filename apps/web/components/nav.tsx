@@ -47,29 +47,18 @@ export async function Nav() {
   );
 }
 
-/** Scoreboard mark: dot-matrix rising bars — bulbs lighting up column by column. */
+/** Ember mark: a three-bar verdict gauge — the grading-rig identity in miniature. */
 function Logo() {
   return (
     <span
-      className="flex h-7 w-7 items-center justify-center rounded-md border"
-      style={{ background: "var(--surface)", borderColor: "var(--border-strong)" }}
+      className="flex h-7 w-7 items-center justify-center rounded-md"
+      style={{ background: "var(--brand)" }}
       aria-hidden
     >
-      <svg width="18" height="18" viewBox="0 0 40 40">
-        <g fill="var(--border-strong)">
-          <circle cx="8" cy="14" r="3" />
-          <circle cx="8" cy="23" r="3" />
-          <circle cx="20" cy="14" r="3" />
-        </g>
-        <g fill="var(--brand)">
-          <circle cx="8" cy="32" r="3" />
-          <circle cx="20" cy="32" r="3" />
-          <circle cx="20" cy="23" r="3" />
-          <circle cx="32" cy="32" r="3" />
-          <circle cx="32" cy="23" r="3" />
-          <circle cx="32" cy="14" r="3" />
-          <circle cx="32" cy="5" r="3" />
-        </g>
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+        <rect x="2" y="9" width="3" height="5" rx="1" fill="var(--brand-contrast)" />
+        <rect x="6.5" y="5" width="3" height="9" rx="1" fill="var(--brand-contrast)" />
+        <rect x="11" y="2" width="3" height="12" rx="1" fill="var(--brand-contrast)" />
       </svg>
     </span>
   );

@@ -1,27 +1,27 @@
 import type { Metadata } from "next";
-import { Anton, Inter, JetBrains_Mono } from "next/font/google";
+import { Archivo, Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { getCurrentUser } from "@/lib/auth";
 
 /**
- * "Scoreboard" type system (user-picked theme): Anton for jumbotron display,
- * Inter for commentary/body, JetBrains Mono for the score digits.
+ * "Test Bench" type system: Archivo (wide, heavy) for display, Instrument Sans
+ * for body, IBM Plex Mono for the data/readout language.
  */
-const display = Anton({
+const display = Archivo({
   subsets: ["latin"],
-  weight: "400", // Anton ships one weight — it IS the bold
+  weight: ["600", "700", "800", "900"],
   variable: "--font-display",
 });
-const sans = Inter({
+const sans = Instrument_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
 });
-const mono = JetBrains_Mono({
+const mono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-mono",
 });
 
@@ -31,12 +31,11 @@ export const metadata: Metadata = {
     "A harshly-honest directory of trending AI/GitHub tools plus the takes of the engineers who run them.",
 };
 
-// Set the theme class before paint. Scoreboard is a NIGHT identity — dark is
-// the default; light is the opt-in "day game" mode.
+// Set the theme class before paint to avoid a flash of the wrong theme.
 const themeScript = `(() => {
   try {
     const t = localStorage.getItem('theme');
-    const dark = t ? t === 'dark' : true;
+    const dark = t ? t === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
     if (dark) document.documentElement.classList.add('dark');
   } catch (e) {}
 })();`;
