@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Post, Item, User } from "@aix/db";
 import { VoteButtons } from "./vote-buttons";
+import { RepostButton } from "./repost-button";
 import { timeAgo } from "@/lib/format";
 
 export function PostCard({
@@ -9,12 +10,16 @@ export function PostCard({
   item,
   myVote,
   signedIn,
+  repostCount = 0,
+  reposted = false,
 }: {
   post: Post;
   author: User;
   item: Item | null;
   myVote: number;
   signedIn: boolean;
+  repostCount?: number;
+  reposted?: boolean;
 }) {
   return (
     <div className="card flex gap-3 p-4">
@@ -46,10 +51,11 @@ export function PostCard({
             <span className="text-neutral-400">· {item.overallScore}/100</span>
           </Link>
         )}
-        <div className="mt-2 text-xs text-neutral-500">
+        <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
           <Link href={`/post/${post.id}`} className="hover:underline">
             {post.commentCount} comments
           </Link>
+          <RepostButton targetType="post" targetId={post.id} initialCount={repostCount} initialReposted={reposted} signedIn={signedIn} />
         </div>
       </div>
     </div>

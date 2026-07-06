@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { eq } from "drizzle-orm";
+import { getDb, items } from "@aix/db";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
 import { upsertStackEntry, deleteStackEntry, STACK_STATUSES } from "@/lib/stack";
+import { emitActivity } from "@/lib/activity";
+import { notify } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +28,16 @@ export async function POST(req: Request) {
     const user = await requireUser();
     const body = UpsertBody.parse(await req.json());
     const entry = upsertStackEntry(user.id, body);
+
+    // Feed activity + notify the item's original poster (best-effort).
+    if (entry.itemId) {
+      emitActivity({ actorId: user.id, verb: "stack_added", objectType: "item", objectId: entry.itemId });
+      const poster = getDb().select({ id: items.postedById }).from(items).where(eq(items.id, entry.itemId)).get();
+      if (poster?.id) notify({ userId: poster.id, actorId: user.id, type: "stack_add", objectType: "item", objectId: entry.itemId });
+    } else {
+      emitActivity({ actorId: user.id, verb: "stack_added", objectType: "stack", objectId: entry.id });
+    }
+
     return NextResponse.json({ entry }, { status: 201 });
   } catch (err) {
     return errorResponse(err);

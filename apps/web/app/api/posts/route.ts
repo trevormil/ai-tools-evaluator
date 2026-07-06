@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { getDb, posts, items } from "@aix/db";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
+import { emitActivity } from "@/lib/activity";
 
 export const dynamic = "force-dynamic";
 
@@ -29,6 +30,8 @@ export async function POST(req: Request) {
       .values({ authorId: user.id, itemId, body: input.body })
       .returning()
       .get();
+
+    emitActivity({ actorId: user.id, verb: "posted", objectType: "post", objectId: post.id });
 
     return NextResponse.json({ post }, { status: 201 });
   } catch (err) {

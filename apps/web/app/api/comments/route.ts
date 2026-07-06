@@ -4,6 +4,8 @@ import { eq, sql } from "drizzle-orm";
 import { getDb, comments, items, posts } from "@aix/db";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
+import { emitActivity } from "@/lib/activity";
+import { notify } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -50,6 +52,23 @@ export async function POST(req: Request) {
     } else if (input.postId) {
       db.update(posts).set({ commentCount: sql`${posts.commentCount} + 1` }).where(eq(posts.id, input.postId)).run();
     }
+
+    // Feed activity + reply notification (best-effort).
+    const objectType = input.postId ? "post" : "item";
+    const objectId = (input.postId ?? input.itemId)!;
+    emitActivity({ actorId: user.id, verb: "commented", objectType, objectId });
+
+    // Notify whoever is being replied to: the parent comment's author, else the
+    // post author, else the item's poster.
+    let recipientId: string | null = null;
+    if (input.parentId) {
+      recipientId = db.select({ id: comments.authorId }).from(comments).where(eq(comments.id, input.parentId)).get()?.id ?? null;
+    } else if (input.postId) {
+      recipientId = db.select({ id: posts.authorId }).from(posts).where(eq(posts.id, input.postId)).get()?.id ?? null;
+    } else if (input.itemId) {
+      recipientId = db.select({ id: items.postedById }).from(items).where(eq(items.id, input.itemId)).get()?.id ?? null;
+    }
+    if (recipientId) notify({ userId: recipientId, actorId: user.id, type: "reply", objectType, objectId });
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (err) {

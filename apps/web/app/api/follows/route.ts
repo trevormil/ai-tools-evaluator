@@ -4,6 +4,8 @@ import { and, eq } from "drizzle-orm";
 import { getDb, follows, users } from "@aix/db";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
+import { emitActivity } from "@/lib/activity";
+import { notify } from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 
@@ -32,6 +34,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ following: false });
     }
     db.insert(follows).values({ followerId: user.id, followeeId: targetUserId }).run();
+    emitActivity({ actorId: user.id, verb: "followed", objectType: "user", objectId: targetUserId });
+    notify({ userId: targetUserId, actorId: user.id, type: "follow" });
     return NextResponse.json({ following: true });
   } catch (err) {
     return errorResponse(err);

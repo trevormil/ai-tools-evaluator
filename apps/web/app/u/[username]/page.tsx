@@ -13,7 +13,11 @@ import { PostCard } from "@/components/post-card";
 import { ItemCard } from "@/components/item-card";
 import { FollowButton } from "@/components/follow-button";
 import { StackSection } from "@/components/stack-section";
+import { WorkflowSection } from "@/components/workflow-section";
+import { ArticleList } from "@/components/article-list";
+import { ProfileTabs, type ProfileTab } from "@/components/profile-tabs";
 import { getUserStack } from "@/lib/stack";
+import { listArticlesByAuthor } from "@/lib/articles";
 import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -29,11 +33,68 @@ export default async function ProfilePage({ params }: { params: Params }) {
   const isSelf = viewer?.id === profile.id;
   const posts = listPostsByAuthor(profile.id);
   const stack = getUserStack(profile.id);
+  const articles = listArticlesByAuthor(profile.id);
   const submittedItems = listItemsByPoster(profile.id);
   const submissions = isSelf ? listSubmissionsByUser(profile.id) : [];
   const counts = followCounts(profile.id);
   const following = viewer && !isSelf ? isFollowing(viewer.id, profile.id) : false;
   const myVotes = viewer ? userVotes(viewer.id, "post") : {};
+
+  const postsTab = (
+    <section className="flex flex-col gap-6">
+      {isSelf && submissions.length > 0 && (
+        <div>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">Your submissions</h3>
+          <ul className="flex flex-col gap-2">
+            {submissions.map((s) => (
+              <li key={s.id} className="card flex items-center justify-between gap-3 p-3 text-sm">
+                <span className="truncate">{s.url}</span>
+                <span className="chip">{s.status}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {submittedItems.length > 0 && (
+        <div>
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Published items</h3>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {submittedItems.map((item) => (
+              <ItemCard key={item.id} item={item} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Posts</h3>
+        {posts.length === 0 ? (
+          <p className="text-sm text-neutral-500">No posts yet.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {posts.map((p) => (
+              <PostCard
+                key={p.post.id}
+                post={p.post}
+                author={p.author}
+                item={p.item}
+                myVote={myVotes[p.post.id] ?? 0}
+                signedIn={!!viewer}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+
+  const tabs: ProfileTab[] = [
+    { key: "posts", label: "Posts", content: postsTab },
+    { key: "stack", label: "My Stack", content: <StackSection stack={stack} isSelf={isSelf} username={profile.username} /> },
+    { key: "workflow", label: "My Workflow", content: <WorkflowSection profile={profile} isSelf={isSelf} articles={articles} /> },
+    { key: "articles", label: "Articles", content: <ArticleList articles={articles} isSelf={isSelf} /> },
+  ];
 
   return (
     <div className="flex flex-col gap-8">
@@ -54,65 +115,25 @@ export default async function ProfilePage({ params }: { params: Params }) {
             {counts.followers} followers · {counts.following} following · joined {timeAgo(profile.createdAt)} ago
           </p>
         </div>
-        {viewer && !isSelf && <FollowButton targetUserId={profile.id} initialFollowing={following} signedIn />}
-        {!viewer && <a href="/api/auth/github" className="btn-ghost">Sign in to follow</a>}
-      </header>
-
-      {isSelf && (
-        <section>
-          <div className="mb-2 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Your submissions</h2>
+        <div className="flex items-center gap-2">
+          {viewer && !isSelf && (
+            <>
+              <FollowButton targetUserId={profile.id} initialFollowing={following} signedIn />
+              <a href={`/messages/${profile.id}`} className="btn-ghost">
+                Message
+              </a>
+            </>
+          )}
+          {!viewer && <a href="/api/auth/github" className="btn-ghost">Sign in to follow</a>}
+          {isSelf && (
             <a href="/api/auth/logout" className="text-xs text-neutral-500 hover:underline">
               Sign out
             </a>
-          </div>
-          {submissions.length === 0 ? (
-            <p className="text-sm text-neutral-500">No submissions yet. Drop a link on the Submit page.</p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {submissions.map((s) => (
-                <li key={s.id} className="card flex items-center justify-between gap-3 p-3 text-sm">
-                  <span className="truncate">{s.url}</span>
-                  <span className="chip">{s.status}</span>
-                </li>
-              ))}
-            </ul>
           )}
-        </section>
-      )}
+        </div>
+      </header>
 
-      <StackSection stack={stack} isSelf={isSelf} username={profile.username} />
-
-      {submittedItems.length > 0 && (
-        <section>
-          <h2 className="mb-3 text-lg font-semibold">Published items</h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {submittedItems.map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
-          </div>
-        </section>
-      )}
-
-      <section>
-        <h2 className="mb-3 text-lg font-semibold">Posts</h2>
-        {posts.length === 0 ? (
-          <p className="text-sm text-neutral-500">No posts yet.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {posts.map((p) => (
-              <PostCard
-                key={p.post.id}
-                post={p.post}
-                author={p.author}
-                item={p.item}
-                myVote={myVotes[p.post.id] ?? 0}
-                signedIn={!!viewer}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      <ProfileTabs tabs={tabs} />
     </div>
   );
 }

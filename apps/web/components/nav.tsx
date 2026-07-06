@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { ThemeToggle } from "./theme-toggle";
+import { NotificationBell } from "./notification-bell";
 
 export async function Nav() {
   const user = await getCurrentUser();
@@ -15,7 +16,9 @@ export async function Nav() {
           <NavLink href="/directory">Directory</NavLink>
           <NavLink href="/leaderboard">Leaderboard</NavLink>
           <NavLink href="/submit">Submit</NavLink>
+          {user && <NavLink href="/messages">Messages</NavLink>}
         </div>
+        {user && <NotificationBell />}
         <ThemeToggle />
         {user ? (
           <Link href={`/u/${user.username}`} className="btn-ghost !px-2">
