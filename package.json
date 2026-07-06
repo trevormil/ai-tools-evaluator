@@ -16,7 +16,7 @@
     "db:studio": "cd packages/db && bun run studio",
     "test": "bun test packages apps",
     "test:e2e": "cd e2e && bun run test",
-    "typecheck": "tsc --build --verbose",
+    "typecheck": "bun run --filter '*' typecheck",
     "spaces:setup": "bun scripts/spaces-setup.ts"
   },
   "devDependencies": {

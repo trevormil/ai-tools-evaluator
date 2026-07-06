@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "bun --bun next dev -p 3000",
     "build": "bun --bun next build",
-    "start": "bun --bun next start -p 3000"
+    "start": "bun --bun next start -p 3000",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@aix/core": "workspace:*",

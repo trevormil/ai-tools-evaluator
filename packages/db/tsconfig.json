@@ -1,5 +1,5 @@
 {
   "extends": "../../tsconfig.base.json",
-  "compilerOptions": { "outDir": "dist", "rootDir": "src", "paths": { "@aix/core": ["../core/src/index.ts"] } },
+  "compilerOptions": { "rootDir": "src" },
   "include": ["src"]
 }

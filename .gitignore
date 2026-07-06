@@ -50,3 +50,6 @@ content/items/*.md
 .pnp.*
 .yarn/
 yarn.lock
+
+# TypeScript incremental build info
+*.tsbuildinfo

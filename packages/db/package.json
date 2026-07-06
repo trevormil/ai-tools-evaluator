@@ -12,9 +12,11 @@
   "scripts": {
     "push": "drizzle-kit push",
     "generate": "drizzle-kit generate",
-    "studio": "drizzle-kit studio"
+    "studio": "drizzle-kit studio",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@aix/core": "workspace:*",
     "drizzle-orm": "0.38.3"
   },
   "devDependencies": {

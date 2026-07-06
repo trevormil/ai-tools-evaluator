@@ -65,6 +65,7 @@
       "name": "@aix/db",
       "version": "0.1.0",
       "dependencies": {
+        "@aix/core": "workspace:*",
         "drizzle-orm": "0.38.3",
       },
       "devDependencies": {
