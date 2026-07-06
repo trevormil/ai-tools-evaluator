@@ -10,12 +10,17 @@ anchor: ARCH
    research papers — each distilled into a strict, harshly-honest evaluation
    artifact that leads with _"is this actually worth it, or complexity for its
    own sake?"_
-2. **A social site** around them — Twitter-like posts, profiles, comments,
-   discussions, and votes.
+2. **The takes around them** — per-tool practitioner blurbs (`@user's take`,
+   status, ★rating), a one-tap "I use this" count, comments, votes, follows,
+   DMs. Directory-first: the home page IS the directory; the timeline is a
+   secondary surface at `/activity`. There is no generic post composer
+   (legacy posts still render).
 
-A bot auto-scans multiple sources daily (capped at 10 new items/day, dedup-aware)
-and posts evaluations. Anyone can drop a link into a suggestion queue that the
-bot drains first on its next run.
+A scanner auto-scans multiple sources daily (capped at 10 new items/day,
+dedup-aware) and publishes evaluations. Anyone can submit a URL: the tool
+appears in the directory INSTANTLY as a pending item (`scoreStatus="pending"`,
+"Awaiting score…", socially live) and the scanner upgrades the same row in
+place when the evaluation lands — comments/takes/votes survive.
 
 ## [1] Topology
 
@@ -34,7 +39,7 @@ SQLite" simplicity.
 | --- | --- |
 | `packages/core` | Strict `Evaluation` schema, 10-metric scorecard, verdict enum, categories, markdown (de)serializer, evaluator prompt. **The shared contract.** |
 | `packages/db` | Drizzle + `bun:sqlite` schema + migrator. |
-| `apps/web` | Next.js 15 (App Router) — directory UI + filters (incl. audience), item scorecard pages, **social network** (feed, posts, likes, reposts, comments, DMs, activity, notifications), **profiles** (Posts · My Stack · My Workflow · Articles), long-form markdown articles, GitHub OAuth, submission queue, newsletter, public API v1 + internal API. |
+| `apps/web` | Next.js 15 (App Router) — directory-first home (search + filters incl. audience), item pages (scorecard + **takes** + "I use this" + comments + repo README), `/activity` timeline, **profiles** (Takes · My Stack · My Workflow · Articles · Activity), long-form markdown articles, GitHub OAuth (+ gated dev login), instant submissions, newsletter, public API v1 + internal API. |
 | `apps/scanner` | Multi-source discovery (GitHub, arXiv) + queue drain -> Claude evaluation -> publish. k8s CronJob. |
 | `apps/bot` | Discord bot — daily + weekly digests, `/submit`, `/eval`, `/leaderboard`. |
 | `ios` | Native SwiftUI iOS client reading the public API v1 (directory, item detail, leaderboard). |
