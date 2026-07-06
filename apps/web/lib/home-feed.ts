@@ -4,6 +4,7 @@ import {
   getDb,
   activities,
   articles,
+  comments,
   follows,
   items,
   posts,
@@ -36,7 +37,8 @@ export type FeedEmbed =
       toolName: string | null;
       status: string;
       take: string | null;
-    };
+    }
+  | { type: "comment"; body: string; item: Item | null; href: string };
 
 export type FeedEntry =
   | {
@@ -251,6 +253,24 @@ export function getUserActivity(
  * Attach a human label, link, and (where the verb has a real object) an
  * embedded card so the feed row is content, not a dead one-liner.
  */
+/** The actor's most recent comment on a target — the discussion content. */
+function latestCommentBy(
+  authorId: string,
+  target: { itemId?: string; postId?: string },
+): string | null {
+  const cond = target.itemId
+    ? eq(comments.itemId, target.itemId)
+    : eq(comments.postId, target.postId!);
+  const row = getDb()
+    .select({ body: comments.body })
+    .from(comments)
+    .where(and(eq(comments.authorId, authorId), cond))
+    .orderBy(desc(comments.createdAt), desc(comments.id))
+    .limit(1)
+    .get();
+  return row?.body ?? null;
+}
+
 function resolveActivity(activity: Activity, actor: User): FeedEntry | null {
   const db = getDb();
   const base = {
@@ -352,14 +372,18 @@ function resolveActivity(activity: Activity, actor: User): FeedEntry | null {
     }
 
     case "commented": {
+      // The activity references the TARGET (item/post); embed the actor's
+      // latest comment there so the discussion is content, not a dead link.
       if (activity.objectType === "item") {
-        const it = db
-          .select({ slug: items.slug, title: items.title })
-          .from(items)
-          .where(eq(items.id, activity.objectId))
-          .get();
-        if (!it) return null;
-        return { ...base, label: `commented on ${it.title}`, href: `/item/${it.slug}` };
+        const item = db.select().from(items).where(eq(items.id, activity.objectId)).get();
+        if (!item) return null;
+        const c = latestCommentBy(actor.id, { itemId: item.id });
+        return {
+          ...base,
+          label: `joined the discussion on ${item.title}`,
+          href: `/item/${item.slug}`,
+          embed: c ? { type: "comment", body: c, item, href: `/item/${item.slug}` } : null,
+        };
       }
       const p = db
         .select({ id: posts.id })
@@ -367,7 +391,13 @@ function resolveActivity(activity: Activity, actor: User): FeedEntry | null {
         .where(eq(posts.id, activity.objectId))
         .get();
       if (!p) return null;
-      return { ...base, label: "commented on a post", href: `/post/${p.id}` };
+      const c = latestCommentBy(actor.id, { postId: p.id });
+      return {
+        ...base,
+        label: "joined a discussion",
+        href: `/post/${p.id}`,
+        embed: c ? { type: "comment", body: c, item: null, href: `/post/${p.id}` } : null,
+      };
     }
 
     case "followed": {

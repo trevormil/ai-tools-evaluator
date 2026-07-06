@@ -54,6 +54,26 @@ test("reply to a legacy post inline from the timeline", async ({ page }) => {
   await expect(page.getByText(unique)).toBeVisible();
 });
 
+test("discussions surface in the feed with their content (ticket 0038)", async ({ page }) => {
+  // Comment on a tool from its page…
+  await page.goto("/item/dspy");
+  const unique = `metric-driven prompting is underrated ${Date.now()}`;
+  await page.getByPlaceholder(/add a comment/i).fill(unique);
+  await page.getByRole("button", { name: /^comment$/i }).click();
+  await expect(page.getByText(unique)).toBeVisible();
+  // …and the feed carries the discussion content, not a dead label.
+  await page.goto("/activity");
+  await expect(page.getByText(/joined the discussion on DSPy/i).first()).toBeVisible();
+  await expect(page.getByText(unique).first()).toBeVisible();
+});
+
+test("random mode lands on a tool page (ticket 0038)", async ({ page }) => {
+  await page.goto("/random");
+  await expect(page).toHaveURL(/\/item\/[a-z0-9-]+/);
+  // It's a scored tool — the readout rail is present.
+  await expect(page.getByText("Readout")).toBeVisible();
+});
+
 test("quote-repost from the timeline and see the quote in the feed", async ({ page }) => {
   await page.goto("/activity");
   const postCard = page

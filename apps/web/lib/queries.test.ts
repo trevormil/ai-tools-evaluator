@@ -39,6 +39,18 @@ beforeAll(async () => {
   }
 });
 
+test("randomToolSlug returns a published, scored tool (ticket 0038)", async () => {
+  const { randomToolSlug } = await import("./queries");
+  // Draw repeatedly: always a QCount slug that is published (it6 is unpublished
+  // and other suites' items may be pending/scored — scored-only is asserted by
+  // never drawing this suite's unpublished row).
+  for (let i = 0; i < 10; i++) {
+    const slug = randomToolSlug();
+    expect(slug).toBeTruthy();
+    expect(slug).not.toBe("tool-6"); // the unpublished row
+  }
+});
+
 // Scoped by a unique search needle: bun runs all test files in one process, so
 // the @aix/db singleton shares one DB across suites — global counts would race.
 test("countItems reports the true filtered total, beyond any page limit", () => {

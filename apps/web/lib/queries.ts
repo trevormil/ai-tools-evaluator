@@ -79,6 +79,29 @@ export function listItems(f: ItemFilters = {}): Item[] {
     .all();
 }
 
+/**
+ * Random mode (ticket 0038): one published tool to just go learn. Prefers
+ * scored items (they have the full write-up); falls back to any published.
+ */
+export function randomToolSlug(): string | undefined {
+  const db = getDb();
+  const scored = db
+    .select({ slug: items.slug })
+    .from(items)
+    .where(and(eq(items.published, true), eq(items.scoreStatus, "scored")))
+    .orderBy(sql`random()`)
+    .limit(1)
+    .get();
+  if (scored) return scored.slug;
+  return db
+    .select({ slug: items.slug })
+    .from(items)
+    .where(eq(items.published, true))
+    .orderBy(sql`random()`)
+    .limit(1)
+    .get()?.slug;
+}
+
 export function getItemBySlug(slug: string): Item | undefined {
   return getDb().select().from(items).where(eq(items.slug, slug)).get();
 }

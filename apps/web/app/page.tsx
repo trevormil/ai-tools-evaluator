@@ -61,22 +61,44 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <p className="eyebrow">The directory</p>
-        <h1 className="mt-2 max-w-3xl font-display text-2xl font-black leading-[1.05] tracking-tight sm:text-4xl">
-          Every dev tool, on the record —{" "}
-          <span className="text-brand">harshly scored, honestly used.</span>
-        </h1>
-        {!user && (
-          <p className="mt-2 max-w-xl text-sm text-muted">
-            Ten-metric scorecards and blunt verdicts from the evaluator, real takes from the
-            engineers running each tool. Submit anything —{" "}
-            <Link href="/submit" className="link-brand">
-              it shows up instantly
-            </Link>
-            .
-          </p>
-        )}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow">The directory</p>
+          <h1 className="mt-2 max-w-3xl font-display text-2xl font-black leading-[1.05] tracking-tight sm:text-4xl">
+            Every dev tool, on the record —{" "}
+            <span className="text-brand">harshly scored, honestly used.</span>
+          </h1>
+          {!user && (
+            <p className="mt-2 max-w-xl text-sm text-muted">
+              Ten-metric scorecards and blunt verdicts from the evaluator, real takes from the
+              engineers running each tool. Submit anything —{" "}
+              <Link href="/submit" className="link-brand">
+                it shows up instantly
+              </Link>
+              .
+            </p>
+          )}
+        </div>
+        <a href="/random" className="btn-ghost shrink-0" title="Open a random tool">
+          <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
+            <rect
+              x="0.75"
+              y="0.75"
+              width="12.5"
+              height="12.5"
+              rx="3"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.5"
+            />
+            <circle cx="4.6" cy="4.6" r="1.15" fill="currentColor" />
+            <circle cx="9.4" cy="4.6" r="1.15" fill="currentColor" />
+            <circle cx="7" cy="7" r="1.15" fill="currentColor" />
+            <circle cx="4.6" cy="9.4" r="1.15" fill="currentColor" />
+            <circle cx="9.4" cy="9.4" r="1.15" fill="currentColor" />
+          </svg>
+          Pick one at random
+        </a>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">

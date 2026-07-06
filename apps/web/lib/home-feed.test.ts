@@ -212,6 +212,37 @@ test("following mode shows ONLY the circle — no silent global fallback, no ite
   }
 });
 
+test("comment activities carry the discussion content as an embed (ticket 0038)", async () => {
+  const { comments, activities } = schema;
+  db.insert(comments)
+    .values({
+      id: "cm_1",
+      authorId: CARA,
+      itemId: "item_pub",
+      body: "does this handle monorepos?",
+      createdAt: T0 + 85,
+    })
+    .run();
+  db.insert(activities)
+    .values({
+      id: "act_comment",
+      actorId: CARA,
+      verb: "commented",
+      objectType: "item",
+      objectId: "item_pub",
+      createdAt: T0 + 85,
+    })
+    .run();
+
+  const { entries } = getUnifiedFeed(null, { mode: "all", limit: 100 });
+  const disc = entries.find((e) => e.kind === "activity" && e.activity.id === "act_comment");
+  if (disc?.kind !== "activity") throw new Error("comment activity missing from feed");
+  expect(disc.embed?.type).toBe("comment");
+  if (disc.embed?.type !== "comment") throw new Error("unreachable");
+  expect(disc.embed.body).toBe("does this handle monorepos?");
+  expect(disc.embed.item?.slug).toBe("pub-tool");
+});
+
 test("getUserActivity returns one actor's resolved activity, newest first (ticket 0029)", async () => {
   const { getUserActivity } = await import("./home-feed");
   const entries = getUserActivity(BOB, 50);

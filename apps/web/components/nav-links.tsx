@@ -12,6 +12,7 @@ export function NavLinks({ signedIn }: { signedIn: boolean }) {
     { href: "/activity", label: "Activity", active: pathname.startsWith("/activity") },
     { href: "/leaderboard", label: "Leaderboard", active: pathname.startsWith("/leaderboard") },
     { href: "/submit", label: "Submit", active: pathname.startsWith("/submit") },
+    { href: "/random", label: "Random", active: false },
     ...(signedIn
       ? [{ href: "/messages", label: "Messages", active: pathname.startsWith("/messages") }]
       : []),

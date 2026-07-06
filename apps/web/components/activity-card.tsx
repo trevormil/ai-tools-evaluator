@@ -87,6 +87,27 @@ function Embed({ embed }: { embed: FeedEmbed }) {
     );
   }
 
+  if (embed.type === "comment") {
+    return (
+      <Link
+        href={embed.href}
+        className="mt-2 block rounded-lg border p-3 hover:bg-neutral-50 dark:hover:bg-neutral-800/50"
+        style={{ borderColor: "var(--border)" }}
+      >
+        <span className="line-clamp-3 block whitespace-pre-wrap text-sm">{embed.body}</span>
+        {embed.item && (
+          <span className="mt-1.5 flex items-center gap-1.5 text-xs text-faint">
+            {embed.item.coverImageUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={embed.item.coverImageUrl} alt="" className="h-4 w-4 rounded object-cover" />
+            )}
+            ↳ {embed.item.title}
+          </span>
+        )}
+      </Link>
+    );
+  }
+
   // stack: the take is the content — show it like a mini review.
   const target = embed.item ? `/item/${embed.item.slug}` : undefined;
   const body = (
