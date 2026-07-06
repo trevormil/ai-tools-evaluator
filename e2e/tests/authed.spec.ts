@@ -10,16 +10,7 @@ test.beforeEach(async ({ context, baseURL }) => {
 test("add a tool to My Stack and see it on the profile", async ({ page }) => {
   await page.goto("/u/e2euser");
   // Open the My Stack tab (profiles are tabbed).
-  await page
-    .getByRole("button", { name: /my stack/i })
-    .first()
-    .click()
-    .catch(() => {});
-  await page
-    .getByText(/my stack/i)
-    .first()
-    .click()
-    .catch(() => {});
+  await page.getByRole("tab", { name: /my stack/i }).click();
 
   const unique = `Neovim-${Date.now()}`;
   await page.getByPlaceholder(/tool name/i).fill(unique);

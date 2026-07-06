@@ -22,6 +22,7 @@ import { ReadmeSection } from "@/components/readme-section";
 import { SegMeter } from "@/components/seg-meter";
 import { CopyButton } from "@/components/copy-button";
 import { IntegrationDiagram } from "@/components/integration-diagram";
+import { ContentTabs, type ContentTab } from "@/components/content-tabs";
 import { getOrFetchReadme, prepareReadme } from "@/lib/github-readme";
 import { renderMarkdown } from "@/lib/markdown";
 import { timeAgo } from "@/lib/format";
@@ -30,6 +31,7 @@ import type { StackStatus } from "@/lib/stack-types";
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const SECTIONS: {
   key: "whatItIs" | "vsVanilla" | "surfaceArea" | "devilsAdvocate" | "steelman";
@@ -42,8 +44,16 @@ const SECTIONS: {
   { key: "steelman", title: "The honest case for it" },
 ];
 
-export default async function ItemPage({ params }: { params: Params }) {
+export default async function ItemPage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { slug } = await params;
+  const sp = await searchParams;
+  const initialTab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const item = getItemBySlug(slug);
   if (!item) notFound();
 
@@ -67,6 +77,129 @@ export default async function ItemPage({ params }: { params: Params }) {
   // pending/legacy GitHub items (best-effort).
   const readmeMd = await getOrFetchReadme(item);
   const readmeHtml = readmeMd ? renderMarkdown(prepareReadme(readmeMd, item.externalId)) : null;
+
+  /** One pane per concern — the page reads one thing at a time. */
+  const buildTabs = (): ContentTab[] => {
+    const tabs: ContentTab[] = [];
+
+    if (pending) {
+      tabs.push({
+        key: "status",
+        label: "Status",
+        content: (
+          <section className="card border-dashed p-6 text-sm text-muted">
+            <p className="eyebrow mb-2 !text-amber-600 dark:!text-amber-400">In the queue</p>
+            This tool was submitted by the community and is awaiting its ten-metric evaluation. The
+            scorecard, verdict, and full write-up land on the next scanner run — takes, comments,
+            and votes are already live.
+          </section>
+        ),
+      });
+    } else {
+      tabs.push({
+        key: "evaluation",
+        label: "Evaluation",
+        content: (
+          <div className="flex flex-col gap-8">
+            {evaluation!.media.length > 0 && <MediaGallery media={evaluation!.media} />}
+            <div className="prose-none flex flex-col gap-6">
+              {SECTIONS.map(({ key, title }) => {
+                const content = evaluation!.body[key];
+                if (!content) return null;
+                return (
+                  <section key={key} className="border-l-2 border-[var(--border-strong)] pl-4">
+                    <h2 className="mb-1.5 text-lg font-bold tracking-tight">{title}</h2>
+                    <p className="whitespace-pre-wrap leading-relaxed text-muted">{content}</p>
+                  </section>
+                );
+              })}
+            </div>
+            {evaluation!.audience && (
+              <section>
+                <p className="eyebrow mb-2">Who it&apos;s for</p>
+                <h2 className="mb-3 text-lg font-bold tracking-tight">Audience fit</h2>
+                <AudienceFit audience={evaluation!.audience} />
+              </section>
+            )}
+          </div>
+        ),
+      });
+      tabs.push({
+        key: "scorecard",
+        label: "Scorecard",
+        content: (
+          <section>
+            <p className="eyebrow mb-2">The report card</p>
+            <div className="card p-4 sm:p-5">
+              <Scorecard scores={evaluation!.scores} overall={item.overallScore} />
+            </div>
+          </section>
+        ),
+      });
+    }
+
+    if (readmeHtml) {
+      tabs.push({ key: "readme", label: "README", content: <ReadmeSection html={readmeHtml} /> });
+    }
+
+    tabs.push({
+      key: "takes",
+      label: takes.length > 0 ? `Takes · ${takes.length}` : "Takes",
+      content: (
+        <section className="flex flex-col gap-4">
+          <p className="eyebrow">From the people running it</p>
+          <TakeComposer
+            itemId={item.id}
+            initialTake={myEntry?.take ?? null}
+            initialStatus={(myEntry?.status as StackStatus | undefined) ?? null}
+            initialRating={myEntry?.rating ?? null}
+            signedIn={!!user}
+          />
+          {takes.length === 0 ? (
+            <p className="text-sm text-muted">
+              No takes yet — be the first to say how it holds up.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {takes.map((t) => (
+                <TakeCard
+                  key={t.id}
+                  username={t.username}
+                  avatarUrl={t.user.avatarUrl}
+                  status={t.status}
+                  rating={t.rating}
+                  take={t.take}
+                  updatedAt={t.updatedAt}
+                  followedByViewer={t.followedByViewer}
+                />
+              ))}
+            </div>
+          )}
+        </section>
+      ),
+    });
+
+    tabs.push({
+      key: "discussion",
+      label: item.commentCount > 0 ? `Discussion · ${item.commentCount}` : "Discussion",
+      content: (
+        <section className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">The thread</p>
+            <Link href={`/`} className="data text-[11px] text-muted hover:text-brand">
+              ← Directory
+            </Link>
+          </div>
+          <div className="card p-4">
+            <CommentForm itemId={item.id} signedIn={!!user} />
+          </div>
+          <CommentThread comments={comments} itemId={item.id} signedIn={!!user} />
+        </section>
+      ),
+    });
+
+    return tabs;
+  };
 
   return (
     <article className="flex flex-col gap-8">
@@ -137,100 +270,10 @@ export default async function ItemPage({ params }: { params: Params }) {
       </header>
 
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
-        {/* Main column: the write-up, the repo's words, the community's words. */}
-        <div className="flex min-w-0 flex-col gap-8">
-          {pending ? (
-            <section className="card border-dashed p-6 text-sm text-muted">
-              <p className="eyebrow mb-2 !text-amber-600 dark:!text-amber-400">In the queue</p>
-              This tool was submitted by the community and is awaiting its ten-metric evaluation.
-              The scorecard, verdict, and full write-up land on the next scanner run — takes,
-              comments, and votes are already live.
-            </section>
-          ) : (
-            <>
-              {evaluation!.media.length > 0 && <MediaGallery media={evaluation!.media} />}
-
-              <div className="prose-none flex flex-col gap-6">
-                {SECTIONS.map(({ key, title }) => {
-                  const content = evaluation!.body[key];
-                  if (!content) return null;
-                  return (
-                    <section key={key} className="border-l-2 border-[var(--border-strong)] pl-4">
-                      <h2 className="mb-1.5 text-lg font-bold tracking-tight">{title}</h2>
-                      <p className="whitespace-pre-wrap leading-relaxed text-muted">{content}</p>
-                    </section>
-                  );
-                })}
-              </div>
-
-              {evaluation!.audience && (
-                <section>
-                  <p className="eyebrow mb-2">Who it&apos;s for</p>
-                  <h2 className="mb-3 text-lg font-bold tracking-tight">Audience fit</h2>
-                  <AudienceFit audience={evaluation!.audience} />
-                </section>
-              )}
-
-              <section>
-                <p className="eyebrow mb-2">The report card</p>
-                <h2 className="mb-3 text-lg font-bold tracking-tight">Scorecard</h2>
-                <div className="card p-4 sm:p-5">
-                  <Scorecard scores={evaluation!.scores} overall={item.overallScore} />
-                </div>
-              </section>
-            </>
-          )}
-
-          {readmeHtml && <ReadmeSection html={readmeHtml} />}
-
-          <section className="flex flex-col gap-4">
-            <div>
-              <p className="eyebrow mb-1">From the people running it</p>
-              <h2 className="text-lg font-bold tracking-tight">
-                Takes{takes.length > 0 ? ` · ${takes.length}` : ""}
-              </h2>
-            </div>
-            <TakeComposer
-              itemId={item.id}
-              initialTake={myEntry?.take ?? null}
-              initialStatus={(myEntry?.status as StackStatus | undefined) ?? null}
-              initialRating={myEntry?.rating ?? null}
-              signedIn={!!user}
-            />
-            {takes.length === 0 ? (
-              <p className="text-sm text-muted">
-                No takes yet — be the first to say how it holds up.
-              </p>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {takes.map((t) => (
-                  <TakeCard
-                    key={t.id}
-                    username={t.username}
-                    avatarUrl={t.user.avatarUrl}
-                    status={t.status}
-                    rating={t.rating}
-                    take={t.take}
-                    updatedAt={t.updatedAt}
-                    followedByViewer={t.followedByViewer}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
-
-          <section className="flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold tracking-tight">Discussion</h2>
-              <Link href={`/`} className="data text-[11px] text-muted hover:text-brand">
-                ← Directory
-              </Link>
-            </div>
-            <div className="card p-4">
-              <CommentForm itemId={item.id} signedIn={!!user} />
-            </div>
-            <CommentThread comments={comments} itemId={item.id} signedIn={!!user} />
-          </section>
+        {/* Main column: tabbed so the page reads one thing at a time
+            (Evaluation · Scorecard · README · Takes · Discussion). */}
+        <div className="min-w-0">
+          <ContentTabs initialTab={initialTab} tabs={buildTabs()} />
         </div>
 
         {/* Spec rail: the instrument readout, pinned while you read. */}

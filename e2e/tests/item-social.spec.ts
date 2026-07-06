@@ -2,9 +2,9 @@ import { test, expect } from "@playwright/test";
 
 /** Item-page social: takes + I-use-this (tickets 0026/0033/0036) + leaderboard (0027). */
 
-test("item page has a Takes section and an I-use-this affordance", async ({ page }) => {
+test("item page has a Takes tab and an I-use-this affordance", async ({ page }) => {
   await page.goto("/item/ripgrep");
-  await expect(page.getByRole("heading", { name: /takes/i })).toBeVisible();
+  await expect(page.getByRole("tab", { name: /takes/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /i use this/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /reposts/ }).first()).toBeVisible();
 });
@@ -15,7 +15,7 @@ test("signed-in user adds a take and it leads their profile + the activity feed"
   baseURL,
 }) => {
   await context.addCookies([{ name: "aix_session", value: "e2e-token", url: baseURL! }]);
-  await page.goto("/item/zod");
+  await page.goto("/item/zod?tab=takes");
   const unique = `parse-don't-validate is the way ${Date.now()}`;
   await page.getByRole("button", { name: /add your take/i }).click();
   await page.getByPlaceholder(/how do you use it/i).fill(unique);

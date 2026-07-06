@@ -23,13 +23,19 @@ test("old /directory URLs redirect home with filters intact", async ({ page }) =
   await expect(page.getByText(/langchain/i).first()).toBeVisible();
 });
 
-test("item detail renders verdict, sections, scorecard, audience", async ({ page }) => {
+test("item detail renders verdict, sections, scorecard, audience across tabs", async ({ page }) => {
   await page.goto("/item/ripgrep");
   await expect(page.getByText(/ripgrep/i).first()).toBeVisible();
   await expect(page.getByText(/essential/i).first()).toBeVisible();
+  // Evaluation tab (default): write-up + audience.
   await expect(page.getByText(/Devil's advocate/i)).toBeVisible();
   await expect(page.getByText(/Who it's for/i)).toBeVisible();
-  await expect(page.getByText("Novelty", { exact: true })).toBeVisible(); // a scorecard metric label
+  // Scorecard lives in its own tab now.
+  await page.getByRole("tab", { name: "Scorecard" }).click();
+  await expect(page.getByText("Novelty", { exact: true })).toBeVisible();
+  // Deep link works too.
+  await page.goto("/item/ripgrep?tab=scorecard");
+  await expect(page.getByText("Novelty", { exact: true })).toBeVisible();
 });
 
 test("item page shows the decision layer: install, adopt-if/skip-if, health, schematic", async ({
@@ -50,8 +56,9 @@ test("item page shows the decision layer: install, adopt-if/skip-if, health, sch
   await expect(page.getByText("Where it sits")).toBeVisible();
 });
 
-test("item page shows the repo's own README, expandable", async ({ page }) => {
+test("item page shows the repo's own README in its tab, expandable", async ({ page }) => {
   await page.goto("/item/ripgrep");
+  await page.getByRole("tab", { name: "README" }).click();
   await expect(page.getByText("In their own words")).toBeVisible();
   await expect(page.getByText(/Why should I use ripgrep/i)).toBeVisible();
   await page.getByRole("button", { name: /read the full readme/i }).click();

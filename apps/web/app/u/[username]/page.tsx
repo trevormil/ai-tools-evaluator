@@ -15,7 +15,7 @@ import { FollowButton } from "@/components/follow-button";
 import { StackSection } from "@/components/stack-section";
 import { WorkflowSection } from "@/components/workflow-section";
 import { ArticleList } from "@/components/article-list";
-import { ProfileTabs, type ProfileTab } from "@/components/profile-tabs";
+import { ProfileTabs, type ProfileTab } from "@/components/content-tabs";
 import { ProfileLinks } from "@/components/profile-links";
 import { ProfileLinksEditor } from "@/components/profile-links-editor";
 import { EditProfile } from "@/components/edit-profile";

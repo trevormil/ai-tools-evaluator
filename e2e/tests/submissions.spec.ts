@@ -17,11 +17,15 @@ test("a fresh URL creates a live 'Awaiting score…' item and lands you on it", 
   await expect(page).toHaveURL(new RegExp(`/item/${name}`));
   await expect(page.getByText("Awaiting score…").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /i use this/i })).toBeVisible();
-  await expect(page.getByRole("button", { name: /add your take/i })).toBeVisible();
   // Instant logo: GitHub owner avatar.
   await expect(page.locator(`img[src="https://github.com/e2e-org.png"]`).first()).toBeVisible();
 
-  // Comments work immediately.
+  // Takes are one tab over…
+  await page.getByRole("tab", { name: /takes/i }).click();
+  await expect(page.getByRole("button", { name: /add your take/i })).toBeVisible();
+
+  // …and comments work immediately in the Discussion tab.
+  await page.getByRole("tab", { name: /discussion/i }).click();
   const comment = `first! ${Date.now()}`;
   await page.getByPlaceholder(/add a comment/i).fill(comment);
   await page.getByRole("button", { name: /^comment$/i }).click();

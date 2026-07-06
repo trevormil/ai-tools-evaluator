@@ -55,8 +55,8 @@ test("reply to a legacy post inline from the timeline", async ({ page }) => {
 });
 
 test("discussions surface in the feed with their content (ticket 0038)", async ({ page }) => {
-  // Comment on a tool from its page…
-  await page.goto("/item/dspy");
+  // Comment on a tool from its Discussion tab…
+  await page.goto("/item/dspy?tab=discussion");
   const unique = `metric-driven prompting is underrated ${Date.now()}`;
   await page.getByPlaceholder(/add a comment/i).fill(unique);
   await page.getByRole("button", { name: /^comment$/i }).click();

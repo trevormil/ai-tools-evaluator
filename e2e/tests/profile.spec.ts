@@ -15,7 +15,7 @@ test("?tab=activity deep-links straight to the Activity tab", async ({ page }) =
 
 test("switching tabs updates the URL for sharing", async ({ page }) => {
   await page.goto("/u/e2euser");
-  await page.getByRole("button", { name: "Articles" }).click();
+  await page.getByRole("tab", { name: "Articles" }).click();
   await expect(page).toHaveURL(/tab=articles/);
 });
 
