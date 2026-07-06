@@ -23,7 +23,7 @@ export function Filters() {
       const next = new URLSearchParams(params.toString());
       if (value) next.set(key, value);
       else next.delete(key);
-      router.push(`/directory?${next.toString()}`);
+      router.push(`/?${next.toString()}`);
     },
     [params, router],
   );
@@ -113,7 +113,7 @@ export function Filters() {
             </option>
           ))}
         </select>
-        <button className="btn-ghost" onClick={() => router.push("/directory")}>
+        <button className="btn-ghost" onClick={() => router.push("/")}>
           Reset
         </button>
       </div>

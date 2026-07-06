@@ -8,10 +8,10 @@ export function FeedTabs({ mode }: { mode: FeedMode }) {
       className="flex w-fit items-center gap-1 rounded-xl border p-1"
       style={{ borderColor: "var(--border)", background: "var(--surface)" }}
     >
-      <Tab href="/?feed=all" active={mode === "all"}>
+      <Tab href="/activity?feed=all" active={mode === "all"}>
         Everything
       </Tab>
-      <Tab href="/?feed=following" active={mode === "following"}>
+      <Tab href="/activity?feed=following" active={mode === "following"}>
         Following
       </Tab>
     </div>

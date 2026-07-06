@@ -11,12 +11,17 @@ export function MobileNav({ username }: { username: string | null }) {
   const pathname = usePathname();
 
   const tabs: { href: string; label: string; icon: string; active: boolean }[] = [
-    { href: "/", label: "Feed", icon: "⌂", active: pathname === "/" },
     {
-      href: "/directory",
+      href: "/",
       label: "Directory",
       icon: "▤",
-      active: pathname.startsWith("/directory") || pathname.startsWith("/item"),
+      active: pathname === "/" || pathname.startsWith("/item"),
+    },
+    {
+      href: "/activity",
+      label: "Activity",
+      icon: "◎",
+      active: pathname.startsWith("/activity"),
     },
     { href: "/submit", label: "Submit", icon: "＋", active: pathname.startsWith("/submit") },
     {

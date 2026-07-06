@@ -22,8 +22,8 @@ export async function Nav() {
         </Link>
         {/* <sm: the bottom tab bar (MobileNav) carries these; header stays lean. */}
         <div className="hidden flex-1 items-center gap-0.5 text-sm sm:flex sm:gap-1">
-          <NavLink href="/">Feed</NavLink>
-          <NavLink href="/directory">Directory</NavLink>
+          <NavLink href="/">Directory</NavLink>
+          <NavLink href="/activity">Activity</NavLink>
           <NavLink href="/leaderboard">Leaderboard</NavLink>
           <NavLink href="/submit">Submit</NavLink>
           {user && <NavLink href="/messages">Messages</NavLink>}

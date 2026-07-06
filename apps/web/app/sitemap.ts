@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 /** Static top-level pages plus every published item URL. */
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
-  const staticPaths = ["/", "/directory", "/leaderboard"].map((path) => ({
+  const staticPaths = ["/", "/activity", "/leaderboard"].map((path) => ({
     url: absoluteUrl(path),
     lastModified: now,
   }));
