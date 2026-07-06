@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getCurrentUser } from "@/lib/auth";
 import { ThemeToggle } from "./theme-toggle";
 import { NotificationBell } from "./notification-bell";
+import { NavLinks } from "./nav-links";
 
 export async function Nav() {
   const user = await getCurrentUser();
@@ -22,11 +23,7 @@ export async function Nav() {
         </Link>
         {/* <sm: the bottom tab bar (MobileNav) carries these; header stays lean. */}
         <div className="hidden flex-1 items-center gap-0.5 text-sm sm:flex sm:gap-1">
-          <NavLink href="/">Directory</NavLink>
-          <NavLink href="/activity">Activity</NavLink>
-          <NavLink href="/leaderboard">Leaderboard</NavLink>
-          <NavLink href="/submit">Submit</NavLink>
-          {user && <NavLink href="/messages">Messages</NavLink>}
+          <NavLinks signedIn={!!user} />
         </div>
         <div className="flex-1 sm:hidden" aria-hidden />
         {user && <NotificationBell />}
@@ -64,16 +61,5 @@ function Logo() {
         <rect x="11" y="2" width="3" height="12" rx="1" fill="var(--brand-contrast)" />
       </svg>
     </span>
-  );
-}
-
-function NavLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link
-      href={href}
-      className="rounded-lg px-2.5 py-1.5 font-medium text-muted transition-colors hover:bg-[var(--surface-2)] hover:text-ink"
-    >
-      {children}
-    </Link>
   );
 }

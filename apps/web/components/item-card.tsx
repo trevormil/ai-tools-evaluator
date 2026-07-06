@@ -36,9 +36,13 @@ export function ItemCard({ item }: { item: Item }) {
             {item.title.slice(0, 2).toUpperCase()}
           </div>
         )}
+        {/* Gradient exists to keep the stamp legible over photos — skip it on
+            monogram/contain placeholders where it just reads as grime. */}
+        {!pending && item.coverImageUrl && (
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+        )}
         {!pending && (
           <>
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
             {/* Score readout — colored by band, reads like a benchmark stamp. */}
             <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-black/70 px-2 py-1 backdrop-blur-sm">
               <span className={`h-1.5 w-1.5 rounded-full ${scoreColorClass(band)}`} />
