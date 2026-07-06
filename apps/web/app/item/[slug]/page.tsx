@@ -3,14 +3,19 @@ import Link from "next/link";
 import { CATEGORY_LABELS, type Category } from "@aix/core";
 import { getCurrentUser } from "@/lib/auth";
 import { getItemBySlug, parseEvaluation, getItemComments, userVotes } from "@/lib/queries";
+import { listPostsByItem, itemStackSummary } from "@/lib/item-social";
+import { repostCount, hasReposted, repostCountsFor, userRepostSet } from "@/lib/reposts";
 import { toCommentViews } from "@/lib/comment-view";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { Scorecard } from "@/components/scorecard";
 import { AudienceFit } from "@/components/audience-fit";
 import { MediaGallery } from "@/components/media-gallery";
 import { VoteButtons } from "@/components/vote-buttons";
+import { RepostButton } from "@/components/repost-button";
 import { CommentForm } from "@/components/comment-form";
 import { CommentThread } from "@/components/comment-thread";
+import { PostCard } from "@/components/post-card";
+import { PostComposer } from "@/components/post-composer";
 
 export const dynamic = "force-dynamic";
 
@@ -38,6 +43,19 @@ export default async function ItemPage({ params }: { params: Params }) {
   const myItemVote = user ? (userVotes(user.id, "item")[item.id] ?? 0) : 0;
   const myCommentVotes = user ? userVotes(user.id, "comment") : {};
   const comments = toCommentViews(commentNodes, myCommentVotes);
+
+  // The social surface around the tool (ticket 0026).
+  const itemPosts = listPostsByItem(item.id);
+  const myPostVotes = user ? userVotes(user.id, "post") : {};
+  const postRepostCounts = repostCountsFor(
+    "post",
+    itemPosts.map((p) => p.post.id),
+  );
+  const myPostReposts = user ? userRepostSet(user.id, "post") : new Set<string>();
+  const stack = itemStackSummary(item.id);
+  const runners = (stack.byStatus["using"] ?? 0) + (stack.byStatus["trying"] ?? 0);
+  const itemReposts = repostCount("item", item.id);
+  const iReposted = user ? hasReposted(user.id, "item", item.id) : false;
 
   return (
     <article className="flex flex-col gap-8">
@@ -71,6 +89,15 @@ export default async function ItemPage({ params }: { params: Params }) {
             {evaluation.source.stars != null && (
               <span className="data text-xs text-faint">★ {evaluation.source.stars}</span>
             )}
+            <span className="text-xs">
+              <RepostButton
+                targetType="item"
+                targetId={item.id}
+                initialCount={itemReposts}
+                initialReposted={iReposted}
+                signedIn={!!user}
+              />
+            </span>
           </div>
         </div>
       </header>
@@ -98,12 +125,70 @@ export default async function ItemPage({ params }: { params: Params }) {
         </section>
       )}
 
+      {stack.total > 0 && (
+        <section>
+          <p className="eyebrow mb-2">In the wild</p>
+          <h2 className="mb-3 text-lg font-bold tracking-tight">
+            {runners > 0
+              ? `${runners} engineer${runners === 1 ? "" : "s"} run${runners === 1 ? "s" : ""} this`
+              : `${stack.total} engineer${stack.total === 1 ? "" : "s"} have an opinion`}
+          </h2>
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              {Object.entries(stack.byStatus).map(([status, n]) => (
+                <span key={status} className="chip">
+                  {status} · {n}
+                </span>
+              ))}
+            </div>
+            {stack.takes.length > 0 && (
+              <div className="card flex flex-col gap-3 p-4">
+                {stack.takes.map((t) => (
+                  <blockquote key={t.username} className="text-sm">
+                    <p className="italic text-muted">“{t.take}”</p>
+                    <footer className="mt-1 text-xs text-faint">
+                      <Link href={`/u/${t.username}`} className="hover:underline">
+                        @{t.username}
+                      </Link>{" "}
+                      · {t.status}
+                    </footer>
+                  </blockquote>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
       <section>
         <p className="eyebrow mb-2">The report card</p>
         <h2 className="mb-3 text-lg font-bold tracking-tight">Scorecard</h2>
         <div className="card p-4 sm:p-5">
           <Scorecard scores={evaluation.scores} overall={item.overallScore} />
         </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="text-lg font-bold tracking-tight">Posts about this</h2>
+        <PostComposer signedIn={!!user} itemId={item.id} itemTitle={item.title} />
+        {itemPosts.length === 0 ? (
+          <p className="text-sm text-muted">No posts yet — have a take? Post it.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {itemPosts.map((p) => (
+              <PostCard
+                key={p.post.id}
+                post={p.post}
+                author={p.author}
+                item={null}
+                myVote={myPostVotes[p.post.id] ?? 0}
+                signedIn={!!user}
+                repostCount={postRepostCounts[p.post.id] ?? 0}
+                reposted={myPostReposts.has(p.post.id)}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="flex flex-col gap-4">
