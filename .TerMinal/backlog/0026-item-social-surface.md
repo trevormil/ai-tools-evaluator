@@ -1,7 +1,7 @@
 ---
 id: 26
 title: "Item page social surface: posts about it, who runs it, repost/share"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

@@ -1,7 +1,7 @@
 ---
 id: 27
 title: "Ranked density: compact trending rows + numbered leaderboard"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

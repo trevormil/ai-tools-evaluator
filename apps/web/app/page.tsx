@@ -5,7 +5,7 @@ import { getUnifiedFeed, type FeedMode } from "@/lib/home-feed";
 import { PostComposer } from "@/components/post-composer";
 import { FeedList } from "@/components/feed-list";
 import { FeedTabs } from "@/components/feed-tabs";
-import { ItemCard } from "@/components/item-card";
+import { TrendRow } from "@/components/trend-row";
 import { NewsletterForm } from "@/components/newsletter-form";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +17,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
   const sp = await searchParams;
   const mode: FeedMode = user && sp.feed === "following" ? "following" : "all";
   const page = getUnifiedFeed(user, { mode, limit: 30 });
-  const trending = listItems({ sort: "hot", limit: 4 });
+  const trending = listItems({ sort: "hot", limit: 6 });
 
   return (
     <div className="flex flex-col gap-8">
@@ -43,9 +43,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
               The directory is empty. The scanner hasn&apos;t run yet.
             </p>
           ) : (
-            <div className="grid gap-3">
-              {trending.map((item) => (
-                <ItemCard key={item.id} item={item} />
+            <div className="card flex flex-col p-2">
+              {trending.map((item, i) => (
+                <TrendRow key={item.id} rank={i + 1} item={item} />
               ))}
             </div>
           )}
