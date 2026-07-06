@@ -174,7 +174,7 @@ export function RecapView({ recap, prev, next }: { recap: Recap; prev?: string; 
           One email a night — the tools judged, the traps named. No fluff.
         </p>
         <div className="mt-1">
-          <NewsletterForm />
+          <NewsletterForm variant="inline" />
         </div>
       </section>
 
