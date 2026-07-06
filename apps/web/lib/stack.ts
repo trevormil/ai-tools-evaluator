@@ -74,12 +74,14 @@ export function upsertStackEntry(userId: string, input: UpsertStackInput): Stack
       : undefined;
 
   if (existing) {
+    // Partial-update semantics: `undefined` preserves the existing value
+    // (an I-use-this status toggle must not wipe a take); `null` clears it.
     return db
       .update(stackItems)
       .set({
         status: input.status,
-        take: input.take ?? null,
-        rating: input.rating ?? null,
+        take: input.take === undefined ? existing.take : input.take,
+        rating: input.rating === undefined ? existing.rating : input.rating,
         updatedAt: nowSec,
       })
       .where(eq(stackItems.id, existing.id))

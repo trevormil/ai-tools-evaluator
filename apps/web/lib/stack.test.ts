@@ -22,12 +22,27 @@ beforeAll(async () => {
   getDb().insert(users).values({ id: USER_ID, username: "stacktester" }).run();
 });
 
+test("partial upsert preserves an existing take/rating (ticket 0033: I-use-this must not wipe takes)", () => {
+  upsertStackEntry(USER_ID, { toolName: "Zed", status: "trying", take: "fast editor", rating: 4 });
+  // Status-only upsert (what the I-use-this toggle sends) — take + rating survive.
+  upsertStackEntry(USER_ID, { toolName: "zed", status: "using" });
+  const entry = getUserStack(USER_ID).find((e) => e.toolName === "Zed")!;
+  expect(entry.status).toBe("using");
+  expect(entry.take).toBe("fast editor");
+  expect(entry.rating).toBe(4);
+  // Explicit null clears.
+  upsertStackEntry(USER_ID, { toolName: "zed", status: "using", take: null, rating: null });
+  const cleared = getUserStack(USER_ID).find((e) => e.toolName === "Zed")!;
+  expect(cleared.take).toBeNull();
+  expect(cleared.rating).toBeNull();
+});
+
 test("free-form tool names dedup case-insensitively (ticket 0018: lower(toolName))", () => {
   upsertStackEntry(USER_ID, { toolName: "Cursor", status: "using" });
   // Same tool, different casing + whitespace — must UPDATE the same entry, not add a new one.
   upsertStackEntry(USER_ID, { toolName: "  cursor ", status: "dropped", take: "moved off it" });
 
-  const stack = getUserStack(USER_ID).filter((e) => e.toolName != null);
+  const stack = getUserStack(USER_ID).filter((e) => e.toolName?.toLowerCase() === "cursor");
   expect(stack).toHaveLength(1);
   expect(stack[0]!.status).toBe("dropped");
   expect(stack[0]!.take).toBe("moved off it");

@@ -15,8 +15,8 @@ const UpsertBody = z
     itemId: z.string().optional(),
     toolName: z.string().max(120).optional(),
     status: z.enum(STACK_STATUSES),
-    take: z.string().max(2000).optional(),
-    rating: z.number().int().min(1).max(5).optional(),
+    take: z.string().max(2000).nullable().optional(),
+    rating: z.number().int().min(1).max(5).nullable().optional(),
   })
   .refine((b) => b.itemId || (b.toolName && b.toolName.trim().length > 0), {
     message: "Provide an itemId or a toolName",
