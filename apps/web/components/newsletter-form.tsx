@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 
-/** Email capture for the daily digest. Double opt-in — posts, then user confirms. */
-export function NewsletterForm() {
+/** Email capture for the nightly recap. Double opt-in — posts, then user confirms. */
+export function NewsletterForm({ variant = "card" }: { variant?: "card" | "inline" }) {
   const [email, setEmail] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -32,13 +32,11 @@ export function NewsletterForm() {
     }
   }
 
-  return (
-    <div className="card p-4">
-      <h3 className="font-semibold">Daily digest</h3>
-      <p className="mt-1 text-sm text-neutral-500">
-        New tools & papers, each with a harsh verdict — one email a day.
-      </p>
-      <form onSubmit={submit} className="mt-3 flex gap-2">
+  // `inline` drops the card chrome/heading for surfaces that already frame it
+  // (the recap hero + recap page). `card` is the standalone default.
+  const formRow = (
+    <>
+      <form onSubmit={submit} className="flex gap-2">
         <input
           type="email"
           required
@@ -51,7 +49,19 @@ export function NewsletterForm() {
           {busy ? "…" : "Subscribe"}
         </button>
       </form>
-      {msg && <p className="mt-2 text-xs text-neutral-500">{msg}</p>}
+      {msg && <p className="mt-2 text-xs text-muted">{msg}</p>}
+    </>
+  );
+
+  if (variant === "inline") return <div>{formRow}</div>;
+
+  return (
+    <div className="card p-4">
+      <h3 className="font-semibold">The nightly recap</h3>
+      <p className="mt-1 text-sm text-muted">
+        One email a night — the tools judged, the traps named.
+      </p>
+      <div className="mt-3">{formRow}</div>
     </div>
   );
 }

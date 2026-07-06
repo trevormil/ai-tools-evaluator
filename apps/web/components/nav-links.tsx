@@ -7,15 +7,16 @@ import { usePathname } from "next/navigation";
 export function NavLinks({ signedIn }: { signedIn: boolean }) {
   const pathname = usePathname();
 
+  // Recap-first product (ticket 0040): the nightly briefing + the directory are
+  // the spine. Feed-social (activity, messages) is dropped from the surface;
+  // its routes still exist. `signedIn` no longer changes the nav.
+  void signedIn;
   const links: { href: string; label: string; active: boolean }[] = [
     { href: "/", label: "Directory", active: pathname === "/" || pathname.startsWith("/item") },
-    { href: "/activity", label: "Activity", active: pathname.startsWith("/activity") },
+    { href: "/recap", label: "Recap", active: pathname.startsWith("/recap") },
     { href: "/leaderboard", label: "Leaderboard", active: pathname.startsWith("/leaderboard") },
     { href: "/submit", label: "Submit", active: pathname.startsWith("/submit") },
     { href: "/random", label: "Random", active: false },
-    ...(signedIn
-      ? [{ href: "/messages", label: "Messages", active: pathname.startsWith("/messages") }]
-      : []),
   ];
 
   return (

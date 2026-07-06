@@ -1054,6 +1054,7 @@ function seed() {
         score: hotScore(entry.upvotes, createdAt),
         upvotes: entry.upvotes,
         commentCount: entry.comments,
+        scoredAt: createdAt, // seeded items were "judged" at createdAt (recap grouping)
         createdAt,
       })
       .run();
@@ -1085,6 +1086,23 @@ rg 'fn run' --type rust
     .set({ readmeMd: RIPGREP_README })
     .where(and(eq(items.slug, "ripgrep"), eq(items.published, true)))
     .run();
+
+  // --- Nightly recap cluster (ticket 0040): put a varied set of verdicts on the
+  // current UTC day so "tonight's recap" is a real multi-tool night in demos.
+  const midnight = nowSec - (nowSec % 86_400);
+  const recapCluster: [string, number][] = [
+    ["ripgrep", 0],
+    ["zod", 120],
+    ["react-reasoning-and-acting", 240],
+    ["llamaindex", 360],
+    ["langchain", 480],
+  ];
+  for (const [slug, offset] of recapCluster) {
+    db.update(items)
+      .set({ scoredAt: midnight + offset })
+      .where(eq(items.slug, slug))
+      .run();
+  }
 
   // --- Social feed: only seed once (idempotent on the demo user having no posts).
   const hasPosts = db.select().from(posts).where(eq(posts.authorId, demoId)).get();

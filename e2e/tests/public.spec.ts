@@ -10,11 +10,38 @@ test("home IS the directory: seeded tools list at /", async ({ page }) => {
 
 test("directory filters to complexity-traps at /", async ({ page }) => {
   await page.goto("/?verdict=complexity-trap");
-  // langchain + autogpt are the seeded complexity-traps; ripgrep (essential)
-  // must not be in the GRID (the pulse rail may legitimately mention it).
-  const grid = page.locator("section").first();
-  await expect(grid.getByText(/langchain/i).first()).toBeVisible();
-  await expect(grid.getByText(/ripgrep/i)).toHaveCount(0);
+  // Filtering hides the recap hero, so the page is just the filtered directory.
+  await expect(page.getByText(/langchain/i).first()).toBeVisible();
+  await expect(page.getByText(/ripgrep/i)).toHaveCount(0);
+});
+
+test("home leads with the nightly recap hero", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText("The nightly recap")).toBeVisible();
+  await expect(page.getByText(/tools judged:/i)).toBeVisible();
+  await expect(page.getByText("Tonight's pick")).toBeVisible();
+});
+
+test("recap page + dated permalink + archive render", async ({ page }) => {
+  await page.goto("/recap");
+  await expect(page.getByText("The nightly recap")).toBeVisible();
+  await expect(page.getByText("The one that matters")).toBeVisible();
+  await expect(page.getByText("Every verdict tonight")).toBeVisible();
+  // The archive of dated permalinks (what the email links into).
+  await page.getByRole("link", { name: /All recaps/i }).click();
+  await expect(page).toHaveURL(/\/recap\/archive/);
+  await expect(page.getByText("Every night, on the record.")).toBeVisible();
+  // A dated permalink renders on its own.
+  const today = new Date().toISOString().slice(0, 10);
+  await page.goto(`/recap/${today}`);
+  await expect(page.getByText("Every verdict tonight")).toBeVisible();
+});
+
+test("nav surfaces Recap, not the feed timeline", async ({ page }) => {
+  await page.goto("/");
+  const nav = page.locator("header").first();
+  await expect(nav.getByRole("link", { name: "Recap" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Activity" })).toHaveCount(0);
 });
 
 test("old /directory URLs redirect home with filters intact", async ({ page }) => {
