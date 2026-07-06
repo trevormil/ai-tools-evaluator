@@ -309,6 +309,21 @@ export const articles = sqliteTable(
   (t) => [index("articles_author_idx").on(t.authorId), index("articles_created_idx").on(t.createdAt)],
 );
 
+/* ------------------------------------------------------- profile links */
+
+/** External profile links (unverified — just user-entered URLs). One per kind. */
+export const profileLinks = sqliteTable(
+  "profile_links",
+  {
+    id: cuid(),
+    userId: text("user_id").notNull().references(() => users.id),
+    kind: text("kind").notNull(), // github | x | linkedin | substack | website | youtube | mastodon | bluesky | telegram
+    url: text("url").notNull(),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [uniqueIndex("profile_links_user_kind_idx").on(t.userId, t.kind), index("profile_links_user_idx").on(t.userId)],
+);
+
 /* ------------------------------------------------------ auth sessions */
 
 export const sessions = sqliteTable("sessions", {
@@ -330,3 +345,4 @@ export type Message = typeof messages.$inferSelect;
 export type Activity = typeof activities.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type Article = typeof articles.$inferSelect;
+export type ProfileLink = typeof profileLinks.$inferSelect;
