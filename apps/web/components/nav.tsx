@@ -20,13 +20,15 @@ export async function Nav() {
             AI<span className="text-brand">x</span>
           </span>
         </Link>
-        <div className="flex flex-1 items-center gap-0.5 text-sm sm:gap-1">
+        {/* <sm: the bottom tab bar (MobileNav) carries these; header stays lean. */}
+        <div className="hidden flex-1 items-center gap-0.5 text-sm sm:flex sm:gap-1">
           <NavLink href="/">Feed</NavLink>
           <NavLink href="/directory">Directory</NavLink>
           <NavLink href="/leaderboard">Leaderboard</NavLink>
           <NavLink href="/submit">Submit</NavLink>
           {user && <NavLink href="/messages">Messages</NavLink>}
         </div>
+        <div className="flex-1 sm:hidden" aria-hidden />
         {user && <NotificationBell />}
         <ThemeToggle />
         {user ? (

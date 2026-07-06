@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { Nav } from "@/components/nav";
+import { MobileNav } from "@/components/mobile-nav";
+import { getCurrentUser } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "AIx — is this AI tool actually worth it?",
@@ -17,7 +19,8 @@ const themeScript = `(() => {
   } catch (e) {}
 })();`;
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const user = await getCurrentUser();
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -25,12 +28,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
-        <footer className="mx-auto max-w-5xl px-4 py-12 text-center">
+        {/* pb clears the fixed mobile tab bar (ticket 0030). */}
+        <main className="mx-auto max-w-5xl px-4 py-8 pb-20 sm:pb-8">{children}</main>
+        <footer className="mx-auto max-w-5xl px-4 py-12 pb-24 text-center sm:pb-12">
           <p className="data text-[11px] uppercase tracking-[0.2em] text-faint">
             AIx · <span className="text-brand">signal</span> over noise
           </p>
         </footer>
+        <MobileNav username={user?.username ?? null} />
       </body>
     </html>
   );
