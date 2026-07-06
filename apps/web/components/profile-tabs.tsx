@@ -11,15 +11,15 @@ export function ProfileTabs({ tabs }: { tabs: ProfileTab[] }) {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex gap-1 overflow-x-auto border-b border-neutral-200 dark:border-neutral-800">
+      <div className="flex gap-1 overflow-x-auto border-b border-[var(--border)]">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setActive(t.key)}
-            className={`whitespace-nowrap px-4 py-2 text-sm font-medium transition-colors ${
+            className={`-mb-px whitespace-nowrap px-4 py-2 text-sm font-semibold transition-colors ${
               t.key === current?.key
-                ? "border-b-2 border-neutral-900 text-neutral-900 dark:border-white dark:text-white"
-                : "text-neutral-500 hover:text-neutral-800 dark:hover:text-neutral-200"
+                ? "border-b-2 border-[var(--brand)] text-ink"
+                : "text-muted hover:text-ink"
             }`}
           >
             {t.label}

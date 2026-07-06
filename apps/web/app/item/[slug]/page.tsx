@@ -41,21 +41,21 @@ export default async function ItemPage({ params }: { params: Params }) {
       <header className="flex gap-4">
         <VoteButtons targetType="item" targetId={item.id} initialNet={item.upvotes} initialVote={myItemVote} signedIn={!!user} />
         <div className="flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
+          <div className="mb-3 flex flex-wrap items-center gap-2">
             <VerdictBadge verdict={item.verdict} />
             <span className="chip">{CATEGORY_LABELS[item.category as Category] ?? item.category}</span>
             <span className="chip">{item.integration}</span>
             <span className="chip">noise {item.noiseScore}/100</span>
-            <span className="chip font-semibold">overall {item.overallScore}/100</span>
+            <span className="chip !border-[var(--brand)] !text-brand font-bold">overall {item.overallScore}/100</span>
           </div>
-          <h1 className="text-2xl font-bold">{item.title}</h1>
-          <p className="mt-1 text-neutral-600 dark:text-neutral-400">{item.tagline}</p>
-          <div className="mt-2 flex flex-wrap gap-3 text-sm">
-            <a href={item.url} target="_blank" rel="noreferrer" className="text-orange-600 hover:underline dark:text-orange-400">
+          <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{item.title}</h1>
+          <p className="mt-1.5 text-muted">{item.tagline}</p>
+          <div className="mt-2.5 flex flex-wrap items-center gap-3 text-sm">
+            <a href={item.url} target="_blank" rel="noreferrer" className="link-brand font-medium">
               {item.kind === "arxiv_paper" ? "View paper ↗" : "Source ↗"}
             </a>
-            <span className="text-neutral-400">{evaluation.source.externalId}</span>
-            {evaluation.source.stars != null && <span className="text-neutral-400">★ {evaluation.source.stars}</span>}
+            <span className="data text-xs text-faint">{evaluation.source.externalId}</span>
+            {evaluation.source.stars != null && <span className="data text-xs text-faint">★ {evaluation.source.stars}</span>}
           </div>
         </div>
       </header>
@@ -67,9 +67,9 @@ export default async function ItemPage({ params }: { params: Params }) {
           const content = evaluation.body[key];
           if (!content) return null;
           return (
-            <section key={key}>
-              <h2 className="mb-1 text-lg font-semibold">{title}</h2>
-              <p className="whitespace-pre-wrap text-neutral-700 dark:text-neutral-300">{content}</p>
+            <section key={key} className="border-l-2 border-[var(--border-strong)] pl-4">
+              <h2 className="mb-1.5 text-lg font-bold tracking-tight">{title}</h2>
+              <p className="whitespace-pre-wrap leading-relaxed text-muted">{content}</p>
             </section>
           );
         })}
@@ -77,22 +77,24 @@ export default async function ItemPage({ params }: { params: Params }) {
 
       {evaluation.audience && (
         <section>
-          <h2 className="mb-3 text-lg font-semibold">Who it&apos;s for</h2>
+          <p className="eyebrow mb-2">Who it&apos;s for</p>
+          <h2 className="mb-3 text-lg font-bold tracking-tight">Audience fit</h2>
           <AudienceFit audience={evaluation.audience} />
         </section>
       )}
 
       <section>
-        <h2 className="mb-3 text-lg font-semibold">Scorecard</h2>
-        <div className="card p-4">
+        <p className="eyebrow mb-2">The report card</p>
+        <h2 className="mb-3 text-lg font-bold tracking-tight">Scorecard</h2>
+        <div className="card p-4 sm:p-5">
           <Scorecard scores={evaluation.scores} overall={item.overallScore} />
         </div>
       </section>
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold">Discussion</h2>
-          <Link href={`/directory`} className="text-xs text-neutral-500 hover:underline">
+          <h2 className="text-lg font-bold tracking-tight">Discussion</h2>
+          <Link href={`/directory`} className="data text-[11px] text-muted hover:text-brand">
             ← Directory
           </Link>
         </div>

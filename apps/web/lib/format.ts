@@ -27,9 +27,9 @@ export function timeAgo(unixSec: number): string {
 
 export function scoreColorClass(band: "strong" | "solid" | "mixed" | "weak"): string {
   return {
-    strong: "bg-green-500",
-    solid: "bg-lime-500",
-    mixed: "bg-amber-500",
-    weak: "bg-red-500",
+    strong: "band-strong",
+    solid: "band-solid",
+    mixed: "band-mixed",
+    weak: "band-weak",
   }[band];
 }

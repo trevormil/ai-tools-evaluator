@@ -28,10 +28,10 @@ export function NotificationBell() {
   }, []);
 
   return (
-    <Link href="/notifications" className="relative rounded-lg px-2 py-1 text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-white" aria-label="Notifications">
+    <Link href="/notifications" className="relative rounded-lg px-2 py-1 text-muted transition-colors hover:bg-[var(--surface-2)] hover:text-ink" aria-label="Notifications">
       <span aria-hidden className="text-base">🔔</span>
       {unread > 0 && (
-        <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[10px] font-bold leading-none text-white">
+        <span className="data absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none text-white" style={{ background: "var(--brand)" }}>
           {unread > 99 ? "99+" : unread}
         </span>
       )}

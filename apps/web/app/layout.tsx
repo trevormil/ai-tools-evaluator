@@ -25,9 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Nav />
-        <main className="mx-auto max-w-5xl px-4 py-6">{children}</main>
-        <footer className="mx-auto max-w-5xl px-4 py-10 text-center text-xs text-neutral-400">
-          AIx · signal over noise
+        <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+        <footer className="mx-auto max-w-5xl px-4 py-12 text-center">
+          <p className="data text-[11px] uppercase tracking-[0.2em] text-faint">
+            AIx · <span className="text-brand">signal</span> over noise
+          </p>
         </footer>
       </body>
     </html>

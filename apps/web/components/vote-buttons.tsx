@@ -49,15 +49,15 @@ export function VoteButtons({ targetType, targetId, initialNet, initialVote = 0,
     <div className="flex flex-col items-center">
       <button
         onClick={() => cast(1)}
-        className={`px-1 text-lg leading-none transition-colors ${vote === 1 ? "text-orange-500" : "text-neutral-400 hover:text-orange-500"}`}
+        className={`px-1 text-lg leading-none transition-colors ${vote === 1 ? "text-brand" : "text-faint hover:text-brand"}`}
         aria-label="Upvote"
       >
         ▲
       </button>
-      <span className="text-xs font-semibold tabular-nums">{net}</span>
+      <span className="data text-xs font-bold">{net}</span>
       <button
         onClick={() => cast(-1)}
-        className={`px-1 text-lg leading-none transition-colors ${vote === -1 ? "text-blue-500" : "text-neutral-400 hover:text-blue-500"}`}
+        className={`px-1 text-lg leading-none transition-colors ${vote === -1 ? "text-blue-500" : "text-faint hover:text-blue-500"}`}
         aria-label="Downvote"
       >
         ▼

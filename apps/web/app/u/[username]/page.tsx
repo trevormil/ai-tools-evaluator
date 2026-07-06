@@ -16,8 +16,11 @@ import { StackSection } from "@/components/stack-section";
 import { WorkflowSection } from "@/components/workflow-section";
 import { ArticleList } from "@/components/article-list";
 import { ProfileTabs, type ProfileTab } from "@/components/profile-tabs";
+import { ProfileLinks } from "@/components/profile-links";
+import { ProfileLinksEditor } from "@/components/profile-links-editor";
 import { getUserStack } from "@/lib/stack";
 import { listArticlesByAuthor } from "@/lib/articles";
+import { getProfileLinks } from "@/lib/profile-links";
 import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
@@ -39,6 +42,8 @@ export default async function ProfilePage({ params }: { params: Params }) {
   const counts = followCounts(profile.id);
   const following = viewer && !isSelf ? isFollowing(viewer.id, profile.id) : false;
   const myVotes = viewer ? userVotes(viewer.id, "post") : {};
+  const links = getProfileLinks(profile.id);
+  const linksByKind = Object.fromEntries(links.map((l) => [l.kind, l.url]));
 
   const postsTab = (
     <section className="flex flex-col gap-6">
@@ -114,6 +119,10 @@ export default async function ProfilePage({ params }: { params: Params }) {
           <p className="mt-1 text-xs text-neutral-500">
             {counts.followers} followers · {counts.following} following · joined {timeAgo(profile.createdAt)} ago
           </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <ProfileLinks links={links} />
+            {isSelf && <ProfileLinksEditor initial={linksByKind} />}
+          </div>
         </div>
         <div className="flex items-center gap-2">
           {viewer && !isSelf && (

@@ -2,36 +2,260 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * AIx — "The Verdict Terminal" design system.
+ * Personality lives in a monospace data language (scores/verdicts/eyebrows)
+ * over warm-paper / warm-charcoal canvases, sparked by a single ember accent.
+ * All theming is CSS-variable driven so .dark swaps the whole palette at once.
+ */
+
 :root {
   color-scheme: light dark;
+
+  --bg: #f4f2ec;
+  --bg-grid: #e9e5da;
+  --surface: #ffffff;
+  --surface-2: #efece4;
+  --surface-3: #e6e1d5;
+  --border: #e3ddd0;
+  --border-strong: #d0c9b8;
+  --ink: #1b1813;
+  --muted: #635f54;
+  --faint: #96907f;
+
+  --brand: #e0490c;
+  --brand-bright: #f5631f;
+  --brand-soft: #fbe6d8;
+  --brand-contrast: #ffffff;
+  --ring: #f5631f;
+
+  /* Verdict language — background tint + readable foreground. */
+  --v-essential-bg: #d8f3e0;
+  --v-essential-fg: #14713b;
+  --v-worthwhile-bg: #cdf3ec;
+  --v-worthwhile-fg: #0c6d64;
+  --v-niche-bg: #fbedc9;
+  --v-niche-fg: #9a6207;
+  --v-marginal-bg: #fce1cd;
+  --v-marginal-fg: #b0480f;
+  --v-redundant-bg: #fbdcdc;
+  --v-redundant-fg: #b0231f;
+  --v-trap-bg: #fbd8de;
+  --v-trap-fg: #9c1739;
+
+  /* Score bands — solid meter fills. */
+  --band-strong: #17a34a;
+  --band-solid: #0d9488;
+  --band-mixed: #d98107;
+  --band-weak: #dc2626;
+
+  --shadow-card: 0 1px 2px rgba(27, 24, 19, 0.05), 0 1px 3px rgba(27, 24, 19, 0.04);
+  --shadow-lift: 0 8px 24px -12px rgba(27, 24, 19, 0.28);
+}
+
+.dark {
+  --bg: #0c0b09;
+  --bg-grid: #17140f;
+  --surface: #151310;
+  --surface-2: #1c1914;
+  --surface-3: #24201a;
+  --border: #2a261f;
+  --border-strong: #3a352b;
+  --ink: #f4f0e6;
+  --muted: #a49d8d;
+  --faint: #6d6656;
+
+  --brand: #ff7038;
+  --brand-bright: #ff824f;
+  --brand-soft: #2a1409;
+  --brand-contrast: #150c04;
+  --ring: #ff824f;
+
+  --v-essential-bg: rgba(34, 197, 94, 0.15);
+  --v-essential-fg: #56d98a;
+  --v-worthwhile-bg: rgba(20, 184, 166, 0.16);
+  --v-worthwhile-fg: #3fd6c4;
+  --v-niche-bg: rgba(245, 158, 11, 0.16);
+  --v-niche-fg: #f4bd4c;
+  --v-marginal-bg: rgba(249, 115, 22, 0.16);
+  --v-marginal-fg: #ff9d5c;
+  --v-redundant-bg: rgba(239, 68, 68, 0.16);
+  --v-redundant-fg: #ff7d7d;
+  --v-trap-bg: rgba(244, 63, 94, 0.17);
+  --v-trap-fg: #ff8199;
+
+  --band-strong: #26c760;
+  --band-solid: #19c2b0;
+  --band-mixed: #f5a623;
+  --band-weak: #f2564f;
+
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-lift: 0 12px 32px -14px rgba(0, 0, 0, 0.75);
 }
 
 @layer base {
   body {
-    @apply bg-white text-neutral-900 antialiased dark:bg-neutral-950 dark:text-neutral-100;
+    background-color: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Faint terminal grid — atmosphere, not decoration. */
+    background-image: linear-gradient(var(--bg-grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
+    background-size: 46px 46px;
+    background-position: -1px -1px;
   }
+
+  h1,
+  h2,
+  h3 {
+    letter-spacing: -0.02em;
+  }
+
   a {
     @apply transition-colors;
+  }
+
+  ::selection {
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Themed native controls so selects/options match the canvas. */
+  select option {
+    background: var(--surface);
+    color: var(--ink);
   }
 }
 
 @layer components {
+  /* Monospace "readout" eyebrow — the signature structural device. */
+  .eyebrow {
+    @apply inline-flex items-center gap-1.5 font-mono text-[11px] font-semibold uppercase tracking-[0.18em];
+    color: var(--muted);
+  }
+  .eyebrow::before {
+    content: "//";
+    color: var(--brand);
+    font-weight: 700;
+  }
+
   .card {
-    @apply rounded-xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 14px;
+    box-shadow: var(--shadow-card);
   }
+  .card-hover {
+    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  }
+  .card-hover:hover {
+    box-shadow: var(--shadow-lift);
+    border-color: var(--border-strong);
+  }
+
   .chip {
-    @apply inline-flex items-center rounded-full border border-neutral-200 bg-neutral-50 px-2 py-0.5 text-xs font-medium text-neutral-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300;
+    @apply inline-flex items-center gap-1 rounded-md px-2 py-0.5 font-mono text-[11px] font-medium;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--muted);
   }
+
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-3.5 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
-    @apply btn bg-neutral-900 text-white hover:bg-neutral-700 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200;
+    @apply btn;
+    background: var(--brand);
+    color: var(--brand-contrast);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background: var(--brand-bright);
   }
   .btn-ghost {
-    @apply btn border border-neutral-200 bg-transparent hover:bg-neutral-100 dark:border-neutral-700 dark:hover:bg-neutral-800;
+    @apply btn;
+    background: transparent;
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
   }
+  .btn-ghost:hover:not(:disabled) {
+    background: var(--surface-2);
+  }
+
   .input {
-    @apply w-full rounded-lg border border-neutral-300 bg-white px-3 py-2 text-sm outline-none placeholder:text-neutral-400 focus:border-neutral-500 dark:border-neutral-700 dark:bg-neutral-900 dark:focus:border-neutral-500;
+    @apply w-full rounded-lg px-3 py-2 text-sm outline-none;
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    color: var(--ink);
   }
+  .input::placeholder {
+    color: var(--faint);
+  }
+  .input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
+  }
+
+  /* Verdict badge — bold pill with a live status dot. */
+  .verdict {
+    @apply inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.08em];
+  }
+  .verdict::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+    box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
+  }
+  .verdict-essential { background: var(--v-essential-bg); color: var(--v-essential-fg); }
+  .verdict-worthwhile { background: var(--v-worthwhile-bg); color: var(--v-worthwhile-fg); }
+  .verdict-niche { background: var(--v-niche-bg); color: var(--v-niche-fg); }
+  .verdict-marginal { background: var(--v-marginal-bg); color: var(--v-marginal-fg); }
+  .verdict-redundant { background: var(--v-redundant-bg); color: var(--v-redundant-fg); }
+  .verdict-trap { background: var(--v-trap-bg); color: var(--v-trap-fg); }
+
+  /* Score meter — benchmark-printout fill. */
+  .meter-track {
+    @apply relative h-2 flex-1 overflow-hidden rounded-full;
+    background: var(--surface-3);
+  }
+  .meter-fill {
+    @apply h-full rounded-full;
+    transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .band-strong { background: var(--band-strong); }
+  .band-solid { background: var(--band-solid); }
+  .band-mixed { background: var(--band-mixed); }
+  .band-weak { background: var(--band-weak); }
+
+  .data {
+    @apply font-mono tabular-nums;
+  }
+
+  .link-brand {
+    color: var(--brand);
+  }
+  .link-brand:hover {
+    color: var(--brand-bright);
+    text-decoration: underline;
+  }
+}
+
+/* Text color helpers bound to theme tokens (utility layer so they win over base). */
+@layer utilities {
+  .text-ink { color: var(--ink); }
+  .text-muted { color: var(--muted); }
+  .text-faint { color: var(--faint); }
+  .text-brand { color: var(--brand); }
+  .bg-surface { background: var(--surface); }
+  .bg-surface-2 { background: var(--surface-2); }
+  .border-token { border-color: var(--border); }
+  .border-token-strong { border-color: var(--border-strong); }
 }

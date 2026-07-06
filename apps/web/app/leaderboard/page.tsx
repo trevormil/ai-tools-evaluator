@@ -12,8 +12,9 @@ export default async function LeaderboardPage() {
   return (
     <div className="flex flex-col gap-10">
       <div>
-        <h1 className="text-xl font-bold">Leaderboard</h1>
-        <p className="text-sm text-neutral-500">
+        <p className="eyebrow">Leaderboard</p>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Credit where it&apos;s due.</h1>
+        <p className="mt-1 text-sm text-muted">
           The best, the most argued-over, and the ones that got what they deserved.
         </p>
       </div>
@@ -41,11 +42,11 @@ function Section({ title, blurb, items }: { title: string; blurb: string; items:
   return (
     <section className="flex flex-col gap-4">
       <div>
-        <h2 className="text-lg font-semibold">{title}</h2>
-        <p className="text-sm text-neutral-500">{blurb}</p>
+        <h2 className="text-lg font-bold tracking-tight">{title}</h2>
+        <p className="text-sm text-muted">{blurb}</p>
       </div>
       {items.length === 0 ? (
-        <div className="card p-8 text-center text-sm text-neutral-500">
+        <div className="card p-8 text-center text-sm text-muted">
           Nothing here yet. Run the seed or wait for the scanner.
         </div>
       ) : (

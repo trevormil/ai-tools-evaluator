@@ -16,9 +16,11 @@ export default async function HomePage() {
   const trending = listItems({ sort: "hot", limit: 4 });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+    <div className="flex flex-col gap-8">
+      <Hero />
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section className="flex flex-col gap-4">
-        <h1 className="text-xl font-bold">Feed</h1>
+        <p className="eyebrow">The feed</p>
         <PostComposer signedIn={!!user} />
         {feed.length === 0 ? (
           <div className="card p-8 text-center text-sm text-neutral-500">
@@ -49,13 +51,13 @@ export default async function HomePage() {
       <aside className="flex flex-col gap-4">
         <NewsletterForm />
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-neutral-500">Trending tools</h2>
-          <Link href="/directory" className="text-xs text-neutral-500 hover:underline">
+          <p className="eyebrow">Trending tools</p>
+          <Link href="/directory" className="data text-[11px] text-muted hover:text-brand">
             Browse all →
           </Link>
         </div>
         {trending.length === 0 ? (
-          <p className="text-sm text-neutral-500">The directory is empty. The scanner hasn&apos;t run yet.</p>
+          <p className="text-sm text-muted">The directory is empty. The scanner hasn&apos;t run yet.</p>
         ) : (
           <div className="grid gap-3">
             {trending.map((item) => (
@@ -64,7 +66,54 @@ export default async function HomePage() {
           </div>
         )}
       </aside>
+      </div>
     </div>
+  );
+}
+
+/** Landing thesis: the promise + the verdict color language, up front. */
+const VERDICT_LEGEND: { label: string; cls: string }[] = [
+  { label: "essential", cls: "verdict-essential" },
+  { label: "worthwhile", cls: "verdict-worthwhile" },
+  { label: "niche", cls: "verdict-niche" },
+  { label: "marginal", cls: "verdict-marginal" },
+  { label: "redundant", cls: "verdict-redundant" },
+  { label: "complexity trap", cls: "verdict-trap" },
+];
+
+function Hero() {
+  return (
+    <section className="card relative overflow-hidden p-6 sm:p-9">
+      <div
+        className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full opacity-[0.14] blur-2xl"
+        style={{ background: "var(--brand)" }}
+        aria-hidden
+      />
+      <p className="eyebrow">The verdict is in</p>
+      <h1 className="mt-3 max-w-2xl text-3xl font-black leading-[1.05] tracking-tight sm:text-5xl">
+        The fast-moving world of dev tools,{" "}
+        <span className="text-brand">harshly judged.</span>
+      </h1>
+      <p className="mt-4 max-w-xl text-sm text-muted sm:text-base">
+        Every trending AI tool and paper, run through a ten-metric scorecard and handed a blunt
+        verdict — so you adopt the signal and skip the complexity traps.
+      </p>
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <Link href="/directory" className="btn-primary">
+          Browse the directory
+        </Link>
+        <Link href="/leaderboard" className="btn-ghost">
+          See the leaderboard
+        </Link>
+      </div>
+      <div className="mt-7 flex flex-wrap items-center gap-1.5">
+        {VERDICT_LEGEND.map((v) => (
+          <span key={v.label} className={`verdict ${v.cls}`}>
+            {v.label}
+          </span>
+        ))}
+      </div>
+    </section>
   );
 }
 

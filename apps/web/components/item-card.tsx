@@ -1,40 +1,46 @@
 import Link from "next/link";
-import { CATEGORY_LABELS, type Category } from "@aix/core";
+import { CATEGORY_LABELS, scoreBand, type Category } from "@aix/core";
 import type { Item } from "@aix/db";
 import { VerdictBadge } from "./verdict-badge";
+import { scoreColorClass } from "@/lib/format";
 
 /** Directory card: cover, verdict, score, category + integration chips, tagline. */
 export function ItemCard({ item }: { item: Item }) {
   const tags: string[] = safeParse(item.tagsJson);
+  const band = scoreBand(item.overallScore);
   return (
     <Link
       href={`/item/${item.slug}`}
-      className="card group flex flex-col overflow-hidden transition-shadow hover:shadow-md"
+      className="card card-hover group flex flex-col overflow-hidden"
     >
-      <div className="relative aspect-[16/9] w-full overflow-hidden bg-neutral-100 dark:bg-neutral-800">
+      <div className="relative aspect-[16/9] w-full overflow-hidden" style={{ background: "var(--surface-2)" }}>
         {item.coverImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={item.coverImageUrl}
             alt={item.title}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
+            className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-4xl font-bold text-neutral-300 dark:text-neutral-600">
+          <div className="flex h-full w-full items-center justify-center font-mono text-5xl font-bold text-faint">
             {item.title.slice(0, 2).toUpperCase()}
           </div>
         )}
-        <div className="absolute right-2 top-2 rounded-md bg-black/70 px-2 py-1 text-xs font-bold text-white">
-          {item.overallScore}
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-transparent" />
+        {/* Score readout — colored by band, reads like a benchmark stamp. */}
+        <div className="absolute right-2.5 top-2.5 flex items-center gap-1.5 rounded-lg bg-black/72 px-2 py-1 backdrop-blur-sm">
+          <span className={`h-1.5 w-1.5 rounded-full ${scoreColorClass(band)}`} />
+          <span className="data text-sm font-bold text-white">{item.overallScore}</span>
+          <span className="data text-[10px] text-white/60">/100</span>
         </div>
       </div>
       <div className="flex flex-1 flex-col gap-2 p-4">
         <div className="flex items-center justify-between gap-2">
           <VerdictBadge verdict={item.verdict} />
-          <span className="text-xs text-neutral-400">noise {item.noiseScore}</span>
+          <span className="data text-[11px] text-faint">noise {item.noiseScore}</span>
         </div>
-        <h3 className="line-clamp-1 font-semibold">{item.title}</h3>
-        <p className="line-clamp-2 flex-1 text-sm text-neutral-600 dark:text-neutral-400">{item.tagline}</p>
+        <h3 className="line-clamp-1 font-bold tracking-tight">{item.title}</h3>
+        <p className="line-clamp-2 flex-1 text-sm text-muted">{item.tagline}</p>
         <div className="flex flex-wrap gap-1 pt-1">
           <span className="chip">{CATEGORY_LABELS[item.category as Category] ?? item.category}</span>
           <span className="chip">{item.integration}</span>
