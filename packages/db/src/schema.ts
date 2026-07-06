@@ -39,6 +39,9 @@ export const items = sqliteTable(
     category: text("category").notNull(),
     integration: text("integration").notNull(),
     verdict: text("verdict").notNull(),
+    primaryAudience: text("primary_audience"), // ai-engineer | vibe-coder | both | neither
+    aiEngineerFit: integer("ai_engineer_fit"),
+    vibeCoderFit: integer("vibe_coder_fit"),
     overallScore: integer("overall_score").notNull(),
     noiseScore: integer("noise_score").notNull(),
     tagline: text("tagline").notNull(),
@@ -59,6 +62,7 @@ export const items = sqliteTable(
     uniqueIndex("items_external_idx").on(t.kind, t.externalId),
     index("items_category_idx").on(t.category),
     index("items_verdict_idx").on(t.verdict),
+    index("items_audience_idx").on(t.primaryAudience),
     index("items_created_idx").on(t.createdAt),
     index("items_score_idx").on(t.score),
   ],
@@ -168,6 +172,27 @@ export const scanRuns = sqliteTable("scan_runs", {
   finishedAt: integer("finished_at"),
 });
 
+/* ---------------------------------------------- newsletter subscribers */
+
+/**
+ * Email newsletter list. Double opt-in: a new signup is `pending` until the
+ * confirm link is clicked (`active`); `token` is a single opaque secret used for
+ * BOTH the confirm and one-click unsubscribe links.
+ */
+export const subscribers = sqliteTable(
+  "subscribers",
+  {
+    id: cuid(),
+    email: text("email").notNull().unique(),
+    status: text("status", { enum: ["pending", "active", "unsubscribed"] }).notNull().default("pending"),
+    token: text("token").notNull(),
+    createdAt: integer("created_at").notNull().default(now),
+    confirmedAt: integer("confirmed_at"),
+    unsubscribedAt: integer("unsubscribed_at"),
+  },
+  (t) => [index("subscribers_status_idx").on(t.status), uniqueIndex("subscribers_token_idx").on(t.token)],
+);
+
 /* ------------------------------------------------------ auth sessions */
 
 export const sessions = sqliteTable("sessions", {
@@ -182,3 +207,4 @@ export type Item = typeof items.$inferSelect;
 export type Submission = typeof submissions.$inferSelect;
 export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
+export type Subscriber = typeof subscribers.$inferSelect;

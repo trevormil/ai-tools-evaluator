@@ -3,7 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "AIx — discover trending GitHub tools and discuss them. A dual directory + social site.",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "web": "cd apps/web && bun run dev",
     "scanner": "cd apps/scanner && bun run start",
@@ -15,8 +18,8 @@
   },
   "devDependencies": {
     "@types/bun": "1.1.14",
-    "typescript": "5.7.2",
-    "prettier": "3.4.2"
+    "prettier": "3.4.2",
+    "typescript": "5.7.2"
   },
   "engines": {
     "bun": ">=1.3.0"

@@ -42,6 +42,21 @@ for items published since `since`.
 Open/close a `scan_runs` audit row. Open body `{ source }` → `{ id }`. Close body
 `{ status, discovered, published, skippedDuplicate, error? }`.
 
+### `POST /api/internal/newsletter/send`
+Send the daily digest to all `active` subscribers. Body `{ since?: iso }` (defaults
+to the last 24h). Renders items published since `since`, emails each active
+subscriber (per-subscriber, so each carries its own unsubscribe token), no-op when
+there are no new items. Called by the `aix-newsletter` CronJob. Response:
+`{ sent, subscribers, items }`.
+
+## Public newsletter routes (not internal)
+- `POST /api/newsletter/subscribe` `{ email }` — double opt-in; creates a `pending`
+  subscriber + emails a confirm link. Never reveals prior subscription state.
+- `GET /newsletter/confirm?token=` — activates the subscription.
+- `GET /newsletter/unsubscribe?token=` — one-click unsubscribe.
+Sending uses Resend (`RESEND_API_KEY`); with no key it logs only. Links use
+`AIX_PUBLIC_URL`.
+
 ## Notes
 - The scanner imports `@aix/core` for the schema + evaluator prompt, builds an
   `Evaluation`, then POSTs it here — it does NOT import `@aix/db`.

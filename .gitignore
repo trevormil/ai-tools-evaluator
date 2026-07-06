@@ -45,3 +45,8 @@ apps/*/.env
 .env
 content/items/*.md
 !content/items/.gitkeep
+
+# Yarn PnP artifacts (Next.js can auto-trigger these; we use bun)
+.pnp.*
+.yarn/
+yarn.lock

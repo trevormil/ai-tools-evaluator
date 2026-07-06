@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aix-bot
+  namespace: aix
+  labels:
+    app: aix-bot
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: aix-bot
+  template:
+    metadata:
+      labels:
+        app: aix-bot
+    spec:
+      containers:
+        - name: bot
+          image: ghcr.io/trevormil/aix-bot:latest
+          imagePullPolicy: Always
+          env:
+            # Reach web's internal API over the cluster DNS name.
+            - name: AIX_WEB_URL
+              value: http://aix-web.aix.svc.cluster.local
+          envFrom:
+            # Supplies DISCORD_TOKEN, DISCORD_APP_ID, AIX_INTERNAL_TOKEN, …
+            - secretRef:
+                name: aix-secrets
+          resources:
+            requests:
+              cpu: 25m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+      imagePullSecrets:
+        - name: ghcr-pull
