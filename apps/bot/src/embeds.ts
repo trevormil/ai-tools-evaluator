@@ -31,3 +31,17 @@ export function buildItemEmbed(item: DigestItem): EmbedBuilder {
   if (item.coverImageUrl) embed.setImage(item.coverImageUrl);
   return embed;
 }
+
+/** Compact single-embed leaderboard: one ranked line per item. */
+export function buildLeaderboardEmbed(items: DigestItem[]): EmbedBuilder {
+  const lines = items.map((item, i) => {
+    const categoryLabel = CATEGORY_LABELS[item.category as Category] ?? item.category;
+    return `**${i + 1}.** [${item.title}](${item.url}) — ${item.overallScore}/100 · ${titleCase(
+      item.verdict,
+    )} · ${categoryLabel}`;
+  });
+  return new EmbedBuilder()
+    .setTitle("🏅 AIx leaderboard")
+    .setColor(0x2ecc71)
+    .setDescription(lines.length ? lines.join("\n") : "No recent evaluations yet.");
+}

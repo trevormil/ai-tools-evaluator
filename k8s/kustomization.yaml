@@ -13,3 +13,4 @@ resources:
   - scanner-cronjob.yaml
   - bot-deployment.yaml
   - newsletter-cronjob.yaml
+  - rank-cronjob.yaml

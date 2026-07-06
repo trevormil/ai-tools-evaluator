@@ -12,6 +12,7 @@
     "scanner": "cd apps/scanner && bun run start",
     "bot": "cd apps/bot && bun run start",
     "db:push": "cd packages/db && bun run push",
+    "seed": "cd packages/db && bun src/seed.ts",
     "db:studio": "cd packages/db && bun run studio",
     "test": "bun test",
     "typecheck": "tsc --build --verbose"

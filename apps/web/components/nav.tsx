@@ -13,6 +13,7 @@ export async function Nav() {
         <div className="flex flex-1 items-center gap-1 text-sm sm:gap-2">
           <NavLink href="/">Feed</NavLink>
           <NavLink href="/directory">Directory</NavLink>
+          <NavLink href="/leaderboard">Leaderboard</NavLink>
           <NavLink href="/submit">Submit</NavLink>
         </div>
         <ThemeToggle />

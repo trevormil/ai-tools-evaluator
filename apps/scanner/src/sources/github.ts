@@ -2,6 +2,7 @@ import { Octokit } from "@octokit/rest";
 import { ItemSource } from "@aix/core";
 import type { Discovered, DiscoverySource } from "../types";
 import { nullLogger, type Logger } from "../logger";
+import { evaluateQualityGate, type QualityThresholds } from "./quality-gate";
 
 /**
  * GitHub discovery. Surfaces recently-created AND fast-rising repos across a
@@ -45,17 +46,27 @@ const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 const day = (now: Date, back: number) =>
   new Date(now.getTime() - back * 86_400_000).toISOString().slice(0, 10);
 
-/** Rotating query facets keyed off the calendar day so runs vary. */
-export function buildQueries(now: Date): string[] {
-  const idx = Math.floor(now.getTime() / 86_400_000);
-  const pick = (offset: number) => TOPICS[(idx + offset) % TOPICS.length]!;
+/** Default rotation seed: the calendar-day index, so consecutive days differ. */
+export function rotationSeed(now: Date): number {
+  return Math.floor(now.getTime() / 86_400_000);
+}
+
+/**
+ * Rotating query facets. The three topic facets sweep a NON-overlapping window
+ * of the topic list per run (`seed*3 + {0,1,2}`), so consecutive runs explore
+ * genuinely different slices and the window walks the whole list over time.
+ * `seed` is injectable (defaults to the day index) to keep rotation testable.
+ */
+export function buildQueries(now: Date, seed: number = rotationSeed(now)): string[] {
+  const base = seed * 3;
+  const pick = (offset: number) => TOPICS[((base + offset) % TOPICS.length + TOPICS.length) % TOPICS.length]!;
   const week = day(now, 7);
   const month = day(now, 30);
   return [
     `created:>${week} stars:>15`, // freshly created, already noticed
     `pushed:>${week} stars:>200 topic:${pick(0)}`, // fast-rising in a rotating topic
-    `created:>${month} stars:>75 topic:${pick(5)}`,
-    `created:>${week} stars:>10 topic:${pick(10)}`,
+    `created:>${month} stars:>75 topic:${pick(1)}`,
+    `created:>${week} stars:>10 topic:${pick(2)}`,
   ];
 }
 
@@ -68,6 +79,8 @@ export type GitHubSourceOptions = {
   log?: Logger;
   now?: () => Date;
   octokit?: Octokit; // injectable for tests
+  /** Discovery quality gate thresholds. Omitted → gate is disabled (all pass). */
+  quality?: QualityThresholds;
 };
 
 export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
@@ -75,6 +88,7 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
   const log = opts.log ?? nullLogger;
   const now = opts.now ?? (() => new Date());
   const callBudget = opts.callBudget ?? 80;
+  const quality = opts.quality;
   const etags = new Map<string, EtagEntry>();
   let calls = 0;
 
@@ -131,6 +145,9 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
     language?: string | null;
     license?: { spdx_id?: string | null; key?: string | null } | null;
     pushed_at?: string | null;
+    created_at?: string | null;
+    archived?: boolean;
+    fork?: boolean;
   }): ItemSource {
     return ItemSource.parse({
       kind: "github_repo",
@@ -205,6 +222,22 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
           if (out.length >= limit) break;
           if (!item.full_name || seen.has(item.full_name)) continue;
           seen.add(item.full_name);
+          if (quality) {
+            const decision = evaluateQualityGate(
+              {
+                stars: item.stargazers_count ?? 0,
+                archived: item.archived ?? false,
+                fork: item.fork ?? false,
+                createdAt: item.created_at ?? undefined,
+              },
+              quality,
+              now(),
+            );
+            if (!decision.pass) {
+              log.debug(`gate drop ${item.full_name}: ${decision.reason}`);
+              continue;
+            }
+          }
           const owner = item.owner?.login ?? item.full_name.split("/")[0]!;
           try {
             const readme = await fetchReadme(owner, item.name);

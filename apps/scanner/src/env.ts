@@ -12,6 +12,14 @@ const EnvSchema = z.object({
   AIX_WEB_URL: z.string().url().default("http://localhost:3000"),
   AIX_MODEL: z.string().min(1).default("claude-opus-4-8"),
   AIX_DAILY_CAP: z.coerce.number().int().positive().max(100).default(10),
+  /**
+   * Quality gate on GitHub *discovery* (queue submissions bypass it — a human
+   * asked for those). Repos below the star floor are dropped unless they are
+   * fast-rising; archived repos and forks are always dropped.
+   */
+  AIX_MIN_STARS: z.coerce.number().int().nonnegative().default(50),
+  /** Stars/day (since creation) that counts a below-floor repo as fast-rising. */
+  AIX_MIN_STAR_VELOCITY: z.coerce.number().nonnegative().default(5),
   AIX_DRY_RUN: z
     .enum(["0", "1"])
     .default("0")

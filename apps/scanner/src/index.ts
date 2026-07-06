@@ -161,7 +161,11 @@ async function main(): Promise<void> {
   requireLiveSecrets(env);
   const log = createLogger(env.AIX_DRY_RUN ? "debug" : "info");
 
-  const github = createGitHubSource({ token: env.GITHUB_TOKEN!, log });
+  const github = createGitHubSource({
+    token: env.GITHUB_TOKEN!,
+    log,
+    quality: { minStars: env.AIX_MIN_STARS, minStarVelocity: env.AIX_MIN_STAR_VELOCITY },
+  });
   const arxiv = createArxivSource({ log });
   const model = createAnthropicModel({ apiKey: env.ANTHROPIC_API_KEY!, model: env.AIX_MODEL });
 

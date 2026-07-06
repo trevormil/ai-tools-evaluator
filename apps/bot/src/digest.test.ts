@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runDigest } from "./digest";
-import { readLastPosted } from "./state";
+import { runDigest, runWeeklyDigest } from "./digest";
+import { readLastPosted, readLastWeeklyPosted, writeLastWeeklyPosted } from "./state";
 import type { DigestItem, InternalClient } from "./client";
 import { matchItem } from "./commands/eval";
 
@@ -95,6 +95,91 @@ describe("runDigest", () => {
     });
     expect(sends).toBe(0);
     expect(await readLastPosted(statePath)).toBeNull();
+  });
+});
+
+describe("runWeeklyDigest", () => {
+  it("posts a header + top-N items ranked by overallScore and sets the weekly watermark", async () => {
+    const { client, sinceSeen } = fakeClient([
+      item({ slug: "mid", overallScore: 60 }),
+      item({ slug: "top", overallScore: 95 }),
+      item({ slug: "low", overallScore: 20 }),
+    ]);
+    const sent: unknown[] = [];
+    const now = new Date("2026-07-06T00:00:00.000Z");
+
+    const posted = await runWeeklyDigest({
+      client,
+      statePath,
+      now: () => now,
+      topN: 2,
+      getChannel: async () => ({
+        send: async (p) => {
+          sent.push(p);
+          return null;
+        },
+      }),
+    });
+
+    // Featured items are the two highest scores, in descending order.
+    expect(posted.map((p) => p.slug)).toEqual(["top", "mid"]);
+    // A "Best of the week" header, then one message per featured item.
+    expect(sent).toHaveLength(3);
+    expect((sent[0] as { content: string }).content).toContain("Best of the week");
+    // Looked back a full 7 days.
+    const sinceMs = new Date(sinceSeen[0]!).getTime();
+    expect(now.getTime() - sinceMs).toBe(7 * 24 * 60 * 60 * 1000);
+    expect(await readLastWeeklyPosted(statePath)).toBe(now.toISOString());
+  });
+
+  it("skips (no post, no fetch) when a weekly post happened less than 7 days ago", async () => {
+    await writeLastWeeklyPosted(statePath, "2026-07-04T00:00:00.000Z"); // 2 days before now
+    const { client, sinceSeen } = fakeClient([item()]);
+    let sends = 0;
+    const posted = await runWeeklyDigest({
+      client,
+      statePath,
+      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      getChannel: async () => ({
+        send: async () => {
+          sends++;
+          return null;
+        },
+      }),
+    });
+    expect(posted).toEqual([]);
+    expect(sends).toBe(0);
+    expect(sinceSeen).toHaveLength(0); // never even fetched
+  });
+
+  it("posts again once a full week has elapsed since the last weekly post", async () => {
+    await writeLastWeeklyPosted(statePath, "2026-06-28T00:00:00.000Z"); // 8 days before now
+    const { client } = fakeClient([item({ slug: "again" })]);
+    const posted = await runWeeklyDigest({
+      client,
+      statePath,
+      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      getChannel: async () => ({ send: async () => null }),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["again"]);
+  });
+
+  it("does not post or advance the watermark when there are no items", async () => {
+    const { client } = fakeClient([]);
+    let sends = 0;
+    await runWeeklyDigest({
+      client,
+      statePath,
+      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      getChannel: async () => ({
+        send: async () => {
+          sends++;
+          return null;
+        },
+      }),
+    });
+    expect(sends).toBe(0);
+    expect(await readLastWeeklyPosted(statePath)).toBeNull();
   });
 });
 
