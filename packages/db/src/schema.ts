@@ -16,6 +16,9 @@ export const users = sqliteTable(
     avatarUrl: text("avatar_url"),
     bio: text("bio"),
     role: text("role", { enum: ["user", "mod", "admin", "bot"] }).notNull().default("user"),
+    // My Workflow: either an external link OR a long-form article (articleId).
+    workflowUrl: text("workflow_url"),
+    workflowArticleId: text("workflow_article_id"),
     createdAt: integer("created_at").notNull().default(now),
   },
   (t) => [index("users_username_idx").on(t.username)],
@@ -222,6 +225,90 @@ export const stackItems = sqliteTable(
   ],
 );
 
+/* ------------------------------------------------------------- reposts */
+
+/** A repost (optionally quoted) of a post or item — surfaces in followers' feeds. */
+export const reposts = sqliteTable(
+  "reposts",
+  {
+    id: cuid(),
+    userId: text("user_id").notNull().references(() => users.id),
+    targetType: text("target_type", { enum: ["post", "item"] }).notNull(),
+    targetId: text("target_id").notNull(),
+    quote: text("quote"),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [uniqueIndex("reposts_unique_idx").on(t.userId, t.targetType, t.targetId), index("reposts_user_idx").on(t.userId)],
+);
+
+/* ------------------------------------------------------- direct messages */
+
+/** 1:1 DM. A conversation is the set of messages between a user pair. */
+export const messages = sqliteTable(
+  "messages",
+  {
+    id: cuid(),
+    fromUserId: text("from_user_id").notNull().references(() => users.id),
+    toUserId: text("to_user_id").notNull().references(() => users.id),
+    body: text("body").notNull(),
+    readAt: integer("read_at"),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [index("messages_from_idx").on(t.fromUserId), index("messages_to_idx").on(t.toUserId), index("messages_pair_idx").on(t.fromUserId, t.toUserId)],
+);
+
+/* --------------------------------------------------------- activity feed */
+
+/** Actor–verb–object event stream powering the feed ("X added Y to their stack"). */
+export const activities = sqliteTable(
+  "activities",
+  {
+    id: cuid(),
+    actorId: text("actor_id").notNull().references(() => users.id),
+    verb: text("verb").notNull(), // posted | reposted | commented | stack_added | followed | submitted | article_published
+    objectType: text("object_type").notNull(), // post | item | comment | user | stack | article
+    objectId: text("object_id").notNull(),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [index("activities_actor_idx").on(t.actorId), index("activities_created_idx").on(t.createdAt)],
+);
+
+/* --------------------------------------------------------- notifications */
+
+/** Per-recipient notification inbox with unread tracking. */
+export const notifications = sqliteTable(
+  "notifications",
+  {
+    id: cuid(),
+    userId: text("user_id").notNull().references(() => users.id), // recipient
+    actorId: text("actor_id").references(() => users.id),
+    type: text("type").notNull(), // reply | dm | repost | follow | stack_add | mention
+    objectType: text("object_type"),
+    objectId: text("object_id"),
+    readAt: integer("read_at"),
+    createdAt: integer("created_at").notNull().default(now),
+  },
+  (t) => [index("notifications_user_idx").on(t.userId), index("notifications_unread_idx").on(t.userId, t.readAt)],
+);
+
+/* -------------------------------------------------- long-form articles */
+
+/** Long-form markdown article authored by a user (also backs "My Workflow"). */
+export const articles = sqliteTable(
+  "articles",
+  {
+    id: cuid(),
+    authorId: text("author_id").notNull().references(() => users.id),
+    slug: text("slug").notNull().unique(),
+    title: text("title").notNull(),
+    bodyMd: text("body_md").notNull(),
+    published: integer("published", { mode: "boolean" }).notNull().default(true),
+    createdAt: integer("created_at").notNull().default(now),
+    updatedAt: integer("updated_at").notNull().default(now),
+  },
+  (t) => [index("articles_author_idx").on(t.authorId), index("articles_created_idx").on(t.createdAt)],
+);
+
 /* ------------------------------------------------------ auth sessions */
 
 export const sessions = sqliteTable("sessions", {
@@ -238,3 +325,8 @@ export type Post = typeof posts.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Subscriber = typeof subscribers.$inferSelect;
 export type StackItem = typeof stackItems.$inferSelect;
+export type Repost = typeof reposts.$inferSelect;
+export type Message = typeof messages.$inferSelect;
+export type Activity = typeof activities.$inferSelect;
+export type Notification = typeof notifications.$inferSelect;
+export type Article = typeof articles.$inferSelect;
