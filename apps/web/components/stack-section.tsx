@@ -3,15 +3,21 @@ import { type StackEntry, STACK_STATUSES, STACK_STATUS_LABELS, stackEntryName } 
 import { VerdictBadge } from "@/components/verdict-badge";
 import { StackEditor, StackDeleteButton } from "@/components/stack-editor";
 
-/** Read-only "My Stack" view, grouped by status; editor shown to the owner. */
+/**
+ * Read-only "My Stack" view, grouped by status; editor shown to the owner.
+ * `messageHref` (signed-in visitors) adds an "ask about this" DM affordance
+ * per entry — ticket 0019's "ask about their stack", shipped via 0029.
+ */
 export function StackSection({
   stack,
   isSelf,
   username,
+  messageHref,
 }: {
   stack: StackEntry[];
   isSelf: boolean;
   username: string;
+  messageHref?: string;
 }) {
   const grouped = STACK_STATUSES.map((status) => ({
     status,
@@ -53,6 +59,14 @@ export function StackSection({
                       {e.item && <VerdictBadge verdict={e.item.verdict} />}
                       {e.rating != null && <span className="chip">{"★".repeat(e.rating)}</span>}
                       {isSelf && <StackDeleteButton entryId={e.id} />}
+                      {!isSelf && messageHref && (
+                        <a
+                          href={messageHref}
+                          className="ml-auto shrink-0 text-xs text-muted hover:text-brand hover:underline"
+                        >
+                          ask about this →
+                        </a>
+                      )}
                     </div>
                     {e.take && (
                       <p className="text-sm text-neutral-700 dark:text-neutral-300">{e.take}</p>

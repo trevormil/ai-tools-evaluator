@@ -212,6 +212,15 @@ test("following mode shows ONLY the circle — no silent global fallback, no ite
   }
 });
 
+test("getUserActivity returns one actor's resolved activity, newest first (ticket 0029)", async () => {
+  const { getUserActivity } = await import("./home-feed");
+  const entries = getUserActivity(BOB, 50);
+  // Bob's only non-post activity is the stack add; Cara's repost must not appear.
+  expect(entries.length).toBe(1);
+  expect(entries[0]!.activity.verb).toBe("stack_added");
+  expect(entries[0]!.embed?.type).toBe("stack");
+});
+
 test("cursor pagination walks the whole timeline exactly once, even with same-second entries", () => {
   const { posts } = schema;
   // Two extra posts in the SAME second to prove the compound (createdAt, id) cursor.

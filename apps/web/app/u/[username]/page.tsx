@@ -20,17 +20,28 @@ import { ProfileTabs, type ProfileTab } from "@/components/profile-tabs";
 import { ProfileLinks } from "@/components/profile-links";
 import { ProfileLinksEditor } from "@/components/profile-links-editor";
 import { EditProfile } from "@/components/edit-profile";
+import { ActivityCard } from "@/components/activity-card";
 import { getUserStack } from "@/lib/stack";
 import { listArticlesByAuthor } from "@/lib/articles";
 import { getProfileLinks } from "@/lib/profile-links";
+import { getUserActivity } from "@/lib/home-feed";
 import { timeAgo } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
 type Params = Promise<{ username: string }>;
+type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
-export default async function ProfilePage({ params }: { params: Params }) {
+export default async function ProfilePage({
+  params,
+  searchParams,
+}: {
+  params: Params;
+  searchParams: SearchParams;
+}) {
   const { username } = await params;
+  const sp = await searchParams;
+  const initialTab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const profile = getUserByUsername(username);
   if (!profile) notFound();
 
@@ -99,12 +110,21 @@ export default async function ProfilePage({ params }: { params: Params }) {
     </section>
   );
 
+  const activity = getUserActivity(profile.id);
+
   const tabs: ProfileTab[] = [
     { key: "posts", label: "Posts", content: postsTab },
     {
       key: "stack",
       label: "My Stack",
-      content: <StackSection stack={stack} isSelf={isSelf} username={profile.username} />,
+      content: (
+        <StackSection
+          stack={stack}
+          isSelf={isSelf}
+          username={profile.username}
+          messageHref={viewer && !isSelf ? `/messages/${profile.id}` : undefined}
+        />
+      ),
     },
     {
       key: "workflow",
@@ -115,6 +135,20 @@ export default async function ProfilePage({ params }: { params: Params }) {
       key: "articles",
       label: "Articles",
       content: <ArticleList articles={articles} isSelf={isSelf} />,
+    },
+    {
+      key: "activity",
+      label: "Activity",
+      content:
+        activity.length === 0 ? (
+          <p className="text-sm text-neutral-500">No activity yet.</p>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {activity.map((entry) => (
+              <ActivityCard key={entry.activity.id} entry={entry} />
+            ))}
+          </div>
+        ),
     },
   ];
 
@@ -167,7 +201,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
         </div>
       </header>
 
-      <ProfileTabs tabs={tabs} />
+      <ProfileTabs tabs={tabs} initialTab={initialTab} />
     </div>
   );
 }

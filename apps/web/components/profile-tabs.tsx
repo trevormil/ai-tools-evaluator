@@ -4,10 +4,22 @@ import { useState, type ReactNode } from "react";
 
 export type ProfileTab = { key: string; label: string; content: ReactNode };
 
-/** Simple client-side tabs; server-rendered content is passed in per tab. */
-export function ProfileTabs({ tabs }: { tabs: ProfileTab[] }) {
-  const [active, setActive] = useState(tabs[0]?.key);
+/**
+ * Client-side tabs over server-rendered content. Deep-linkable (ticket 0029):
+ * `initialTab` comes from the page's ?tab= param and switching updates the URL
+ * via replaceState so any tab is shareable without a re-render round-trip.
+ */
+export function ProfileTabs({ tabs, initialTab }: { tabs: ProfileTab[]; initialTab?: string }) {
+  const valid = tabs.some((t) => t.key === initialTab);
+  const [active, setActive] = useState(valid ? initialTab : tabs[0]?.key);
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
+
+  function select(key: string) {
+    setActive(key);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", key);
+    window.history.replaceState(null, "", url);
+  }
 
   return (
     <div className="flex flex-col gap-6">
@@ -15,7 +27,7 @@ export function ProfileTabs({ tabs }: { tabs: ProfileTab[] }) {
         {tabs.map((t) => (
           <button
             key={t.key}
-            onClick={() => setActive(t.key)}
+            onClick={() => select(t.key)}
             className={`-mb-px whitespace-nowrap px-4 py-2 text-sm font-semibold transition-colors ${
               t.key === current?.key
                 ? "border-b-2 border-[var(--brand)] text-ink"

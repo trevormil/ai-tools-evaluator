@@ -221,6 +221,30 @@ export function getUnifiedFeed(
   };
 }
 
+/**
+ * One actor's resolved activity stream, newest first — powers the profile
+ * Activity tab (ticket 0029). Posts are excluded (they have their own tab).
+ */
+export function getUserActivity(
+  actorId: string,
+  limit = 30,
+): Extract<FeedEntry, { kind: "activity" }>[] {
+  const rows = getDb()
+    .select({ activity: activities, actor: users })
+    .from(activities)
+    .innerJoin(users, eq(activities.actorId, users.id))
+    .where(and(eq(activities.actorId, actorId), ne(activities.verb, "posted")))
+    .orderBy(desc(activities.createdAt), desc(activities.id))
+    .limit(limit)
+    .all();
+  const out: Extract<FeedEntry, { kind: "activity" }>[] = [];
+  for (const r of rows) {
+    const resolved = resolveActivity(r.activity, r.actor);
+    if (resolved && resolved.kind === "activity") out.push(resolved);
+  }
+  return out;
+}
+
 /* ------------------------------------------------- activity resolution */
 
 /**
