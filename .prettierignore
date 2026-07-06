@@ -9,3 +9,4 @@ ios
 .TerMinal
 *.md
 e2e/test-results
+docs/design
