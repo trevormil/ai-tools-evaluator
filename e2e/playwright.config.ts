@@ -37,6 +37,7 @@ export default defineConfig({
       AIX_DB_PATH: E2E_DB,
       AIX_INTERNAL_TOKEN: E2E_TOKEN,
       AIX_PUBLIC_URL: `http://localhost:${E2E_PORT}`,
+      AIX_DEV_LOGIN: "1", // exercised by dev-login.spec.ts
     },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

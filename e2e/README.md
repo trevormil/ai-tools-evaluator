@@ -28,3 +28,18 @@ DEST=~/Library/Caches/ms-playwright/chromium_headless_shell-$REV
 rm -rf "$DEST" && mkdir -p "$DEST" && unzip -q /tmp/hs.zip -d "$DEST"
 chmod +x "$DEST/chrome-mac/headless_shell"
 ```
+
+## Mock sign-in for local smoke testing
+
+The web app has a dev-only login that stands in for the GitHub OAuth
+round-trip. It is OFF unless `AIX_DEV_LOGIN=1` is set (never set it in
+production — the route 404s without it):
+
+```bash
+AIX_DEV_LOGIN=1 AIX_DB_PATH=/tmp/aix-dev.db bun run web
+open "http://localhost:3000/api/auth/dev?u=alice"   # signs you in as @alice
+```
+
+Any `?u=<username>` ([a-z0-9-], created on first use) gets a real session
+cookie, so you can smoke-test multi-user flows (DMs, follows, reposts) by
+signing in as different users across browser profiles.

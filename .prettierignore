@@ -8,3 +8,4 @@ k8s
 ios
 .TerMinal
 *.md
+e2e/test-results

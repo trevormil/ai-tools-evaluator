@@ -12,6 +12,8 @@ const EnvSchema = z.object({
   GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
   // Public base URL for building email links (confirm/unsubscribe).
   AIX_PUBLIC_URL: z.string().optional(),
+  // Opt-in dev-only login (/api/auth/dev). NEVER set in production.
+  AIX_DEV_LOGIN: z.string().optional(),
   // Newsletter sending (free tier: Resend). If unset, emails are logged only.
   RESEND_API_KEY: z.string().optional(),
   NEWSLETTER_FROM: z.string().optional(),

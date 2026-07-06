@@ -3,6 +3,7 @@ import type { Item } from "@aix/db";
 import { VerdictBadge } from "./verdict-badge";
 import { VoteButtons } from "./vote-buttons";
 import { RepostButton } from "./repost-button";
+import { InlineReply } from "./inline-reply";
 import { timeAgo } from "@/lib/format";
 
 /**
@@ -59,10 +60,11 @@ export function ItemFeedCard({
             </Link>
           )}
         </div>
-        <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
+        <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-neutral-500">
           <Link href={`/item/${item.slug}`} className="hover:underline">
             {item.commentCount} comments
           </Link>
+          <InlineReply itemId={item.id} signedIn={signedIn} />
           <RepostButton
             targetType="item"
             targetId={item.id}

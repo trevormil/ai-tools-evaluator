@@ -1,7 +1,7 @@
 ---
 id: 24
 title: "Unified timeline: items as first-class feed cards, rich activities, Following/Everyone toggle, load-more"
-status: open
+status: in-progress
 priority: critical
 horizon: now
 hitl: false

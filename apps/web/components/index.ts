@@ -20,3 +20,4 @@ export { FeedList } from "./feed-list";
 export { FeedTabs } from "./feed-tabs";
 export { ItemFeedCard } from "./item-feed-card";
 export { ActivityCard } from "./activity-card";
+export { InlineReply } from "./inline-reply";

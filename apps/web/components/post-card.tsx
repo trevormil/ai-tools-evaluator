@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Post, Item, User } from "@aix/db";
 import { VoteButtons } from "./vote-buttons";
 import { RepostButton } from "./repost-button";
+import { InlineReply } from "./inline-reply";
 import { timeAgo } from "@/lib/format";
 
 export function PostCard({
@@ -63,10 +64,11 @@ export function PostCard({
             <span className="text-neutral-400">· {item.overallScore}/100</span>
           </Link>
         )}
-        <div className="mt-2 flex items-center gap-4 text-xs text-neutral-500">
+        <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-neutral-500">
           <Link href={`/post/${post.id}`} className="hover:underline">
             {post.commentCount} comments
           </Link>
+          <InlineReply postId={post.id} signedIn={signedIn} />
           <RepostButton
             targetType="post"
             targetId={post.id}

@@ -1,7 +1,7 @@
 ---
 id: 25
 title: "Inline engagement: reply from the feed, quote-repost composer"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false
