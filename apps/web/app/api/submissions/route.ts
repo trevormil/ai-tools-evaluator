@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { and, eq, inArray } from "drizzle-orm";
-import { getDb, items, submissions } from "@aix/db";
+import { getDb, submissions } from "@aix/db";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
+import { createPendingItem } from "@/lib/pending-items";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +13,11 @@ const Body = z.object({
 });
 
 /**
- * Public (session-authed) link submission → inserts a `queued` row for the
- * scanner. Duplicates are PERSISTED as `duplicate` rows with a reason (ticket
- * 0028) so the submitter sees the outcome instead of a silent no-op.
+ * Public (session-authed) link submission. The tool appears in the directory
+ * IMMEDIATELY as a pending item ("Awaiting score…", ticket 0035) and a
+ * `queued` row feeds the evaluation queue. Duplicates are PERSISTED as
+ * `duplicate` rows with a reason (ticket 0028) so the submitter sees the
+ * outcome instead of a silent no-op.
  */
 export async function POST(req: Request) {
   try {
@@ -23,24 +25,9 @@ export async function POST(req: Request) {
     const { url, note } = Body.parse(await req.json());
     const db = getDb();
 
-    // Already catalogued? Point at the existing evaluation.
-    const catalogued = db
-      .select({ slug: items.slug, title: items.title })
-      .from(items)
-      .where(eq(items.url, url))
-      .get();
-    // Already pending? Don't enqueue a second copy.
-    const pending = catalogued
-      ? undefined
-      : db
-          .select({ id: submissions.id })
-          .from(submissions)
-          .where(
-            and(eq(submissions.url, url), inArray(submissions.status, ["queued", "processing"])),
-          )
-          .get();
+    const { item, existed } = createPendingItem(url, user.id);
+    const duplicate = existed;
 
-    const duplicate = !!catalogued || !!pending;
     const submission = db
       .insert(submissions)
       .values({
@@ -49,16 +36,20 @@ export async function POST(req: Request) {
         source: "web",
         submittedById: user.id,
         status: duplicate ? "duplicate" : "queued",
-        reason: catalogued
-          ? `Already catalogued as “${catalogued.title}” (/item/${catalogued.slug}).`
-          : pending
-            ? "This URL is already in the queue."
-            : null,
+        itemId: item.id,
+        reason: duplicate
+          ? item.scoreStatus === "pending"
+            ? `Already submitted — “${item.title}” is awaiting evaluation (/item/${item.slug}).`
+            : `Already catalogued as “${item.title}” (/item/${item.slug}).`
+          : null,
       })
       .returning()
       .get();
 
-    return NextResponse.json({ submission, duplicate }, { status: duplicate ? 200 : 201 });
+    return NextResponse.json(
+      { submission, duplicate, item: { slug: item.slug, title: item.title } },
+      { status: duplicate ? 200 : 201 },
+    );
   } catch (err) {
     return errorResponse(err);
   }

@@ -11,7 +11,8 @@ type Params = { params: Promise<{ slug: string }> };
 export async function GET(_req: Request, { params }: Params) {
   const { slug } = await params;
   const item = getItemBySlug(slug);
-  if (!item || !item.published) {
+  // Pending submissions have no evaluation yet — 404 to API consumers (0035).
+  if (!item || !item.published || item.scoreStatus === "pending") {
     return NextResponse.json({ error: "Not found" }, { status: 404, headers: CORS });
   }
   const evaluation = parseEvaluation(item);

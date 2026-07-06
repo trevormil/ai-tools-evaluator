@@ -28,13 +28,13 @@ test("add a tool to My Stack and see it on the profile", async ({ page }) => {
   await expect(page.getByText(unique)).toBeVisible();
 });
 
-test("compose a post and see it in the feed", async ({ page }) => {
+test("no generic post composer anywhere — takes are the primitive (ticket 0036)", async ({
+  page,
+}) => {
+  await page.goto("/activity");
+  await expect(page.getByPlaceholder(/what's happening/i)).toHaveCount(0);
   await page.goto("/");
-  const unique = `e2e post ${Date.now()}`;
-  const box = page.getByRole("textbox").first();
-  await box.fill(unique);
-  await page.getByRole("button", { name: /post/i }).first().click();
-  await expect(page.getByText(unique)).toBeVisible();
+  await expect(page.getByPlaceholder(/what's happening/i)).toHaveCount(0);
 });
 
 test("notifications page is reachable when signed in", async ({ page }) => {

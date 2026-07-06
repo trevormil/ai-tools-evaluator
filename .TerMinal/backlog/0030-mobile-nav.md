@@ -1,7 +1,7 @@
 ---
 id: 30
 title: "Mobile bottom tab bar (Feed · Directory · Submit · Alerts · Profile)"
-status: open
+status: in-progress
 priority: medium
 horizon: next
 hitl: false

@@ -9,13 +9,16 @@ import { getDb, items, type Item } from "@aix/db";
 
 /** Highest weighted overallScore. The tools worth adopting. */
 export function topRated(limit = 12): Item[] {
-  return getDb()
-    .select()
-    .from(items)
-    .where(eq(items.published, true))
-    .orderBy(desc(items.overallScore), desc(items.score))
-    .limit(limit)
-    .all();
+  return (
+    getDb()
+      .select()
+      .from(items)
+      // Pending submissions carry a placeholder 0 — a score ranking is scored-only.
+      .where(and(eq(items.published, true), eq(items.scoreStatus, "scored")))
+      .orderBy(desc(items.overallScore), desc(items.score))
+      .limit(limit)
+      .all()
+  );
 }
 
 /** Most comments — where the arguments are actually happening. */

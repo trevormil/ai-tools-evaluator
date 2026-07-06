@@ -61,6 +61,9 @@ export const items = sqliteTable(
     model: text("model"),
     postedById: text("posted_by_id").references(() => users.id),
     published: integer("published", { mode: "boolean" }).notNull().default(true),
+    // "pending" = user-submitted, awaiting the evaluation queue; placeholder
+    // score/verdict values are never displayed (ticket 0035).
+    scoreStatus: text("score_status").notNull().default("scored"),
     score: real("score").notNull().default(0), // hot-ranking score, recomputed
     upvotes: integer("upvotes").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),

@@ -29,8 +29,12 @@ export function GET(req: Request) {
     limit,
   });
 
+  // Pending community submissions carry placeholder scores — never serve them
+  // to API consumers that render scorecards (ticket 0035).
+  const scored = rows.filter((r) => r.scoreStatus !== "pending");
+
   return NextResponse.json(
-    { items: rows.map(toPublicItem), count: rows.length },
+    { items: scored.map(toPublicItem), count: scored.length },
     {
       headers: {
         ...CORS,

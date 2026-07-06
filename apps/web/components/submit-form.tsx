@@ -25,10 +25,16 @@ export function SubmitForm() {
         error?: string;
         duplicate?: boolean;
         submission?: { reason?: string | null };
+        item?: { slug: string; title: string };
       };
       if (res.ok) {
         setUrl("");
         setNote("");
+        // The tool is live immediately (ticket 0035) — take them to it.
+        if (!data.duplicate && data.item) {
+          router.push(`/item/${data.item.slug}`);
+          return;
+        }
         setMsg({
           ok: true,
           text: data.duplicate

@@ -34,7 +34,9 @@ export function ItemFeedCard({
       />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-xs text-faint">
-          <span className="eyebrow !text-[10px]">Fresh evaluation</span>
+          <span className="eyebrow !text-[10px]">
+            {item.scoreStatus === "pending" ? "New submission" : "Fresh evaluation"}
+          </span>
           <span>· {timeAgo(item.createdAt)}</span>
         </div>
         <div className="mt-1 flex items-start gap-3">
@@ -42,8 +44,16 @@ export function ItemFeedCard({
             <Link href={`/item/${item.slug}`} className="block hover:opacity-90">
               <span className="flex flex-wrap items-center gap-2">
                 <span className="font-bold tracking-tight">{item.title}</span>
-                <VerdictBadge verdict={item.verdict} />
-                <span className="data text-xs font-bold">{item.overallScore}/100</span>
+                {item.scoreStatus === "pending" ? (
+                  <span className="chip !border-amber-500 !text-amber-600 dark:!text-amber-400">
+                    Awaiting score…
+                  </span>
+                ) : (
+                  <>
+                    <VerdictBadge verdict={item.verdict} />
+                    <span className="data text-xs font-bold">{item.overallScore}/100</span>
+                  </>
+                )}
               </span>
               <span className="mt-1 line-clamp-2 block text-sm text-muted">{item.tagline}</span>
             </Link>

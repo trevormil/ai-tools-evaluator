@@ -18,7 +18,12 @@ export function TrendRow({
   /** The ranking metric to display; defaults to the overall score. */
   metric?: { value: string | number; label: string };
 }) {
-  const m = metric ?? { value: item.overallScore, label: "/100" };
+  const pending = item.scoreStatus === "pending";
+  // Explicit metrics (comment counts, noise) are real data even while pending;
+  // only the default score readout is a placeholder to hide.
+  const m =
+    metric ??
+    (pending ? { value: "—", label: "queued" } : { value: item.overallScore, label: "/100" });
   const band = scoreBand(item.overallScore);
   return (
     <Link
@@ -45,7 +50,7 @@ export function TrendRow({
       <span className="min-w-0 flex-1">
         <span className="line-clamp-1 text-sm font-medium">{item.title}</span>
         <span className="line-clamp-1 text-xs text-muted">
-          {String(item.verdict).replace("-", " ")}
+          {pending ? "awaiting score" : String(item.verdict).replace("-", " ")}
         </span>
       </span>
       <span className="flex shrink-0 items-center gap-1.5">

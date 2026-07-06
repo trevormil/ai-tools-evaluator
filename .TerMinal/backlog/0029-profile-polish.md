@@ -1,7 +1,7 @@
 ---
 id: 29
 title: "Profile polish: activity tab, deep-linkable tabs, stack DM affordance, dead code"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

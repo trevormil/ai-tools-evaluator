@@ -2,17 +2,25 @@ import { test, expect } from "@playwright/test";
 
 /** Public, unauthenticated browsing over the seeded dataset. */
 
-test("directory lists seeded tools", async ({ page }) => {
-  await page.goto("/directory");
+test("home IS the directory: seeded tools list at /", async ({ page }) => {
+  await page.goto("/");
   await expect(page.getByRole("link", { name: /ripgrep/i }).first()).toBeVisible();
   await expect(page.getByText(/zod/i).first()).toBeVisible();
 });
 
-test("directory filters to complexity-traps", async ({ page }) => {
+test("directory filters to complexity-traps at /", async ({ page }) => {
+  await page.goto("/?verdict=complexity-trap");
+  // langchain + autogpt are the seeded complexity-traps; ripgrep (essential)
+  // must not be in the GRID (the pulse rail may legitimately mention it).
+  const grid = page.locator("section").first();
+  await expect(grid.getByText(/langchain/i).first()).toBeVisible();
+  await expect(grid.getByText(/ripgrep/i)).toHaveCount(0);
+});
+
+test("old /directory URLs redirect home with filters intact", async ({ page }) => {
   await page.goto("/directory?verdict=complexity-trap");
-  // langchain + autogpt are the seeded complexity-traps; ripgrep (essential) must not show
+  await expect(page).toHaveURL(/\/\?verdict=complexity-trap/);
   await expect(page.getByText(/langchain/i).first()).toBeVisible();
-  await expect(page.getByText(/ripgrep/i)).toHaveCount(0);
 });
 
 test("item detail renders verdict, sections, scorecard, audience", async ({ page }) => {

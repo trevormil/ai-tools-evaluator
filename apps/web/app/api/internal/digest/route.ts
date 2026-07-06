@@ -26,7 +26,13 @@ export async function GET(req: Request) {
       coverImageUrl: items.coverImageUrl,
     })
     .from(items)
-    .where(and(eq(items.published, true), gte(items.createdAt, sinceSec)))
+    .where(
+      and(
+        eq(items.published, true),
+        eq(items.scoreStatus, "scored"),
+        gte(items.createdAt, sinceSec),
+      ),
+    )
     .all();
 
   return NextResponse.json({ items: rows });

@@ -27,7 +27,13 @@ export async function POST(req: Request) {
   const newItems = db
     .select()
     .from(items)
-    .where(and(eq(items.published, true), gte(items.createdAt, sinceSec)))
+    .where(
+      and(
+        eq(items.published, true),
+        eq(items.scoreStatus, "scored"),
+        gte(items.createdAt, sinceSec),
+      ),
+    )
     .orderBy(desc(items.overallScore))
     .all();
 

@@ -1,7 +1,7 @@
 ---
 id: 28
 title: "Submission transparency + honest directory counts"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

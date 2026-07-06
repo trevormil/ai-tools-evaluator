@@ -50,6 +50,13 @@
       "when": 1783353128634,
       "tag": "0006_strange_glorian",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1783363198941,
+      "tag": "0007_talented_bucky",
+      "breakpoints": true
     }
   ]
 }

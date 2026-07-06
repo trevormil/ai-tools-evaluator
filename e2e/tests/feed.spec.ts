@@ -1,19 +1,21 @@
 import { test, expect } from "@playwright/test";
 
-/** Unified-feed + inline-engagement flows (tickets 0024/0025), authed session. */
+/** /activity timeline (tickets 0024/0025/0032), authed session. */
 test.use({ storageState: { cookies: [], origins: [] } });
 
 test.beforeEach(async ({ context, baseURL }) => {
   await context.addCookies([{ name: "aix_session", value: "e2e-token", url: baseURL! }]);
 });
 
-test("timeline shows fresh evaluations as first-class cards with actions", async ({ page }) => {
-  await page.goto("/");
+test("activity timeline shows fresh evaluations as first-class cards with actions", async ({
+  page,
+}) => {
+  await page.goto("/activity");
   const itemCard = page
     .locator("div.card", { has: page.getByText("Fresh evaluation").first() })
     .first();
   await expect(itemCard).toBeVisible();
-  // The card carries the post-grade action row: comments, reply, reposts.
+  // The card carries the action row: comments, reply, reposts.
   await expect(itemCard.getByText(/comments/)).toBeVisible();
   await expect(itemCard.getByRole("button", { name: "Reply" })).toBeVisible();
   await expect(itemCard.getByText(/reposts/)).toBeVisible();
@@ -27,7 +29,7 @@ test("feed tabs switch between Everything and Following (no silent fallback)", a
   // A brand-new user (dev login) — follows nobody, has posted nothing.
   await context.clearCookies();
   await page.goto(`/api/auth/dev?u=lonely-${Date.now()}`);
-  await page.goto("/?feed=following");
+  await page.goto("/activity?feed=following");
   // Empty circle → explicit empty state, NOT the global stream.
   await expect(page.getByText(/nobody you follow/i)).toBeVisible();
   await page.getByRole("link", { name: "Everything" }).click();
@@ -35,10 +37,9 @@ test("feed tabs switch between Everything and Following (no silent fallback)", a
   expect(baseURL).toBeTruthy();
 });
 
-test("reply to a post inline from the timeline", async ({ page }) => {
-  await page.goto("/");
+test("reply to a legacy post inline from the timeline", async ({ page }) => {
+  await page.goto("/activity");
   const postCard = page.locator("div.card", { hasText: "@aixdemo" }).first();
-  const before = await postCard.getByText(/\d+ comments/).textContent();
   await postCard.getByRole("button", { name: "Reply" }).click();
   const unique = `inline reply ${Date.now()}`;
   await postCard.getByPlaceholder(/write a reply/i).fill(unique);
@@ -47,11 +48,10 @@ test("reply to a post inline from the timeline", async ({ page }) => {
   // The reply landed in the real thread.
   await postCard.getByText(/\d+ comments/).click();
   await expect(page.getByText(unique)).toBeVisible();
-  expect(before).toBeTruthy();
 });
 
-test("quote-repost a post from the timeline and see the quote in the feed", async ({ page }) => {
-  await page.goto("/");
+test("quote-repost from the timeline and see the quote in the feed", async ({ page }) => {
+  await page.goto("/activity");
   const postCard = page.locator("div.card", { hasText: "@aixdemo" }).first();
   await postCard.getByRole("button", { name: /reposts/ }).click();
   await postCard.getByRole("button", { name: /quote/i }).click();
@@ -59,7 +59,7 @@ test("quote-repost a post from the timeline and see the quote in the feed", asyn
   await postCard.getByPlaceholder(/add your take/i).fill(unique);
   await postCard.getByRole("button", { name: "Quote", exact: true }).click();
   await expect(postCard.getByText(/1 reposted/)).toBeVisible();
-  // The quote is content in the timeline (rich activity entry), not a dead one-liner.
-  await page.goto("/");
+  // The quote is content in the timeline (rich activity entry).
+  await page.goto("/activity");
   await expect(page.getByText(unique)).toBeVisible();
 });
