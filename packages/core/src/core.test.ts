@@ -30,6 +30,12 @@ const sample: Evaluation = {
   tags: ["mcp", "typescript"],
   verdict: "marginal",
   noiseScore: 62,
+  audience: {
+    primary: "ai-engineer",
+    aiEngineerFit: 55,
+    vibeCoderFit: 20,
+    rationale: "Only an engineer running sandboxed/remote setups gets value; a vibe coder gains nothing over native file tools.",
+  },
   scores,
   overallScore: computeOverall(scores),
   tagline: "A tidy MCP wrapper, but Claude already reads files fine on its own.",
@@ -87,11 +93,18 @@ describe("schema", () => {
       tags: sample.tags,
       verdict: sample.verdict,
       noiseScore: sample.noiseScore,
+      audience: sample.audience,
       scores: sample.scores,
       tagline: sample.tagline,
       body: sample.body,
     };
     expect(() => EvaluationDraft.parse(draft)).not.toThrow();
+  });
+
+  test("rejects out-of-range audience fit", () => {
+    const bad = structuredClone(sample);
+    bad.audience.aiEngineerFit = 150;
+    expect(() => Evaluation.parse(bad)).toThrow();
   });
 });
 

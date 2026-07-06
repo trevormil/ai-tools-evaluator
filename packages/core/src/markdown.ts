@@ -1,6 +1,7 @@
 import { Evaluation } from "./schema";
 import { METRICS } from "./metrics";
 import { CATEGORY_LABELS } from "./categories";
+import { PRIMARY_AUDIENCE_LABELS } from "./audience";
 
 /**
  * Serialize an Evaluation to a strict git-native `.md` artifact. The document is
@@ -74,6 +75,12 @@ ${e.body.surfaceArea}
 
 ${e.body.devilsAdvocate}
 ${e.body.steelman ? `\n## The honest case for it\n\n${e.body.steelman}\n` : ""}
+## Who it's for
+
+**Primary: ${PRIMARY_AUDIENCE_LABELS[e.audience.primary]}** · AI-first engineer fit **${e.audience.aiEngineerFit}/100** · vibe-coder fit **${e.audience.vibeCoderFit}/100**
+
+${e.audience.rationale}
+
 ## Scorecard
 
 ${scoreTable}

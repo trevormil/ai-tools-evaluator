@@ -47,6 +47,8 @@ ${readme.slice(0, 12000)}
 - tags: up to 12 kebab-case tags
 - verdict: one of essential | worthwhile | niche | marginal | redundant | complexity-trap
 - noiseScore: 0 (pure signal) .. 100 (pure noise)
+- audience: { primary: ai-engineer | vibe-coder | both | neither, aiEngineerFit: 0-100, vibeCoderFit: 0-100, rationale }
+    AIx is for AI-first ENGINEERS who want to upskill and sharpen their workflow — not vibe coders who just want a flashier tool to do the work for them. Score aiEngineerFit on depth/leverage for a technical engineer; score vibeCoderFit on accessible does-it-for-you value. They are independent (a real workflow tool can rate high on both). Set primary honestly.
 - tagline: one line, <=160 chars, states the verdict's reasoning
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
 - body: { whatItIs, vsVanilla, surfaceArea, devilsAdvocate, steelman? }

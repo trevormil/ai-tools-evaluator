@@ -1,6 +1,20 @@
 import { z } from "zod";
 import { CATEGORIES, INTEGRATION_KINDS, ITEM_KINDS } from "./categories";
 import { METRIC_KEYS } from "./metrics";
+import { PRIMARY_AUDIENCES } from "./audience";
+
+/**
+ * Who this is actually for. AIx targets AI-first engineers who want to upskill,
+ * not vibe coders chasing flashier tools — but the line is fuzzy, so both
+ * audiences are scored independently rather than forced into a binary.
+ */
+export const AudienceFit = z.object({
+  primary: z.enum(PRIMARY_AUDIENCES),
+  aiEngineerFit: z.number().int().min(0).max(100),
+  vibeCoderFit: z.number().int().min(0).max(100),
+  rationale: z.string().min(10).max(400),
+});
+export type AudienceFit = z.infer<typeof AudienceFit>;
 
 /** A single scorecard metric: a number 0–100 plus a one-line justification. */
 export const MetricScore = z.object({
@@ -101,6 +115,8 @@ export const Evaluation = z.object({
   verdict: Verdict,
   /** 0 = pure signal, 100 = pure noise. Forces a number, no hedging. */
   noiseScore: z.number().int().min(0).max(100),
+  /** Who it's for — independent fit scores for AI engineers vs vibe coders. */
+  audience: AudienceFit,
   /** Ten-metric report card, each 0–100 with a rationale. */
   scores: Scorecard,
   /** Weighted final score, 0–100. Recomputed from `scores` on write. */

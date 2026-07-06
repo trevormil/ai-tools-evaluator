@@ -1,4 +1,5 @@
 export * from "./categories";
+export * from "./audience";
 export * from "./metrics";
 export * from "./schema";
 export * from "./markdown";
