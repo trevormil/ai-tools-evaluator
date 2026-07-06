@@ -316,7 +316,9 @@ function resolveActivity(activity: Activity, actor: User): FeedEntry | null {
           .get();
         return {
           ...base,
-          label: `added ${item.title} to their stack`,
+          label: stack?.take
+            ? `shared a take on ${item.title}`
+            : `added ${item.title} to their stack`,
           href: `/item/${item.slug}`,
           embed: {
             type: "stack",
@@ -335,7 +337,9 @@ function resolveActivity(activity: Activity, actor: User): FeedEntry | null {
       if (!stack) return null;
       return {
         ...base,
-        label: `added ${stack.toolName ?? "a tool"} to their stack`,
+        label: stack.take
+          ? `shared a take on ${stack.toolName ?? "a tool"}`
+          : `added ${stack.toolName ?? "a tool"} to their stack`,
         href: `/u/${actor.username}`,
         embed: {
           type: "stack",

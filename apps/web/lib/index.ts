@@ -9,3 +9,4 @@ export * from "./comment-view";
 export * from "./format";
 export * from "./home-feed";
 export * from "./item-social";
+export * from "./takes";

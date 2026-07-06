@@ -1,10 +1,9 @@
 import { test, expect, beforeAll } from "bun:test";
 import { rmSync } from "node:fs";
 
-/** Item-page social surface (ticket 0026): posts about an item + who runs it. */
+/** Item-page practitioner signal (ticket 0026): who runs the tool. */
 const DB_PATH = `/tmp/aix-item-social-test-${process.pid}.db`;
 
-let listPostsByItem: typeof import("./item-social").listPostsByItem;
 let itemStackSummary: typeof import("./item-social").itemStackSummary;
 let db: ReturnType<typeof import("@aix/db").getDb>;
 
@@ -15,8 +14,8 @@ beforeAll(async () => {
   process.env.AIX_DB_PATH = DB_PATH;
 
   const { runMigrations } = await import("./migrate");
-  const { getDb, users, items, posts, stackItems } = await import("@aix/db");
-  ({ listPostsByItem, itemStackSummary } = await import("./item-social"));
+  const { getDb, users, items, stackItems } = await import("@aix/db");
+  ({ itemStackSummary } = await import("./item-social"));
   runMigrations();
   db = getDb();
 
@@ -40,25 +39,12 @@ beforeAll(async () => {
     })
     .run();
 
-  db.insert(posts)
-    .values({ id: "p1", authorId: "u1", itemId: ITEM, body: "about x", createdAt: 100 })
-    .run();
-  db.insert(posts)
-    .values({ id: "p2", authorId: "u2", itemId: null, body: "unrelated", createdAt: 200 })
-    .run();
-
   db.insert(stackItems)
     .values({ id: "s1", userId: "u1", itemId: ITEM, status: "using", take: "love it" })
     .run();
   db.insert(stackItems)
     .values({ id: "s2", userId: "u2", itemId: ITEM, status: "dropped", take: null })
     .run();
-});
-
-test("listPostsByItem returns only posts attached to the item, with authors", () => {
-  const rows = listPostsByItem(ITEM);
-  expect(rows.map((r) => r.post.id)).toEqual(["p1"]);
-  expect(rows[0]!.author.username).toBe("one");
 });
 
 test("itemStackSummary counts runners and surfaces takes with usernames", () => {

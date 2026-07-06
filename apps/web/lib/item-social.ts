@@ -1,24 +1,10 @@
 import { and, desc, eq, isNotNull } from "drizzle-orm";
-import { getDb, items, posts, stackItems, users, type Post, type User } from "@aix/db";
+import { getDb, stackItems, users } from "@aix/db";
 
 /**
- * The item page's social surface (ticket 0026): the discussion *around* a tool
- * — posts that reference it and the practitioners who actually run it.
+ * The item page's practitioner signal (ticket 0026): who actually runs the
+ * tool. Takes themselves live in lib/takes.ts (ticket 0036).
  */
-
-export type ItemPost = { post: Post; author: User };
-
-/** Posts attached to an item, newest first, with authors. */
-export function listPostsByItem(itemId: string, limit = 20): ItemPost[] {
-  return getDb()
-    .select({ post: posts, author: users })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .where(eq(posts.itemId, itemId))
-    .orderBy(desc(posts.createdAt))
-    .limit(limit)
-    .all();
-}
 
 export type StackSummary = {
   total: number;

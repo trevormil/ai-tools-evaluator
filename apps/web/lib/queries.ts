@@ -122,18 +122,6 @@ export function getPost(id: string): PostWithAuthor | undefined {
   return r ? { post: r.post, author: r.author, item: r.item } : undefined;
 }
 
-export function listPostsByAuthor(authorId: string): PostWithAuthor[] {
-  return getDb()
-    .select({ post: posts, author: users, item: items })
-    .from(posts)
-    .innerJoin(users, eq(posts.authorId, users.id))
-    .leftJoin(items, eq(posts.itemId, items.id))
-    .where(eq(posts.authorId, authorId))
-    .orderBy(desc(posts.createdAt))
-    .all()
-    .map((r) => ({ post: r.post, author: r.author, item: r.item }));
-}
-
 /* ------------------------------------------------------------ comments */
 
 export type CommentNode = { comment: Comment; author: User; children: CommentNode[] };

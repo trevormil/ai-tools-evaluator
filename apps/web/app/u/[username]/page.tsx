@@ -2,14 +2,13 @@ import { notFound } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth";
 import {
   getUserByUsername,
-  listPostsByAuthor,
   listItemsByPoster,
   listSubmissionsByUser,
   followCounts,
   isFollowing,
-  userVotes,
 } from "@/lib/queries";
-import { PostCard } from "@/components/post-card";
+import { getUserTakes } from "@/lib/takes";
+import { TakeCard } from "@/components/take-card";
 import { SubmissionRow } from "@/components/submission-row";
 import { ItemCard } from "@/components/item-card";
 import { FollowButton } from "@/components/follow-button";
@@ -47,18 +46,18 @@ export default async function ProfilePage({
 
   const viewer = await getCurrentUser();
   const isSelf = viewer?.id === profile.id;
-  const posts = listPostsByAuthor(profile.id);
+  const takes = getUserTakes(profile.id);
   const stack = getUserStack(profile.id);
   const articles = listArticlesByAuthor(profile.id);
   const submittedItems = listItemsByPoster(profile.id);
   const submissions = isSelf ? listSubmissionsByUser(profile.id) : [];
   const counts = followCounts(profile.id);
   const following = viewer && !isSelf ? isFollowing(viewer.id, profile.id) : false;
-  const myVotes = viewer ? userVotes(viewer.id, "post") : {};
   const links = getProfileLinks(profile.id);
   const linksByKind = Object.fromEntries(links.map((l) => [l.kind, l.url]));
 
-  const postsTab = (
+  // Takes lead the profile (ticket 0036): @user's word on the tools they run.
+  const takesTab = (
     <section className="flex flex-col gap-6">
       {isSelf && submissions.length > 0 && (
         <div>
@@ -76,7 +75,7 @@ export default async function ProfilePage({
       {submittedItems.length > 0 && (
         <div>
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-            Published items
+            Tools they brought in
           </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {submittedItems.map((item) => (
@@ -88,20 +87,32 @@ export default async function ProfilePage({
 
       <div>
         <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
-          Posts
+          Takes
         </h3>
-        {posts.length === 0 ? (
-          <p className="text-sm text-neutral-500">No posts yet.</p>
+        {takes.length === 0 ? (
+          <p className="text-sm text-neutral-500">
+            No takes yet{isSelf ? " — visit a tool page and add yours." : "."}
+          </p>
         ) : (
           <div className="flex flex-col gap-3">
-            {posts.map((p) => (
-              <PostCard
-                key={p.post.id}
-                post={p.post}
-                author={p.author}
-                item={p.item}
-                myVote={myVotes[p.post.id] ?? 0}
-                signedIn={!!viewer}
+            {takes.map((t) => (
+              <TakeCard
+                key={t.id}
+                username={profile.username}
+                avatarUrl={profile.avatarUrl}
+                status={t.status}
+                rating={t.rating}
+                take={t.take}
+                updatedAt={t.updatedAt}
+                tool={
+                  t.item
+                    ? {
+                        slug: t.item.slug,
+                        title: t.item.title,
+                        coverImageUrl: t.item.coverImageUrl,
+                      }
+                    : { slug: null, title: t.toolName ?? "Unknown tool", coverImageUrl: null }
+                }
               />
             ))}
           </div>
@@ -113,7 +124,7 @@ export default async function ProfilePage({
   const activity = getUserActivity(profile.id);
 
   const tabs: ProfileTab[] = [
-    { key: "posts", label: "Posts", content: postsTab },
+    { key: "takes", label: "Takes", content: takesTab },
     {
       key: "stack",
       label: "My Stack",
