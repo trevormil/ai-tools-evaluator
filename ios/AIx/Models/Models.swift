@@ -178,6 +178,19 @@ struct ItemSource: Codable, Hashable {
     let authors: [String]?
 }
 
+/// Decision layer (ticket 0039). Mirrors `Evaluation.quickstart` — optional.
+struct Quickstart: Codable, Hashable {
+    let install: String
+    let requires: [String]?
+}
+
+/// Mirrors `Evaluation.decision` — optional. Adopt-or-skip in one look.
+struct Decision: Codable, Hashable {
+    let adoptIf: [String]
+    let skipIf: [String]
+    let insteadOf: String?
+}
+
 /// The five required plaintext explanations. Mirrors `Evaluation.body`.
 struct EvaluationBody: Codable, Hashable {
     let whatItIs: String
@@ -245,6 +258,8 @@ struct Evaluation: Codable, Hashable, Identifiable {
     let overallScore: Int
     let tagline: String
     let body: EvaluationBody
+    let quickstart: Quickstart?
+    let decision: Decision?
     let media: [MediaAsset]
     let evaluatedBy: String
     let model: String?

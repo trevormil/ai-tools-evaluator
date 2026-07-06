@@ -41,6 +41,10 @@ struct ItemDetailView: View {
             VStack(alignment: .leading, spacing: 20) {
                 cover(eval)
                 header(eval)
+                if eval.quickstart != nil || eval.decision != nil {
+                    Divider()
+                    makeTheCall(eval)
+                }
                 Divider()
                 bodySections(eval)
                 Divider()
@@ -122,6 +126,67 @@ struct ItemDetailView: View {
                         .padding(.vertical, 3)
                         .background(Color.primary.opacity(0.07), in: Capsule())
                 }
+            }
+        }
+    }
+
+    // MARK: Decision layer ("Make the call", ticket 0039)
+
+    @ViewBuilder
+    private func makeTheCall(_ eval: Evaluation) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Make the call")
+                .font(.title3.weight(.bold))
+
+            if let quickstart = eval.quickstart {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Text(quickstart.install)
+                            .font(.system(.footnote, design: .monospaced))
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                        Spacer()
+                        Button {
+                            UIPasteboard.general.string = quickstart.install
+                        } label: {
+                            Image(systemName: "doc.on.doc")
+                                .font(.caption)
+                        }
+                        .accessibilityLabel("Copy install command")
+                    }
+                    .padding(10)
+                    .background(Color.primary.opacity(0.06), in: RoundedRectangle(cornerRadius: 8))
+                    if let requires = quickstart.requires, !requires.isEmpty {
+                        Text("needs: \(requires.joined(separator: " · "))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
+            if let decision = eval.decision {
+                decisionList("Adopt if", decision.adoptIf, symbol: "plus.circle.fill", tint: .green)
+                decisionList("Skip if", decision.skipIf, symbol: "minus.circle.fill", tint: .red)
+                if let insteadOf = decision.insteadOf {
+                    (Text("Instead of ").foregroundStyle(.secondary) + Text(insteadOf).bold())
+                        .font(.footnote)
+                }
+            }
+        }
+    }
+
+    private func decisionList(_ title: String, _ lines: [String], symbol: String, tint: Color) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(tint)
+            ForEach(lines, id: \.self) { line in
+                Label(line, systemImage: symbol)
+                    .font(.footnote)
+                    .foregroundStyle(.primary)
+                    .labelStyle(.titleAndIcon)
+                    .imageScale(.small)
+                    .tint(tint)
             }
         }
     }
