@@ -108,6 +108,7 @@ test("the upgraded item keeps its social data and scores render real values", as
   expect(item.overallScore).toBe(80);
   expect(item.verdict).toBe("worthwhile");
   expect(item.readmeMd).toContain("Their words"); // README persisted at publish
+  expect(item.scoredAt).toBeGreaterThan(0); // judged-at stamped on the upgrade (0040)
   const comments = db
     .select()
     .from(schema.comments)

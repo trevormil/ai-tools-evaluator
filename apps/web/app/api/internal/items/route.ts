@@ -80,6 +80,7 @@ export async function POST(req: Request) {
         readmeMd: readmeMd ?? existing.readmeMd,
         model: evaluation.model ?? null,
         scoreStatus: "scored",
+        scoredAt: nowSec, // judged now — the pending→scored transition (ticket 0040)
         score: hotScore(existing.upvotes, existing.createdAt),
       })
       .where(eq(items.id, existing.id))
@@ -114,6 +115,7 @@ export async function POST(req: Request) {
       readmeMd: readmeMd ?? null,
       model: evaluation.model ?? null,
       published: true,
+      scoredAt: nowSec, // scanner-discovered items are born judged (ticket 0040)
       score: hotScore(0, nowSec),
       createdAt: nowSec,
     })
