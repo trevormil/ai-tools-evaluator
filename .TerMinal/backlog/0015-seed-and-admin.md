@@ -1,7 +1,7 @@
 ---
 id: 015
 title: "Seed data, admin/mod tooling, ranking cron"
-status: open
+status: in-progress
 priority: medium
 horizon: next
 hitl: false

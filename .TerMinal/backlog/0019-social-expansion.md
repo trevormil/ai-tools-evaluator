@@ -1,7 +1,7 @@
 ---
 id: 19
 title: "Full social layer: reposts, DMs, activity feed, notifications"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

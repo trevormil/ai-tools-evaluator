@@ -1,7 +1,7 @@
 ---
 id: 21
 title: "Native SwiftUI iOS app (reads public API v1)"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

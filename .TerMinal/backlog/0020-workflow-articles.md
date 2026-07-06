@@ -1,7 +1,7 @@
 ---
 id: 20
 title: "My Workflow tab + long-form markdown articles"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

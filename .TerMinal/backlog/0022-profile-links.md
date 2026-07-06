@@ -1,7 +1,7 @@
 ---
 id: 22
 title: "Profile links — GitHub, X, LinkedIn, Substack, etc (unverified)"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

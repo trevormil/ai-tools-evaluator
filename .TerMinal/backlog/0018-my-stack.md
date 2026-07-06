@@ -1,7 +1,7 @@
 ---
 id: 18
 title: "Profiles: My Stack — tools you run + your take"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false
