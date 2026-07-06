@@ -97,7 +97,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
             <circle cx="4.6" cy="9.4" r="1.15" fill="currentColor" />
             <circle cx="9.4" cy="9.4" r="1.15" fill="currentColor" />
           </svg>
-          Pick one at random
+          Shuffle
         </a>
       </div>
 

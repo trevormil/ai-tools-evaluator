@@ -39,16 +39,17 @@ beforeAll(async () => {
   }
 });
 
-test("randomToolSlug returns a published, scored tool (ticket 0038)", async () => {
-  const { randomToolSlug } = await import("./queries");
-  // Draw repeatedly: always a QCount slug that is published (it6 is unpublished
-  // and other suites' items may be pending/scored — scored-only is asserted by
-  // never drawing this suite's unpublished row).
-  for (let i = 0; i < 10; i++) {
-    const slug = randomToolSlug();
-    expect(slug).toBeTruthy();
-    expect(slug).not.toBe("tool-6"); // the unpublished row
+test("shuffledTools deals a shuffled, scored-only, published deck (ticket 0038)", async () => {
+  const { shuffledTools } = await import("./queries");
+  const deck = shuffledTools(100);
+  expect(deck.length).toBeGreaterThan(0);
+  for (const item of deck) {
+    expect(item.published).toBe(true);
+    expect(item.scoreStatus).toBe("scored"); // pending rows have nothing to learn yet
   }
+  expect(deck.map((i) => i.slug)).not.toContain("tool-6"); // the unpublished row
+  // Limit is respected.
+  expect(shuffledTools(3).length).toBe(3);
 });
 
 // Scoped by a unique search needle: bun runs all test files in one process, so

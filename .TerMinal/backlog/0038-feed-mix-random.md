@@ -24,11 +24,11 @@ Two asks from the user:
    discussions.** Products + takes are already first-class; comment
    activity is a dead label ("commented on X"). Make discussion entries
    carry the comment body + the tool context as an embedded card.
-2. **Random mode**: a "pick one at random" affordance — /random routes to a
-   random published (scored-first) tool page so you can just learn one.
-   Entry points: home header + desktop nav.
+2. **Random mode**: /random is a snap-scrolling SHUFFLE DECK — full-height
+   digest cards (stamp, meter, what-it-is, devil's advocate, top take) you
+   scroll through one at a time; reload re-deals. Entry: home header + nav.
 
 ## Acceptance
 - A comment on an item shows in /activity with the comment text embedded.
-- /random 307s to a random /item/<slug>; button on home + nav link.
+- /random renders a multi-card snap deck; each card opens the full page.
 - e2e covers both.

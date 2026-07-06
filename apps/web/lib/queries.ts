@@ -80,26 +80,18 @@ export function listItems(f: ItemFilters = {}): Item[] {
 }
 
 /**
- * Random mode (ticket 0038): one published tool to just go learn. Prefers
- * scored items (they have the full write-up); falls back to any published.
+ * Random mode (ticket 0038): a shuffled deck of published, scored tools to
+ * scroll through and learn one at a time. Scored-only — pending submissions
+ * have no write-up to learn from yet.
  */
-export function randomToolSlug(): string | undefined {
-  const db = getDb();
-  const scored = db
-    .select({ slug: items.slug })
+export function shuffledTools(limit = 20): Item[] {
+  return getDb()
+    .select()
     .from(items)
     .where(and(eq(items.published, true), eq(items.scoreStatus, "scored")))
     .orderBy(sql`random()`)
-    .limit(1)
-    .get();
-  if (scored) return scored.slug;
-  return db
-    .select({ slug: items.slug })
-    .from(items)
-    .where(eq(items.published, true))
-    .orderBy(sql`random()`)
-    .limit(1)
-    .get()?.slug;
+    .limit(limit)
+    .all();
 }
 
 export function getItemBySlug(slug: string): Item | undefined {

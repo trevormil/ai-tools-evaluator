@@ -67,11 +67,15 @@ test("discussions surface in the feed with their content (ticket 0038)", async (
   await expect(page.getByText(unique).first()).toBeVisible();
 });
 
-test("random mode lands on a tool page (ticket 0038)", async ({ page }) => {
+test("random mode is a scrollable shuffle deck (ticket 0038)", async ({ page }) => {
   await page.goto("/random");
+  await expect(page.getByText("Deal me a tool.")).toBeVisible();
+  // A deck of full-height cards, position readout on the first one.
+  await expect(page.getByText(/Shuffle · 1 \//).first()).toBeVisible();
+  const open = page.getByRole("link", { name: /open the full evaluation/i });
+  expect(await open.count()).toBeGreaterThan(1); // multiple cards to scroll through
+  await open.first().click();
   await expect(page).toHaveURL(/\/item\/[a-z0-9-]+/);
-  // It's a scored tool — the readout rail is present.
-  await expect(page.getByText("Readout")).toBeVisible();
 });
 
 test("quote-repost from the timeline and see the quote in the feed", async ({ page }) => {
