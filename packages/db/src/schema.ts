@@ -221,7 +221,7 @@ export const stackItems = sqliteTable(
     index("stack_user_idx").on(t.userId),
     index("stack_item_idx").on(t.itemId),
     uniqueIndex("stack_user_item_idx").on(t.userId, t.itemId),
-    uniqueIndex("stack_user_tool_idx").on(t.userId, t.toolName),
+    uniqueIndex("stack_user_tool_idx").on(t.userId, sql`lower(${t.toolName})`),
   ],
 );
 

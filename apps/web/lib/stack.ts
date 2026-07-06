@@ -1,4 +1,4 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { getDb, stackItems, items, type StackItem, type Item } from "@aix/db";
 import { STACK_STATUSES, STACK_STATUS_LABELS, type StackStatus } from "./stack-types";
 
@@ -49,7 +49,7 @@ export function upsertStackEntry(userId: string, input: UpsertStackInput): Stack
   const existing = itemId
     ? db.select().from(stackItems).where(and(eq(stackItems.userId, userId), eq(stackItems.itemId, itemId))).get()
     : toolName
-      ? db.select().from(stackItems).where(and(eq(stackItems.userId, userId), eq(stackItems.toolName, toolName))).get()
+      ? db.select().from(stackItems).where(and(eq(stackItems.userId, userId), sql`lower(${stackItems.toolName}) = lower(${toolName})`)).get()
       : undefined;
 
   if (existing) {
