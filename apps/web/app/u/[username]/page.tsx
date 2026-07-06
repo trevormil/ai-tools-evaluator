@@ -10,6 +10,7 @@ import {
   userVotes,
 } from "@/lib/queries";
 import { PostCard } from "@/components/post-card";
+import { SubmissionRow } from "@/components/submission-row";
 import { ItemCard } from "@/components/item-card";
 import { FollowButton } from "@/components/follow-button";
 import { StackSection } from "@/components/stack-section";
@@ -55,10 +56,7 @@ export default async function ProfilePage({ params }: { params: Params }) {
           </h3>
           <ul className="flex flex-col gap-2">
             {submissions.map((s) => (
-              <li key={s.id} className="card flex items-center justify-between gap-3 p-3 text-sm">
-                <span className="truncate">{s.url}</span>
-                <span className="chip">{s.status}</span>
-              </li>
+              <SubmissionRow key={s.id} submission={s} />
             ))}
           </ul>
         </div>

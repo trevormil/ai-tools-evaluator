@@ -21,14 +21,18 @@ export function SubmitForm() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ url, note }),
       });
-      const data = (await res.json().catch(() => ({}))) as { error?: string; duplicate?: boolean };
+      const data = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        duplicate?: boolean;
+        submission?: { reason?: string | null };
+      };
       if (res.ok) {
         setUrl("");
         setNote("");
         setMsg({
           ok: true,
           text: data.duplicate
-            ? "Already in the queue — thanks!"
+            ? (data.submission?.reason ?? "Already known — thanks!")
             : "Queued! The scanner will evaluate it on its next run.",
         });
         router.refresh();

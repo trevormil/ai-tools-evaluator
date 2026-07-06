@@ -31,7 +31,7 @@ export type ItemFilters = {
   limit?: number;
 };
 
-export function listItems(f: ItemFilters = {}): Item[] {
+function itemConds(f: ItemFilters) {
   const conds = [eq(items.published, true)];
   if (f.category) conds.push(eq(items.category, f.category));
   if (f.integration) conds.push(eq(items.integration, f.integration));
@@ -47,6 +47,21 @@ export function listItems(f: ItemFilters = {}): Item[] {
     );
     if (textMatch) conds.push(textMatch);
   }
+  return conds;
+}
+
+/** True total for a filter set — the directory shows real counts, not page size. */
+export function countItems(f: ItemFilters = {}): number {
+  const row = getDb()
+    .select({ n: sql<number>`count(*)` })
+    .from(items)
+    .where(and(...itemConds(f)))
+    .get();
+  return row?.n ?? 0;
+}
+
+export function listItems(f: ItemFilters = {}): Item[] {
+  const conds = itemConds(f);
 
   const order =
     f.sort === "new"

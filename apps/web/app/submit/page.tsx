@@ -1,6 +1,7 @@
 import { getCurrentUser } from "@/lib/auth";
 import { listSubmissionsByUser } from "@/lib/queries";
 import { SubmitForm } from "@/components/submit-form";
+import { SubmissionRow } from "@/components/submission-row";
 
 export const dynamic = "force-dynamic";
 
@@ -36,10 +37,7 @@ export default async function SubmitPage() {
           </h2>
           <ul className="flex flex-col gap-2">
             {submissions.map((s) => (
-              <li key={s.id} className="card flex items-center justify-between gap-3 p-3 text-sm">
-                <span className="truncate">{s.url}</span>
-                <span className="chip">{s.status}</span>
-              </li>
+              <SubmissionRow key={s.id} submission={s} />
             ))}
           </ul>
         </section>

@@ -22,3 +22,4 @@ export { ItemFeedCard } from "./item-feed-card";
 export { ActivityCard } from "./activity-card";
 export { InlineReply } from "./inline-reply";
 export { TrendRow } from "./trend-row";
+export { SubmissionRow } from "./submission-row";

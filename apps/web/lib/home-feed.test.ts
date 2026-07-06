@@ -154,13 +154,25 @@ test("published items enter the timeline as item entries; unpublished never do",
 });
 
 test("entries are strictly newest-first across kinds", () => {
-  const { entries } = getUnifiedFeed(null, { mode: "all", limit: 50 });
+  const { entries } = getUnifiedFeed(null, { mode: "all", limit: 100 });
   const times = entries.map((e) => e.createdAt);
   expect([...times].sort((a, b) => b - a)).toEqual(times);
-  // The stack activity (T0+80) precedes the repost (T0+70), which precedes bob's post (T0+60),
-  // which precedes the item (T0+50).
-  const keys = entries.map((e) => e.kind);
-  expect(keys.slice(0, 4)).toEqual(["activity", "activity", "post", "item"]);
+  // Relative order of THIS suite's entries (other suites share the process-wide
+  // test DB): stack activity (T0+80) > repost (T0+70) > bob's post (T0+60) > item (T0+50).
+  const mine = entries
+    .map((e) =>
+      e.kind === "post" && e.post.id === "post_bob"
+        ? "bob-post"
+        : e.kind === "item" && e.item.id === "item_pub"
+          ? "pub-item"
+          : e.kind === "activity" && e.activity.id === "act_stack"
+            ? "stack"
+            : e.kind === "activity" && e.activity.id === "act_repost"
+              ? "repost"
+              : null,
+    )
+    .filter(Boolean);
+  expect(mine).toEqual(["stack", "repost", "bob-post", "pub-item"]);
 });
 
 test("a repost activity embeds the original post and carries the quote", () => {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { and, eq, inArray } from "drizzle-orm";
-import { getDb, submissions } from "@aix/db";
+import { getDb, items, submissions } from "@aix/db";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
 
@@ -12,30 +12,53 @@ const Body = z.object({
   note: z.string().max(1000).optional(),
 });
 
-/** Public (session-authed) link submission → inserts a `queued` row for the scanner. */
+/**
+ * Public (session-authed) link submission → inserts a `queued` row for the
+ * scanner. Duplicates are PERSISTED as `duplicate` rows with a reason (ticket
+ * 0028) so the submitter sees the outcome instead of a silent no-op.
+ */
 export async function POST(req: Request) {
   try {
     const user = await requireUser();
     const { url, note } = Body.parse(await req.json());
     const db = getDb();
 
-    // Dedup: if the same URL is already pending, don't enqueue a second copy.
-    const existing = db
-      .select({ id: submissions.id })
-      .from(submissions)
-      .where(and(eq(submissions.url, url), inArray(submissions.status, ["queued", "processing"])))
+    // Already catalogued? Point at the existing evaluation.
+    const catalogued = db
+      .select({ slug: items.slug, title: items.title })
+      .from(items)
+      .where(eq(items.url, url))
       .get();
-    if (existing) {
-      return NextResponse.json({ duplicate: true }, { status: 200 });
-    }
+    // Already pending? Don't enqueue a second copy.
+    const pending = catalogued
+      ? undefined
+      : db
+          .select({ id: submissions.id })
+          .from(submissions)
+          .where(
+            and(eq(submissions.url, url), inArray(submissions.status, ["queued", "processing"])),
+          )
+          .get();
 
+    const duplicate = !!catalogued || !!pending;
     const submission = db
       .insert(submissions)
-      .values({ url, note: note ?? null, source: "web", submittedById: user.id, status: "queued" })
+      .values({
+        url,
+        note: note ?? null,
+        source: "web",
+        submittedById: user.id,
+        status: duplicate ? "duplicate" : "queued",
+        reason: catalogued
+          ? `Already catalogued as “${catalogued.title}” (/item/${catalogued.slug}).`
+          : pending
+            ? "This URL is already in the queue."
+            : null,
+      })
       .returning()
       .get();
 
-    return NextResponse.json({ submission }, { status: 201 });
+    return NextResponse.json({ submission, duplicate }, { status: duplicate ? 200 : 201 });
   } catch (err) {
     return errorResponse(err);
   }
