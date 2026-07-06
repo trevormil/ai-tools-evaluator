@@ -6,25 +6,16 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        // Heavy grotesk for headings/body; monospace carries the "data" language.
-        sans: [
-          "ui-sans-serif",
-          "system-ui",
-          "-apple-system",
-          "BlinkMacSystemFont",
-          "Segoe UI",
-          "Helvetica Neue",
-          "Arial",
-          "sans-serif",
-        ],
+        // "Test Bench" trio (loaded via next/font in app/layout.tsx):
+        // Archivo display, Instrument Sans body, IBM Plex Mono readouts.
+        display: ["var(--font-display)", "ui-sans-serif", "system-ui", "sans-serif"],
+        sans: ["var(--font-sans)", "ui-sans-serif", "system-ui", "Segoe UI", "sans-serif"],
         mono: [
+          "var(--font-mono)",
           "ui-monospace",
           "SFMono-Regular",
-          "SF Mono",
-          "JetBrains Mono",
           "Menlo",
           "Consolas",
-          "Liberation Mono",
           "monospace",
         ],
       },

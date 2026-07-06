@@ -1,14 +1,11 @@
-import { scoreBand } from "@aix/core";
-import { scoreColorClass } from "@/lib/format";
+import { SegMeter } from "./seg-meter";
 
+/** Score readout: segmented meter + mono value (the bench's one gauge). */
 export function ScoreBar({ score, showValue = true }: { score: number; showValue?: boolean }) {
-  const band = scoreBand(score);
   return (
     <div className="flex items-center gap-2.5">
-      <div className="meter-track">
-        <div className={`meter-fill ${scoreColorClass(band)}`} style={{ width: `${score}%` }} />
-      </div>
-      {showValue && <span className="data w-8 text-right text-xs font-bold">{score}</span>}
+      <SegMeter score={score} size="sm" className="flex-1" />
+      {showValue && <span className="data w-8 text-right text-xs font-semibold">{score}</span>}
     </div>
   );
 }

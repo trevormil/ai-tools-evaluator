@@ -1,10 +1,9 @@
 import {
   AUDIENCE_AXES,
   PRIMARY_AUDIENCE_LABELS,
-  scoreBand,
   type AudienceFit as AudienceFitData,
 } from "@aix/core";
-import { scoreColorClass } from "@/lib/format";
+import { SegMeter } from "./seg-meter";
 
 /** "Who it's for" — independent AI-engineer vs vibe-coder fit scores + rationale. */
 export function AudienceFit({ audience }: { audience: AudienceFitData }) {
@@ -26,21 +25,18 @@ export function AudienceFit({ audience }: { audience: AudienceFitData }) {
       <div className="grid gap-4 sm:grid-cols-2">
         {AUDIENCE_AXES.map((axis) => {
           const v = values[axis.key] ?? 0;
-          const band = scoreBand(v);
           const isTop = v === top;
           return (
             <div
               key={axis.key}
-              className={`rounded-xl border p-4 ${isTop ? "border-[var(--brand)]" : "border-token"}`}
+              className={`rounded-lg border p-4 ${isTop ? "border-[var(--brand)]" : "border-token"}`}
               style={{ background: "var(--surface-2)" }}
             >
               <div className="flex items-baseline justify-between">
                 <span className="text-sm font-semibold">{axis.label}</span>
                 <span className="data text-2xl font-bold leading-none">{v}</span>
               </div>
-              <div className="meter-track mt-3">
-                <div className={`meter-fill ${scoreColorClass(band)}`} style={{ width: `${v}%` }} />
-              </div>
+              <SegMeter score={v} className="mt-3" />
               <p className="mt-2 text-xs text-muted">{axis.desc}</p>
             </div>
           );
