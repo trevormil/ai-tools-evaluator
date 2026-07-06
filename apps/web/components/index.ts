@@ -33,3 +33,4 @@ export { DiscoveryCard } from "./discovery-card";
 export { CopyButton } from "./copy-button";
 export { IntegrationDiagram } from "./integration-diagram";
 export { ContentTabs, type ContentTab } from "./content-tabs";
+export { RecapView } from "./recap-view";
