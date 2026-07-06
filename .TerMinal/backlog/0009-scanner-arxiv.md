@@ -1,7 +1,7 @@
 ---
 id: 009
 title: "Scanner: arXiv paper discovery"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

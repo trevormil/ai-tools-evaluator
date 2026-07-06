@@ -1,7 +1,7 @@
 ---
 id: 005
 title: "Web: GitHub OAuth + server sessions"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

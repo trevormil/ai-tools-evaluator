@@ -1,7 +1,7 @@
 ---
 id: 002
 title: "Web: Next.js 15 + Tailwind scaffold, mobile-first shell"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

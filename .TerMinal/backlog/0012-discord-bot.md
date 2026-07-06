@@ -1,7 +1,7 @@
 ---
 id: 012
 title: "Discord bot: daily digest, link submissions, lookups"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

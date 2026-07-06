@@ -1,7 +1,7 @@
 ---
 id: 007
 title: "Web: link-drop suggestion queue (form + API)"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

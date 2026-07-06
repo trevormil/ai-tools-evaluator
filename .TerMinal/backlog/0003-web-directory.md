@@ -1,7 +1,7 @@
 ---
 id: 003
 title: "Web: directory list + filters + item detail scorecard page"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

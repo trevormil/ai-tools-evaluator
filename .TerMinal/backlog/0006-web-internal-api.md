@@ -1,7 +1,7 @@
 ---
 id: 006
 title: "Web: authenticated internal API for scanner + bot writes"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

@@ -1,7 +1,7 @@
 ---
 id: 004
 title: "Web: posts feed, comments, votes, profiles, follows"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

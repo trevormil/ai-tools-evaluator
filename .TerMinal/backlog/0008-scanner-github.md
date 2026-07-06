@@ -1,7 +1,7 @@
 ---
 id: 008
 title: "Scanner: GitHub trending discovery, rate-limit-resilient"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false

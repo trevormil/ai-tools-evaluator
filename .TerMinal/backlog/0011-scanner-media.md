@@ -1,7 +1,7 @@
 ---
 id: 011
 title: "Scanner: media attachment (images/video per item)"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false

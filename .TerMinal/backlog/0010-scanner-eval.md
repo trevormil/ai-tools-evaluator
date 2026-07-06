@@ -1,7 +1,7 @@
 ---
 id: 010
 title: "Scanner: Claude evaluation pipeline + dedup + daily cap + .md export"
-status: open
+status: in-progress
 priority: critical
 horizon: now
 hitl: false

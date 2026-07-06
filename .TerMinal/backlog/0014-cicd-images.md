@@ -1,7 +1,7 @@
 ---
 id: 014
 title: "CI/CD: Dockerfiles + GHCR build/push workflow"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false
