@@ -19,7 +19,7 @@ import {
   type Evaluation as Eval,
   type MetricKey,
 } from "@aix/core";
-import { getDb, items, users, posts, comments } from "@aix/db";
+import { getDb, items, users, posts, comments, stackItems, activities } from "@aix/db";
 
 /* -------------------------------------------------------- hot ranking (local)
  * Mirrors apps/web/lib/ranking.ts. Duplicated (a few lines) so the seed doesn't
@@ -1070,6 +1070,59 @@ function seed() {
       .run();
 
     socialInserted = 2;
+
+    // Takes — the social primitive (ticket 0036): honest blurbs on tools the
+    // demo users run, plus feed activities so the home pulse rail is alive.
+    const zod = db.select().from(items).where(eq(items.slug, "zod")).get();
+    const takeSeeds = [
+      {
+        userId: demoId,
+        item: ripgrep,
+        status: "using",
+        rating: 5,
+        take: "In every repo I touch. The agent finds the right code on the first try instead of grepping node_modules for a minute.",
+        at: nowSec - 1 * DAY + 4000,
+      },
+      {
+        userId: demoId,
+        item: zod,
+        status: "using",
+        rating: 4,
+        take: "Every LLM tool-call boundary in our stack goes through a zod schema. Malformed model output stopped being a production incident.",
+        at: nowSec - 3600 * 5,
+      },
+      {
+        userId: botId,
+        item: langchain,
+        status: "dropped",
+        rating: 2,
+        take: "Ran it for two quarters. The abstractions aged worse than the code they replaced — back to the raw SDK.",
+        at: nowSec - 3600 * 2,
+      },
+    ] as const;
+    for (const t of takeSeeds) {
+      if (!t.item) continue;
+      db.insert(stackItems)
+        .values({
+          userId: t.userId,
+          itemId: t.item.id,
+          status: t.status,
+          rating: t.rating,
+          take: t.take,
+          createdAt: t.at,
+          updatedAt: t.at,
+        })
+        .run();
+      db.insert(activities)
+        .values({
+          actorId: t.userId,
+          verb: "stack_added",
+          objectType: "item",
+          objectId: t.item.id,
+          createdAt: t.at,
+        })
+        .run();
+    }
   }
 
   console.log(

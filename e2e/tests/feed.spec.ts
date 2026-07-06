@@ -39,7 +39,11 @@ test("feed tabs switch between Everything and Following (no silent fallback)", a
 
 test("reply to a legacy post inline from the timeline", async ({ page }) => {
   await page.goto("/activity");
-  const postCard = page.locator("div.card", { hasText: "@aixdemo" }).first();
+  // Specifically a POST card (has a Reply button) — take activities also carry @aixdemo.
+  const postCard = page
+    .locator("div.card", { hasText: "@aixdemo" })
+    .filter({ has: page.getByRole("button", { name: "Reply" }) })
+    .first();
   await postCard.getByRole("button", { name: "Reply" }).click();
   const unique = `inline reply ${Date.now()}`;
   await postCard.getByPlaceholder(/write a reply/i).fill(unique);
@@ -52,7 +56,10 @@ test("reply to a legacy post inline from the timeline", async ({ page }) => {
 
 test("quote-repost from the timeline and see the quote in the feed", async ({ page }) => {
   await page.goto("/activity");
-  const postCard = page.locator("div.card", { hasText: "@aixdemo" }).first();
+  const postCard = page
+    .locator("div.card", { hasText: "@aixdemo" })
+    .filter({ has: page.getByRole("button", { name: "Reply" }) })
+    .first();
   await postCard.getByRole("button", { name: /reposts/ }).click();
   await postCard.getByRole("button", { name: /quote/i }).click();
   const unique = `hot take ${Date.now()}`;

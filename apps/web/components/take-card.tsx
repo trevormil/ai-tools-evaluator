@@ -36,13 +36,15 @@ export function TakeCard({
             {username.slice(0, 2).toUpperCase()}
           </span>
         )}
-        <Link
-          href={`/u/${username}`}
-          className="font-semibold text-neutral-800 hover:underline dark:text-neutral-100"
-        >
-          @{username}
-        </Link>
-        <span className="text-faint">&apos;s take</span>
+        <span className="min-w-0 truncate">
+          <Link
+            href={`/u/${username}`}
+            className="font-semibold text-neutral-800 hover:underline dark:text-neutral-100"
+          >
+            @{username}
+          </Link>
+          <span className="text-faint">&apos;s take</span>
+        </span>
         {followedByViewer && <span className="chip !text-brand">following</span>}
         <span className="ml-auto shrink-0 text-neutral-400">{timeAgo(updatedAt)}</span>
       </div>
