@@ -14,6 +14,10 @@ import {
 const VERDICTS = Verdict.options;
 const SORTS = ["hot", "new", "top"] as const;
 
+/**
+ * The bench control strip: one prominent search field, then a compact row of
+ * scoped selects. Every control writes straight to the URL.
+ */
 export function Filters() {
   const router = useRouter();
   const params = useSearchParams();
@@ -23,31 +27,37 @@ export function Filters() {
       const next = new URLSearchParams(params.toString());
       if (value) next.set(key, value);
       else next.delete(key);
+      next.delete("page");
       router.push(`/?${next.toString()}`);
     },
     [params, router],
   );
 
   const val = (k: string) => params.get(k) ?? "";
+  const hasFilters = ["q", "category", "integration", "verdict", "audience", "minScore"].some(
+    (k) => !!params.get(k),
+  );
 
   return (
-    <div className="card flex flex-col gap-3 p-4">
+    <div className="flex flex-col gap-2">
       <input
         type="search"
         defaultValue={val("q")}
-        placeholder="Search tools…"
-        className="input"
+        placeholder="Search tools, papers, MCP servers…   ⏎"
+        className="input !rounded-xl !px-4 !py-3 text-base"
+        aria-label="Search the directory"
         onKeyDown={(e) => {
           if (e.key === "Enter") setParam("q", (e.target as HTMLInputElement).value);
         }}
       />
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="flex flex-wrap items-center gap-1.5">
         <select
-          className="input"
+          className="input !w-auto !rounded-lg !py-1.5 text-xs"
           value={val("category")}
           onChange={(e) => setParam("category", e.target.value)}
+          aria-label="Category"
         >
-          <option value="">All categories</option>
+          <option value="">Category</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {CATEGORY_LABELS[c]}
@@ -55,11 +65,12 @@ export function Filters() {
           ))}
         </select>
         <select
-          className="input"
+          className="input !w-auto !rounded-lg !py-1.5 text-xs"
           value={val("integration")}
           onChange={(e) => setParam("integration", e.target.value)}
+          aria-label="Integration"
         >
-          <option value="">All integrations</option>
+          <option value="">Integration</option>
           {INTEGRATION_KINDS.map((i) => (
             <option key={i} value={i}>
               {i}
@@ -67,11 +78,12 @@ export function Filters() {
           ))}
         </select>
         <select
-          className="input"
+          className="input !w-auto !rounded-lg !py-1.5 text-xs"
           value={val("verdict")}
           onChange={(e) => setParam("verdict", e.target.value)}
+          aria-label="Verdict"
         >
-          <option value="">All verdicts</option>
+          <option value="">Verdict</option>
           {VERDICTS.map((v) => (
             <option key={v} value={v}>
               {v}
@@ -79,11 +91,12 @@ export function Filters() {
           ))}
         </select>
         <select
-          className="input"
+          className="input !w-auto !rounded-lg !py-1.5 text-xs"
           value={val("audience")}
           onChange={(e) => setParam("audience", e.target.value)}
+          aria-label="Audience"
         >
-          <option value="">All audiences</option>
+          <option value="">Audience</option>
           {PRIMARY_AUDIENCES.map((a) => (
             <option key={a} value={a}>
               {PRIMARY_AUDIENCE_LABELS[a]}
@@ -91,9 +104,10 @@ export function Filters() {
           ))}
         </select>
         <select
-          className="input"
+          className="input !w-auto !rounded-lg !py-1.5 text-xs"
           value={val("minScore")}
           onChange={(e) => setParam("minScore", e.target.value)}
+          aria-label="Minimum score"
         >
           <option value="">Any score</option>
           {[50, 60, 70, 80, 90].map((s) => (
@@ -103,19 +117,25 @@ export function Filters() {
           ))}
         </select>
         <select
-          className="input"
+          className="input !w-auto !rounded-lg !py-1.5 text-xs"
           value={val("sort") || "hot"}
           onChange={(e) => setParam("sort", e.target.value)}
+          aria-label="Sort"
         >
           {SORTS.map((s) => (
             <option key={s} value={s}>
-              {s}
+              sort: {s}
             </option>
           ))}
         </select>
-        <button className="btn-ghost" onClick={() => router.push("/")}>
-          Reset
-        </button>
+        {hasFilters && (
+          <button
+            className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted hover:text-ink"
+            onClick={() => router.push("/")}
+          >
+            Reset
+          </button>
+        )}
       </div>
     </div>
   );

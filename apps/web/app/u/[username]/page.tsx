@@ -10,7 +10,7 @@ import {
 import { getUserTakes } from "@/lib/takes";
 import { TakeCard } from "@/components/take-card";
 import { SubmissionRow } from "@/components/submission-row";
-import { ItemCard } from "@/components/item-card";
+import { ItemRow } from "@/components/item-row";
 import { FollowButton } from "@/components/follow-button";
 import { StackSection } from "@/components/stack-section";
 import { WorkflowSection } from "@/components/workflow-section";
@@ -77,9 +77,9 @@ export default async function ProfilePage({
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
             Tools they brought in
           </h3>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="flex flex-col gap-2">
             {submittedItems.map((item) => (
-              <ItemCard key={item.id} item={item} />
+              <ItemRow key={item.id} item={item} />
             ))}
           </div>
         </div>

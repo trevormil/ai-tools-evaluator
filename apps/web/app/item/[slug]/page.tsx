@@ -19,6 +19,7 @@ import { TakeCard } from "@/components/take-card";
 import { CommentForm } from "@/components/comment-form";
 import { CommentThread } from "@/components/comment-thread";
 import { ReadmeSection } from "@/components/readme-section";
+import { SegMeter } from "@/components/seg-meter";
 import { getOrFetchReadme, prepareReadme } from "@/lib/github-readme";
 import { renderMarkdown } from "@/lib/markdown";
 import type { StackStatus } from "@/lib/stack-types";
@@ -66,6 +67,7 @@ export default async function ItemPage({ params }: { params: Params }) {
 
   return (
     <article className="flex flex-col gap-8">
+      {/* Bench header: identity + one-line judgment, actions on the same line. */}
       <header className="flex gap-4">
         <VoteButtons
           targetType="item"
@@ -74,162 +76,240 @@ export default async function ItemPage({ params }: { params: Params }) {
           initialVote={myItemVote}
           signedIn={!!user}
         />
-        <div className="flex-1">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            {pending ? (
-              <span className="chip !border-amber-500 font-bold !text-amber-600 dark:!text-amber-400">
-                Awaiting score…
-              </span>
-            ) : (
-              <>
-                <VerdictBadge verdict={item.verdict} />
-                <span className="chip">
-                  {CATEGORY_LABELS[item.category as Category] ?? item.category}
-                </span>
-                <span className="chip">{item.integration}</span>
-                <span className="chip">noise {item.noiseScore}/100</span>
-                <span className="chip !border-[var(--brand)] !text-brand font-bold">
-                  overall {item.overallScore}/100
-                </span>
-              </>
-            )}
-          </div>
-          <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-start gap-4">
             {item.coverImageUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={item.coverImageUrl}
                 alt=""
-                className="h-14 w-14 rounded-xl object-cover"
+                className="h-16 w-16 rounded-xl object-cover"
                 style={{ background: "var(--surface-2)" }}
               />
             )}
             <div className="min-w-0">
-              <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{item.title}</h1>
+              <div className="flex flex-wrap items-center gap-2.5">
+                <h1 className="font-display text-2xl font-black tracking-tight sm:text-3xl">
+                  {item.title}
+                </h1>
+                {pending ? (
+                  <span className="chip !border-amber-500 font-semibold !text-amber-600 dark:!text-amber-400">
+                    Awaiting score…
+                  </span>
+                ) : (
+                  <VerdictBadge verdict={item.verdict} />
+                )}
+              </div>
               <p className="mt-1.5 text-muted">{item.tagline}</p>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <UseThisButton
+                  itemId={item.id}
+                  initialUsing={myEntry?.status === "using" || myEntry?.status === "trying"}
+                  initialEntryId={myEntry?.id ?? null}
+                  initialHasTake={!!myEntry?.take}
+                  initialCount={usingCount}
+                  signedIn={!!user}
+                />
+                <a
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="link-brand font-medium"
+                >
+                  {item.kind === "arxiv_paper" ? "View paper ↗" : "Source ↗"}
+                </a>
+                <span className="text-xs">
+                  <RepostButton
+                    targetType="item"
+                    targetId={item.id}
+                    initialCount={itemReposts}
+                    initialReposted={iReposted}
+                    signedIn={!!user}
+                  />
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-            <UseThisButton
-              itemId={item.id}
-              initialUsing={myEntry?.status === "using" || myEntry?.status === "trying"}
-              initialEntryId={myEntry?.id ?? null}
-              initialHasTake={!!myEntry?.take}
-              initialCount={usingCount}
-              signedIn={!!user}
-            />
-            <a href={item.url} target="_blank" rel="noreferrer" className="link-brand font-medium">
-              {item.kind === "arxiv_paper" ? "View paper ↗" : "Source ↗"}
-            </a>
-            <span className="data text-xs text-faint">{item.externalId}</span>
-            {evaluation?.source.stars != null && (
-              <span className="data text-xs text-faint">★ {evaluation.source.stars}</span>
-            )}
-            <span className="text-xs">
-              <RepostButton
-                targetType="item"
-                targetId={item.id}
-                initialCount={itemReposts}
-                initialReposted={iReposted}
-                signedIn={!!user}
-              />
-            </span>
           </div>
         </div>
       </header>
 
-      {pending ? (
-        <section className="card border-dashed p-6 text-sm text-muted">
-          <p className="eyebrow mb-2 !text-amber-600 dark:!text-amber-400">In the queue</p>
-          This tool was submitted by the community and is awaiting its ten-metric evaluation. The
-          scorecard, verdict, and full write-up land on the next scanner run — takes, comments, and
-          votes are already live.
-        </section>
-      ) : (
-        <>
-          {evaluation!.media.length > 0 && <MediaGallery media={evaluation!.media} />}
-
-          <div className="prose-none flex flex-col gap-6">
-            {SECTIONS.map(({ key, title }) => {
-              const content = evaluation!.body[key];
-              if (!content) return null;
-              return (
-                <section key={key} className="border-l-2 border-[var(--border-strong)] pl-4">
-                  <h2 className="mb-1.5 text-lg font-bold tracking-tight">{title}</h2>
-                  <p className="whitespace-pre-wrap leading-relaxed text-muted">{content}</p>
-                </section>
-              );
-            })}
-          </div>
-
-          {evaluation!.audience && (
-            <section>
-              <p className="eyebrow mb-2">Who it&apos;s for</p>
-              <h2 className="mb-3 text-lg font-bold tracking-tight">Audience fit</h2>
-              <AudienceFit audience={evaluation!.audience} />
+      <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
+        {/* Main column: the write-up, the repo's words, the community's words. */}
+        <div className="flex min-w-0 flex-col gap-8">
+          {pending ? (
+            <section className="card border-dashed p-6 text-sm text-muted">
+              <p className="eyebrow mb-2 !text-amber-600 dark:!text-amber-400">In the queue</p>
+              This tool was submitted by the community and is awaiting its ten-metric evaluation.
+              The scorecard, verdict, and full write-up land on the next scanner run — takes,
+              comments, and votes are already live.
             </section>
+          ) : (
+            <>
+              {evaluation!.media.length > 0 && <MediaGallery media={evaluation!.media} />}
+
+              <div className="prose-none flex flex-col gap-6">
+                {SECTIONS.map(({ key, title }) => {
+                  const content = evaluation!.body[key];
+                  if (!content) return null;
+                  return (
+                    <section key={key} className="border-l-2 border-[var(--border-strong)] pl-4">
+                      <h2 className="mb-1.5 text-lg font-bold tracking-tight">{title}</h2>
+                      <p className="whitespace-pre-wrap leading-relaxed text-muted">{content}</p>
+                    </section>
+                  );
+                })}
+              </div>
+
+              {evaluation!.audience && (
+                <section>
+                  <p className="eyebrow mb-2">Who it&apos;s for</p>
+                  <h2 className="mb-3 text-lg font-bold tracking-tight">Audience fit</h2>
+                  <AudienceFit audience={evaluation!.audience} />
+                </section>
+              )}
+
+              <section>
+                <p className="eyebrow mb-2">The report card</p>
+                <h2 className="mb-3 text-lg font-bold tracking-tight">Scorecard</h2>
+                <div className="card p-4 sm:p-5">
+                  <Scorecard scores={evaluation!.scores} overall={item.overallScore} />
+                </div>
+              </section>
+            </>
           )}
 
-          <section>
-            <p className="eyebrow mb-2">The report card</p>
-            <h2 className="mb-3 text-lg font-bold tracking-tight">Scorecard</h2>
-            <div className="card p-4 sm:p-5">
-              <Scorecard scores={evaluation!.scores} overall={item.overallScore} />
+          {readmeHtml && <ReadmeSection html={readmeHtml} />}
+
+          <section className="flex flex-col gap-4">
+            <div>
+              <p className="eyebrow mb-1">From the people running it</p>
+              <h2 className="text-lg font-bold tracking-tight">
+                Takes{takes.length > 0 ? ` · ${takes.length}` : ""}
+              </h2>
             </div>
+            <TakeComposer
+              itemId={item.id}
+              initialTake={myEntry?.take ?? null}
+              initialStatus={(myEntry?.status as StackStatus | undefined) ?? null}
+              initialRating={myEntry?.rating ?? null}
+              signedIn={!!user}
+            />
+            {takes.length === 0 ? (
+              <p className="text-sm text-muted">
+                No takes yet — be the first to say how it holds up.
+              </p>
+            ) : (
+              <div className="flex flex-col gap-3">
+                {takes.map((t) => (
+                  <TakeCard
+                    key={t.id}
+                    username={t.username}
+                    avatarUrl={t.user.avatarUrl}
+                    status={t.status}
+                    rating={t.rating}
+                    take={t.take}
+                    updatedAt={t.updatedAt}
+                    followedByViewer={t.followedByViewer}
+                  />
+                ))}
+              </div>
+            )}
           </section>
-        </>
-      )}
 
-      {readmeHtml && <ReadmeSection html={readmeHtml} />}
+          <section className="flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg font-bold tracking-tight">Discussion</h2>
+              <Link href={`/`} className="data text-[11px] text-muted hover:text-brand">
+                ← Directory
+              </Link>
+            </div>
+            <div className="card p-4">
+              <CommentForm itemId={item.id} signedIn={!!user} />
+            </div>
+            <CommentThread comments={comments} itemId={item.id} signedIn={!!user} />
+          </section>
+        </div>
 
-      <section className="flex flex-col gap-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="eyebrow mb-1">From the people running it</p>
-            <h2 className="text-lg font-bold tracking-tight">
-              Takes{takes.length > 0 ? ` · ${takes.length}` : ""}
-            </h2>
+        {/* Spec rail: the instrument readout, pinned while you read. */}
+        <aside className="top-20 flex flex-col gap-3 lg:sticky">
+          <div className="card p-4">
+            {pending ? (
+              <div className="flex flex-col gap-2">
+                <p className="eyebrow">Readout</p>
+                <span className="chip w-fit !border-amber-500 font-semibold !text-amber-600 dark:!text-amber-400">
+                  Awaiting score…
+                </span>
+                <p className="text-xs text-muted">
+                  Queued for the next evaluation run. Metrics appear here when it lands.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="eyebrow">Readout</p>
+                <div className="flex items-baseline gap-1">
+                  <span className="data text-4xl font-semibold leading-none">
+                    {item.overallScore}
+                  </span>
+                  <span className="data text-xs text-faint">/100 overall</span>
+                </div>
+                <SegMeter score={item.overallScore} />
+                <dl className="mt-1 flex flex-col gap-1.5 text-sm">
+                  <SpecRow label="verdict">
+                    <VerdictBadge verdict={item.verdict} />
+                  </SpecRow>
+                  <SpecRow label="noise">
+                    <span className="data">{item.noiseScore}/100</span>
+                  </SpecRow>
+                  <SpecRow label="category">
+                    <span className="data text-xs">
+                      {CATEGORY_LABELS[item.category as Category] ?? item.category}
+                    </span>
+                  </SpecRow>
+                  <SpecRow label="integration">
+                    <span className="data text-xs">{item.integration}</span>
+                  </SpecRow>
+                  {evaluation?.source.stars != null && (
+                    <SpecRow label="stars">
+                      <span className="data text-xs">★ {evaluation.source.stars}</span>
+                    </SpecRow>
+                  )}
+                  <SpecRow label="source">
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="data max-w-[170px] truncate text-xs text-brand hover:underline"
+                    >
+                      {item.externalId}
+                    </a>
+                  </SpecRow>
+                </dl>
+              </div>
+            )}
           </div>
-        </div>
-        <TakeComposer
-          itemId={item.id}
-          initialTake={myEntry?.take ?? null}
-          initialStatus={(myEntry?.status as StackStatus | undefined) ?? null}
-          initialRating={myEntry?.rating ?? null}
-          signedIn={!!user}
-        />
-        {takes.length === 0 ? (
-          <p className="text-sm text-muted">No takes yet — be the first to say how it holds up.</p>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {takes.map((t) => (
-              <TakeCard
-                key={t.id}
-                username={t.username}
-                avatarUrl={t.user.avatarUrl}
-                status={t.status}
-                rating={t.rating}
-                take={t.take}
-                updatedAt={t.updatedAt}
-                followedByViewer={t.followedByViewer}
-              />
-            ))}
+          <div className="card flex flex-col gap-1.5 p-4 text-sm">
+            <p className="eyebrow mb-1">In the field</p>
+            <SpecRow label="use it daily">
+              <span className="data">{usingCount}</span>
+            </SpecRow>
+            <SpecRow label="takes">
+              <span className="data">{takes.length}</span>
+            </SpecRow>
+            <SpecRow label="comments">
+              <span className="data">{item.commentCount}</span>
+            </SpecRow>
           </div>
-        )}
-      </section>
-
-      <section className="flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold tracking-tight">Discussion</h2>
-          <Link href={`/`} className="data text-[11px] text-muted hover:text-brand">
-            ← Directory
-          </Link>
-        </div>
-        <div className="card p-4">
-          <CommentForm itemId={item.id} signedIn={!!user} />
-        </div>
-        <CommentThread comments={comments} itemId={item.id} signedIn={!!user} />
-      </section>
+        </aside>
+      </div>
     </article>
+  );
+}
+
+function SpecRow({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <dt className="data text-[11px] uppercase tracking-wider text-faint">{label}</dt>
+      <dd className="flex items-center">{children}</dd>
+    </div>
   );
 }

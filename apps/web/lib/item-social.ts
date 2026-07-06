@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNotNull, sql } from "drizzle-orm";
 import { getDb, stackItems, users } from "@aix/db";
 
 /**
@@ -38,4 +38,20 @@ export function itemStackSummary(itemId: string, takeLimit = 3): StackSummary {
     .all() as StackSummary["takes"];
 
   return { total: rows.length, byStatus, takes };
+}
+
+/** Active-user counts (using/trying) for many items at once — directory rows. */
+export function useCountsFor(itemIds: string[]): Record<string, number> {
+  if (itemIds.length === 0) return {};
+  const rows = getDb()
+    .select({ id: stackItems.itemId, n: sql<number>`count(*)` })
+    .from(stackItems)
+    .where(
+      and(inArray(stackItems.itemId, itemIds), inArray(stackItems.status, ["using", "trying"])),
+    )
+    .groupBy(stackItems.itemId)
+    .all();
+  const out: Record<string, number> = {};
+  for (const r of rows) if (r.id) out[r.id] = r.n;
+  return out;
 }

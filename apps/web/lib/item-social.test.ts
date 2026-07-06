@@ -47,6 +47,14 @@ beforeAll(async () => {
     .run();
 });
 
+test("useCountsFor returns active-user counts per item in one query", async () => {
+  const { useCountsFor } = await import("./item-social");
+  const counts = useCountsFor([ITEM, "missing-item"]);
+  // u1 is "using"; u2 "dropped" doesn't count as active use.
+  expect(counts[ITEM]).toBe(1);
+  expect(counts["missing-item"]).toBeUndefined();
+});
+
 test("itemStackSummary counts runners and surfaces takes with usernames", () => {
   const s = itemStackSummary(ITEM);
   expect(s.total).toBe(2);

@@ -3,9 +3,10 @@ import { getCurrentUser } from "@/lib/auth";
 import { listItems, countItems, type ItemSort } from "@/lib/queries";
 import { getUnifiedFeed, type FeedEntry } from "@/lib/home-feed";
 import { Filters } from "@/components/filters";
-import { ItemCard } from "@/components/item-card";
+import { ItemRow } from "@/components/item-row";
 import { ActivityCard } from "@/components/activity-card";
 import { NewsletterForm } from "@/components/newsletter-form";
+import { useCountsFor } from "@/lib/item-social";
 
 export const dynamic = "force-dynamic";
 
@@ -56,11 +57,13 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
     (e): e is Extract<FeedEntry, { kind: "activity" }> => e.kind === "activity",
   );
 
+  const uses = useCountsFor(items.map((i) => i.id));
+
   return (
     <div className="flex flex-col gap-6">
       <div>
         <p className="eyebrow">The directory</p>
-        <h1 className="mt-2 max-w-2xl text-2xl font-black leading-tight tracking-tight sm:text-4xl">
+        <h1 className="mt-2 max-w-3xl font-display text-2xl font-black leading-[1.05] tracking-tight sm:text-4xl">
           Every dev tool, on the record —{" "}
           <span className="text-brand">harshly scored, honestly used.</span>
         </h1>
@@ -77,7 +80,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_300px]">
-        <section className="flex flex-col gap-4">
+        <section className="flex flex-col gap-3">
           <Filters />
           {items.length === 0 ? (
             <div className="card p-8 text-center text-sm text-muted">
@@ -88,9 +91,9 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
               <p className="data text-[11px] uppercase tracking-wider text-faint">
                 {items.length < total ? `${items.length} of ${total} tools` : `${total} tools`}
               </p>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div className="flex flex-col gap-2">
                 {items.map((item) => (
-                  <ItemCard key={item.id} item={item} />
+                  <ItemRow key={item.id} item={item} uses={uses[item.id] ?? 0} />
                 ))}
               </div>
               {items.length < total && (
