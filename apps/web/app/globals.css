@@ -3,96 +3,102 @@
 @tailwind utilities;
 
 /*
- * AIx — "The Test Bench" design system.
- * The site is a measurement instrument: tools go on the bench, get probed,
- * get a stamped verdict; practitioners leave field notes. Cool porcelain
- * paper, blue-black ink, one calibration-cobalt accent, and a segmented
- * LED-bargraph meter as the signature readout for every score.
- * All theming is CSS-variable driven so .dark swaps the whole palette at once.
+ * AIx — "Scoreboard" design system (user-picked from the ten-theme gallery).
+ * Stadium night: deep navy dark is the PRIMARY mode, scores read as
+ * incandescent amber bulbs, verdicts are board plates, and the meter is a
+ * row of lit bulbs. Light mode is the "day game" counterpart. All theming is
+ * CSS-variable driven so .dark swaps the whole palette at once — but here
+ * :root (light) is the secondary and .dark carries the identity.
  */
 
 :root {
   color-scheme: light dark;
 
-  --bg: #f0f3f6;
-  --bg-grid: #e2e8ee;
+  /* Day game — warm chalk & navy ink, amber kept for the score language. */
+  --bg: #eeede6;
+  --bg-dots: #d9d8cd;
   --surface: #ffffff;
-  --surface-2: #e9eef3;
-  --surface-3: #dce4eb;
-  --border: #d7dfe7;
-  --border-strong: #b3c0cc;
-  --ink: #101823;
-  --muted: #4d5d6d;
-  --faint: #8595a5;
+  --surface-2: #e5e4da;
+  --surface-3: #d8d7ca;
+  --border: #d6d5c9;
+  --border-strong: #b2b1a2;
+  --ink: #131c33;
+  --muted: #545e73;
+  --faint: #8b93a5;
 
-  --brand: #2b4eea;
-  --brand-bright: #4165ff;
-  --brand-soft: #e3e9ff;
-  --brand-contrast: #ffffff;
-  --ring: #4165ff;
+  --brand: #c07f00;
+  --brand-bright: #a16a00;
+  --brand-soft: #f7e7c3;
+  --brand-contrast: #131c33;
+  --brand-fill: #ffb627; /* button/bulb fill — dark text on top */
+  --ring: #c07f00;
+  --glow: transparent;
 
-  /* Verdict stamps — tint + readable foreground, cool-tuned. */
-  --v-essential-bg: #d9f2e3;
-  --v-essential-fg: #0e6e3c;
-  --v-worthwhile-bg: #d3eef1;
-  --v-worthwhile-fg: #0b6a72;
-  --v-niche-bg: #f6ecc8;
-  --v-niche-fg: #8f5e06;
-  --v-marginal-bg: #fbe3cd;
-  --v-marginal-fg: #a4440e;
-  --v-redundant-bg: #fadddd;
-  --v-redundant-fg: #a92220;
-  --v-trap-bg: #f9d9e1;
-  --v-trap-fg: #96173c;
+  /* Verdict plates — win → loss. */
+  --v-essential-bg: #dcf3e6;
+  --v-essential-fg: #157a47;
+  --v-worthwhile-bg: #e7f2d2;
+  --v-worthwhile-fg: #4f7a12;
+  --v-niche-bg: #f9eecb;
+  --v-niche-fg: #8f6a06;
+  --v-marginal-bg: #fce5cd;
+  --v-marginal-fg: #a2560e;
+  --v-redundant-bg: #fcdfd6;
+  --v-redundant-fg: #ad3c1e;
+  --v-trap-bg: #fbdae0;
+  --v-trap-fg: #ab1f3c;
 
-  /* Score bands — meter segment fills. */
-  --band-strong: #149948;
-  --band-solid: #0d9488;
-  --band-mixed: #d18a06;
-  --band-weak: #d92d2d;
+  /* Score bands — bulb fills. */
+  --band-strong: #189d5c;
+  --band-solid: #4f9a16;
+  --band-mixed: #c98d06;
+  --band-weak: #d33049;
 
-  --shadow-card: 0 1px 2px rgba(16, 24, 35, 0.05), 0 1px 3px rgba(16, 24, 35, 0.04);
-  --shadow-lift: 0 8px 24px -12px rgba(16, 24, 35, 0.3);
+  --shadow-card: 0 1px 2px rgba(19, 28, 51, 0.06), 0 1px 3px rgba(19, 28, 51, 0.04);
+  --shadow-lift: 0 8px 24px -12px rgba(19, 28, 51, 0.3);
 }
 
 .dark {
-  --bg: #0a0f16;
-  --bg-grid: #121a25;
-  --surface: #101724;
-  --surface-2: #182130;
-  --surface-3: #202b3c;
-  --border: #253143;
-  --border-strong: #394960;
-  --ink: #e9eff6;
-  --muted: #97a6b8;
-  --faint: #5d6d80;
+  /* Stadium night — the Scoreboard identity. */
+  --bg: #060b1a;
+  --bg-dots: #16223f;
+  --surface: #0c1630;
+  --surface-2: #131f3c;
+  --surface-3: #1b2b4d;
+  --border: #1b2b4d;
+  --border-strong: #2a3c68;
+  --ink: #f2eee2;
+  --muted: #7c8aa6;
+  --faint: #5b6b8c;
 
-  --brand: #7c93ff;
-  --brand-bright: #93a7ff;
-  --brand-soft: #17203b;
-  --brand-contrast: #0a0f16;
-  --ring: #93a7ff;
+  --brand: #ffb627;
+  --brand-bright: #ffc85c;
+  --brand-soft: #241a05;
+  --brand-contrast: #160f00;
+  --brand-fill: #ffb627;
+  --ring: #ffc85c;
+  --glow: rgba(255, 182, 39, 0.45);
 
-  --v-essential-bg: rgba(34, 197, 94, 0.14);
-  --v-essential-fg: #57d98b;
-  --v-worthwhile-bg: rgba(20, 184, 166, 0.15);
-  --v-worthwhile-fg: #43d4c5;
-  --v-niche-bg: rgba(245, 158, 11, 0.15);
-  --v-niche-fg: #f2bd50;
-  --v-marginal-bg: rgba(249, 115, 22, 0.15);
-  --v-marginal-fg: #ff9d5c;
-  --v-redundant-bg: rgba(239, 68, 68, 0.15);
-  --v-redundant-fg: #ff8080;
-  --v-trap-bg: rgba(244, 63, 94, 0.16);
-  --v-trap-fg: #ff8199;
+  --v-essential-bg: rgba(61, 220, 132, 0.09);
+  --v-essential-fg: #3ddc84;
+  --v-worthwhile-bg: rgba(155, 225, 93, 0.09);
+  --v-worthwhile-fg: #9be15d;
+  --v-niche-bg: rgba(255, 209, 102, 0.09);
+  --v-niche-fg: #ffd166;
+  --v-marginal-bg: rgba(255, 158, 74, 0.09);
+  --v-marginal-fg: #ff9e4a;
+  --v-redundant-bg: rgba(255, 107, 74, 0.09);
+  --v-redundant-fg: #ff6b4a;
+  --v-trap-bg: rgba(255, 59, 92, 0.11);
+  --v-trap-fg: #ff3b5c;
 
-  --band-strong: #2bcf68;
-  --band-solid: #1fc7b4;
-  --band-mixed: #f0a52a;
-  --band-weak: #f25a52;
+  --band-strong: #3ddc84;
+  --band-solid: #9be15d;
+  --band-mixed: #ffb627;
+  --band-weak: #ff3b5c;
 
-  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-lift: 0 12px 32px -14px rgba(0, 0, 0, 0.75);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-lift: 0 12px 32px -14px rgba(0, 0, 0, 0.8);
 }
 
 @layer base {
@@ -101,18 +107,22 @@
     color: var(--ink);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    /* Faint bench-grid — atmosphere, not decoration. */
-    background-image: linear-gradient(var(--bg-grid) 1px, transparent 1px),
-      linear-gradient(90deg, var(--bg-grid) 1px, transparent 1px);
-    background-size: 56px 56px;
-    background-position: -1px -1px;
+    /* The board's dot-matrix field — atmosphere, not decoration. */
+    background-image: radial-gradient(var(--bg-dots) 1px, transparent 1.5px);
+    background-size: 16px 16px;
   }
 
   h1,
   h2,
   h3 {
     @apply font-display;
-    letter-spacing: -0.015em;
+    /* Anton ships one weight — neutralize utility bolding so nothing synthesizes. */
+    font-weight: 400 !important;
+    letter-spacing: 0.015em;
+  }
+
+  h1 {
+    text-transform: uppercase;
   }
 
   a {
@@ -120,8 +130,8 @@
   }
 
   ::selection {
-    background: var(--brand);
-    color: var(--brand-contrast);
+    background: var(--brand-fill);
+    color: #160f00;
   }
 
   :focus-visible {
@@ -147,7 +157,7 @@
 }
 
 @layer components {
-  /* Calibration label — mono readout with a brand tick, the structural device. */
+  /* Board caption — mono readout with an amber tick. */
   .eyebrow {
     @apply inline-flex items-center gap-2 font-mono text-[11px] font-semibold uppercase tracking-[0.22em];
     color: var(--muted);
@@ -162,7 +172,7 @@
   .card {
     border: 1px solid var(--border);
     background: var(--surface);
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: var(--shadow-card);
   }
   .card-hover {
@@ -187,11 +197,12 @@
   }
   .btn-primary {
     @apply btn;
-    background: var(--brand);
-    color: var(--brand-contrast);
+    background: var(--brand-fill);
+    color: #160f00;
+    box-shadow: 0 0 14px var(--glow);
   }
   .btn-primary:hover:not(:disabled) {
-    background: var(--brand-bright);
+    background: #ffc85c;
   }
   .btn-ghost {
     @apply btn;
@@ -200,7 +211,8 @@
     color: var(--ink);
   }
   .btn-ghost:hover:not(:disabled) {
-    background: var(--surface-2);
+    border-color: var(--brand);
+    color: var(--brand);
   }
 
   .input {
@@ -214,20 +226,22 @@
   }
   .input:focus {
     border-color: var(--brand);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 22%, transparent);
   }
 
-  /* Verdict stamp — an inspection mark: hard corners, ruled border, square tick. */
+  /* Verdict plate — a board tile: ruled border, lit face, small bulb tick. */
   .verdict {
-    @apply inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.08em];
-    border-radius: 3px;
-    border: 1px solid color-mix(in srgb, currentColor 45%, transparent);
+    @apply inline-flex items-center gap-1.5 px-2 py-0.5 font-mono text-[11px] font-bold uppercase tracking-[0.1em];
+    border-radius: 4px;
+    border: 1.5px solid color-mix(in srgb, currentColor 55%, transparent);
   }
   .verdict::before {
     content: "";
     width: 5px;
     height: 5px;
+    border-radius: 999px;
     background: currentColor;
+    box-shadow: 0 0 6px color-mix(in srgb, currentColor 65%, transparent);
   }
   .verdict-essential {
     background: var(--v-essential-bg);
@@ -254,31 +268,40 @@
     color: var(--v-trap-fg);
   }
 
-  /* Segmented meter — the signature readout. Ten hard segments, lit by band. */
+  /* Bulb meter — the signature readout: ten bulbs, lit by band, warm glow. */
   .seg-meter {
     @apply flex items-center gap-[3px];
   }
   .seg {
-    height: 10px;
+    height: 11px;
     flex: 1 1 0;
     min-width: 4px;
-    border-radius: 1.5px;
+    border-radius: 2px;
     background: var(--surface-3);
+    border: 1px solid color-mix(in srgb, var(--border-strong) 60%, transparent);
   }
   .seg-sm .seg {
-    height: 7px;
+    height: 8px;
   }
   .seg-on-strong {
     background: var(--band-strong);
+    border-color: var(--band-strong);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--band-strong) 60%, transparent);
   }
   .seg-on-solid {
     background: var(--band-solid);
+    border-color: var(--band-solid);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--band-solid) 55%, transparent);
   }
   .seg-on-mixed {
     background: var(--band-mixed);
+    border-color: var(--band-mixed);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--band-mixed) 60%, transparent);
   }
   .seg-on-weak {
     background: var(--band-weak);
+    border-color: var(--band-weak);
+    box-shadow: 0 0 6px color-mix(in srgb, var(--band-weak) 55%, transparent);
   }
 
   /* Legacy smooth meter (kept for inline fills where segments don't fit). */
