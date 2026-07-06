@@ -34,10 +34,16 @@ SQLite" simplicity.
 | --- | --- |
 | `packages/core` | Strict `Evaluation` schema, 10-metric scorecard, verdict enum, categories, markdown (de)serializer, evaluator prompt. **The shared contract.** |
 | `packages/db` | Drizzle + `bun:sqlite` schema + migrator. |
-| `apps/web` | Next.js 15 (App Router) — directory UI, social feed, profiles, filters, submission form, GitHub OAuth, public + internal API. |
+| `apps/web` | Next.js 15 (App Router) — directory UI + filters (incl. audience), item scorecard pages, **social network** (feed, posts, likes, reposts, comments, DMs, activity, notifications), **profiles** (Posts · My Stack · My Workflow · Articles), long-form markdown articles, GitHub OAuth, submission queue, newsletter, public API v1 + internal API. |
 | `apps/scanner` | Multi-source discovery (GitHub, arXiv) + queue drain -> Claude evaluation -> publish. k8s CronJob. |
-| `apps/bot` | Discord bot — daily digests, link submissions, evaluation lookups. |
-| `k8s` | Namespace, web Deployment/Service/Ingress, PVC, scanner CronJob, bot Deployment, secrets. |
+| `apps/bot` | Discord bot — daily + weekly digests, `/submit`, `/eval`, `/leaderboard`. |
+| `ios` | Native SwiftUI iOS client reading the public API v1 (directory, item detail, leaderboard). |
+| `k8s` | Namespace, web Deployment/Service/Ingress, PVC, scanner + newsletter + rank CronJobs, bot Deployment, secrets. |
+
+Social/content tables (`packages/db`): `posts`, `comments`, `votes` (likes),
+`reposts`, `messages` (DMs), `activities` (feed events), `notifications`,
+`follows`, `stack_items` (My Stack), `articles` (long-form + My Workflow),
+`subscribers` (newsletter).
 
 ## [3] Data model
 
