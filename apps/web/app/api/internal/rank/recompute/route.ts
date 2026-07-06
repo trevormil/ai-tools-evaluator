@@ -18,11 +18,17 @@ export async function POST(req: Request) {
   }
 
   const db = getDb();
-  const rows = db.select({ id: items.id, upvotes: items.upvotes, createdAt: items.createdAt }).from(items).all();
+  const rows = db
+    .select({ id: items.id, upvotes: items.upvotes, createdAt: items.createdAt })
+    .from(items)
+    .all();
 
   let updated = 0;
   for (const r of rows) {
-    db.update(items).set({ score: hotScore(r.upvotes, r.createdAt) }).where(eq(items.id, r.id)).run();
+    db.update(items)
+      .set({ score: hotScore(r.upvotes, r.createdAt) })
+      .where(eq(items.id, r.id))
+      .run();
     updated++;
   }
 

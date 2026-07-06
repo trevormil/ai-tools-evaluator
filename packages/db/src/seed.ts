@@ -90,7 +90,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
         url: "https://github.com/BurntSushi/ripgrep",
         title: "ripgrep (rg)",
         author: "Andrew Gallant",
-        description: "Recursively search directories for a regex pattern while respecting your gitignore.",
+        description:
+          "Recursively search directories for a regex pattern while respecting your gitignore.",
         stars: 49000,
         language: "Rust",
         license: "MIT",
@@ -108,18 +109,43 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "Anyone touching a codebase — human or agent — greps constantly. rg is the fastest, most correct grep and the one your agent should reach for by default.",
       },
       scores: {
-        novelty: s(55, "Not a new idea — it's grep. The novelty is engineering: gitignore-aware, Unicode-correct, and absurdly fast."),
-        utility: s(98, "You use it dozens of times an hour without noticing. Pure daily-driver leverage."),
-        deltaVsBaseline: s(88, "GNU grep works, but rg's speed and gitignore defaults change how aggressively you search."),
-        easeOfAdoption: s(95, "One binary, no config, drop-in for grep. `brew install ripgrep` and you're done."),
-        maturity: s(97, "Battle-tested for years, ships inside VS Code, rock-solid release history."),
+        novelty: s(
+          55,
+          "Not a new idea — it's grep. The novelty is engineering: gitignore-aware, Unicode-correct, and absurdly fast.",
+        ),
+        utility: s(
+          98,
+          "You use it dozens of times an hour without noticing. Pure daily-driver leverage.",
+        ),
+        deltaVsBaseline: s(
+          88,
+          "GNU grep works, but rg's speed and gitignore defaults change how aggressively you search.",
+        ),
+        easeOfAdoption: s(
+          95,
+          "One binary, no config, drop-in for grep. `brew install ripgrep` and you're done.",
+        ),
+        maturity: s(
+          97,
+          "Battle-tested for years, ships inside VS Code, rock-solid release history.",
+        ),
         leanness: s(96, "A single static binary. Zero moving parts, no daemon, no runtime."),
-        traction: s(94, "49k stars, embedded in editors and countless tools. The de-facto standard."),
+        traction: s(
+          94,
+          "49k stars, embedded in editors and countless tools. The de-facto standard.",
+        ),
         composability: s(92, "Line-oriented, scriptable, JSON output. Pipes into everything."),
-        longevity: s(90, "Search isn't getting absorbed by a model. This is infrastructure for the next decade."),
-        clarity: s(88, "Excellent docs and a famously thorough author. The man page actually helps."),
+        longevity: s(
+          90,
+          "Search isn't getting absorbed by a model. This is infrastructure for the next decade.",
+        ),
+        clarity: s(
+          88,
+          "Excellent docs and a famously thorough author. The man page actually helps.",
+        ),
       },
-      tagline: "The fastest grep, gitignore-aware by default — the one search tool your agent should reach for first.",
+      tagline:
+        "The fastest grep, gitignore-aware by default — the one search tool your agent should reach for first.",
       body: {
         whatItIs:
           "ripgrep is a command-line search tool that recursively searches directories for a regex pattern. It respects .gitignore by default, skips binary and hidden files, is Unicode-aware, and is written in Rust on top of a fast regex engine. In practice it's a drop-in, much faster replacement for grep/ack/ag.",
@@ -165,18 +191,37 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "If you write TypeScript that touches untrusted input — API bodies, env vars, LLM output — Zod is the parse-don't-validate boundary. For agent tool-calling it's how you make model output type-safe.",
       },
       scores: {
-        novelty: s(70, "Runtime-checked schemas that also infer static types wasn't obvious before Zod made it ergonomic."),
-        utility: s(95, "Every boundary in a real app needs validation. Zod covers it with one source of truth."),
-        deltaVsBaseline: s(80, "Hand-rolled type guards work but rot; Zod keeps the type and the check in sync automatically."),
+        novelty: s(
+          70,
+          "Runtime-checked schemas that also infer static types wasn't obvious before Zod made it ergonomic.",
+        ),
+        utility: s(
+          95,
+          "Every boundary in a real app needs validation. Zod covers it with one source of truth.",
+        ),
+        deltaVsBaseline: s(
+          80,
+          "Hand-rolled type guards work but rot; Zod keeps the type and the check in sync automatically.",
+        ),
         easeOfAdoption: s(90, "One dependency, fluent API, zero config. Productive in minutes."),
-        maturity: s(88, "Widely deployed, stable API, huge ecosystem of adapters (tRPC, forms, OpenAPI)."),
-        leanness: s(72, "Small but not free — the fluent chains add bundle weight and some inference cost at scale."),
+        maturity: s(
+          88,
+          "Widely deployed, stable API, huge ecosystem of adapters (tRPC, forms, OpenAPI).",
+        ),
+        leanness: s(
+          72,
+          "Small but not free — the fluent chains add bundle weight and some inference cost at scale.",
+        ),
         traction: s(93, "The default validation library for TS. Enormous adoption."),
         composability: s(90, "Schemas compose, refine, and transform; adapters everywhere."),
-        longevity: s(85, "TypeScript isn't going anywhere and runtime validation is a permanent need."),
+        longevity: s(
+          85,
+          "TypeScript isn't going anywhere and runtime validation is a permanent need.",
+        ),
         clarity: s(84, "Docs are good; error messages are decent and improving."),
       },
-      tagline: "The parse-don't-validate boundary for TypeScript — and how you make LLM tool-call output type-safe.",
+      tagline:
+        "The parse-don't-validate boundary for TypeScript — and how you make LLM tool-call output type-safe.",
       body: {
         whatItIs:
           "Zod is a TypeScript-first schema declaration and validation library. You define a schema once and get both a runtime validator and a static type inferred from it, so parsed data is typed correctly without a separate interface. It handles nested objects, unions, refinements, transforms, and produces structured errors.",
@@ -203,7 +248,15 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
         externalId: "2210.03629",
         url: "https://arxiv.org/abs/2210.03629",
         title: "ReAct: Synergizing Reasoning and Acting in Language Models",
-        authors: ["Shunyu Yao", "Jeffrey Zhao", "Dian Yu", "Nan Du", "Izhak Shafran", "Karthik Narasimhan", "Yuan Cao"],
+        authors: [
+          "Shunyu Yao",
+          "Jeffrey Zhao",
+          "Dian Yu",
+          "Nan Du",
+          "Izhak Shafran",
+          "Karthik Narasimhan",
+          "Yuan Cao",
+        ],
         description: "Interleaving chain-of-thought reasoning with tool-use actions in LLMs.",
         publishedAt: "2022-10-06T00:00:00.000Z",
       },
@@ -220,18 +273,46 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "This is the mental model under every tool-using agent you run today. You don't need to cite it to build, but understanding the reason-act-observe loop makes you far better at designing and debugging agents.",
       },
       scores: {
-        novelty: s(88, "Framing reasoning traces and actions as one interleaved loop was a genuine conceptual unlock in 2022."),
-        utility: s(78, "You don't run a paper, but its loop is the backbone of every agent framework and harness in production."),
-        deltaVsBaseline: s(72, "Modern models do ReAct-style reasoning implicitly; the paper's value is now conceptual, not a technique you add."),
-        easeOfAdoption: s(70, "It's an idea — free to adopt, but you have to translate it into your own harness."),
-        maturity: s(80, "Peer-reviewed, endlessly cited, and absorbed into the field's common vocabulary."),
+        novelty: s(
+          88,
+          "Framing reasoning traces and actions as one interleaved loop was a genuine conceptual unlock in 2022.",
+        ),
+        utility: s(
+          78,
+          "You don't run a paper, but its loop is the backbone of every agent framework and harness in production.",
+        ),
+        deltaVsBaseline: s(
+          72,
+          "Modern models do ReAct-style reasoning implicitly; the paper's value is now conceptual, not a technique you add.",
+        ),
+        easeOfAdoption: s(
+          70,
+          "It's an idea — free to adopt, but you have to translate it into your own harness.",
+        ),
+        maturity: s(
+          80,
+          "Peer-reviewed, endlessly cited, and absorbed into the field's common vocabulary.",
+        ),
         leanness: s(85, "A pattern, not code. It adds understanding, not moving parts."),
-        traction: s(92, "One of the most-cited agent papers; the name is now shorthand for the whole approach."),
-        composability: s(75, "The loop underlies most frameworks, so the idea composes with everything."),
-        longevity: s(70, "Foundational as history, but frontier models increasingly internalize it — the explicit pattern may fade."),
-        clarity: s(82, "Clearly written with concrete task examples; approachable for practitioners."),
+        traction: s(
+          92,
+          "One of the most-cited agent papers; the name is now shorthand for the whole approach.",
+        ),
+        composability: s(
+          75,
+          "The loop underlies most frameworks, so the idea composes with everything.",
+        ),
+        longevity: s(
+          70,
+          "Foundational as history, but frontier models increasingly internalize it — the explicit pattern may fade.",
+        ),
+        clarity: s(
+          82,
+          "Clearly written with concrete task examples; approachable for practitioners.",
+        ),
       },
-      tagline: "The reason-act-observe loop behind every tool-using agent you run — essential as understanding, not as code.",
+      tagline:
+        "The reason-act-observe loop behind every tool-using agent you run — essential as understanding, not as code.",
       body: {
         whatItIs:
           "ReAct is a 2022 paper showing that interleaving free-form reasoning ('thoughts') with concrete actions (tool calls) and observations lets a language model plan, act, and adjust in one loop. Instead of reasoning in a vacuum or acting blindly, the model alternates: think, do, observe the result, think again. It's the canonical formulation of the agent loop.",
@@ -277,18 +358,37 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "If your agent lives in issues and PRs, this gives it first-class GitHub access without you writing glue. Worthwhile when GitHub is central to your loop; skippable if you just use `gh` on the CLI.",
       },
       scores: {
-        novelty: s(45, "It's the GitHub REST API over MCP. The novelty is the protocol plumbing, not the capability."),
-        utility: s(82, "Real leverage for agents that triage issues, review PRs, and manage releases."),
-        deltaVsBaseline: s(55, "A capable agent can already shell out to the `gh` CLI; MCP mainly buys structured, typed access."),
-        easeOfAdoption: s(78, "Official, documented, and a standard MCP config away — but you still manage a token and a server process."),
+        novelty: s(
+          45,
+          "It's the GitHub REST API over MCP. The novelty is the protocol plumbing, not the capability.",
+        ),
+        utility: s(
+          82,
+          "Real leverage for agents that triage issues, review PRs, and manage releases.",
+        ),
+        deltaVsBaseline: s(
+          55,
+          "A capable agent can already shell out to the `gh` CLI; MCP mainly buys structured, typed access.",
+        ),
+        easeOfAdoption: s(
+          78,
+          "Official, documented, and a standard MCP config away — but you still manage a token and a server process.",
+        ),
         maturity: s(80, "Backed by GitHub, actively maintained, sensible scoping."),
-        leanness: s(58, "Adds a running server and an OAuth/token surface — real moving parts vs. just using `gh`."),
-        traction: s(85, "Fast adoption; the reference example people point to for 'a good MCP server.'"),
+        leanness: s(
+          58,
+          "Adds a running server and an OAuth/token surface — real moving parts vs. just using `gh`.",
+        ),
+        traction: s(
+          85,
+          "Fast adoption; the reference example people point to for 'a good MCP server.'",
+        ),
         composability: s(80, "Standard MCP, so it drops into any MCP-aware client cleanly."),
         longevity: s(72, "GitHub isn't going anywhere; MCP as the transport is the open question."),
         clarity: s(82, "Good README and tool descriptions; the tools are self-explanatory."),
       },
-      tagline: "First-class GitHub for agents over MCP — real leverage if issues/PRs are your loop, redundant with `gh` if not.",
+      tagline:
+        "First-class GitHub for agents over MCP — real leverage if issues/PRs are your loop, redundant with `gh` if not.",
       body: {
         whatItIs:
           "The official Model Context Protocol server for GitHub. It exposes GitHub's API — issues, pull requests, repos, actions, code search — as typed MCP tools an agent can call directly. Point an MCP-aware client at it, supply a token, and your agent can read and act on GitHub without you writing integration code.",
@@ -316,7 +416,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
         url: "https://github.com/stanfordnlp/dspy",
         title: "DSPy",
         author: "Stanford NLP",
-        description: "Programming — not prompting — foundation models. Compile declarative modules into optimized prompts.",
+        description:
+          "Programming — not prompting — foundation models. Compile declarative modules into optimized prompts.",
         stars: 22000,
         language: "Python",
         license: "MIT",
@@ -334,18 +435,49 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "For engineers who treat prompts as artifacts to optimize against a metric — not vibe-tune by hand — DSPy is a genuinely different paradigm. Overkill for one-off prompting; powerful for pipelines you measure.",
       },
       scores: {
-        novelty: s(85, "Treating prompts as compiled, optimizable programs against a metric is a real paradigm shift."),
-        utility: s(72, "High for measured multi-stage pipelines; low if you're writing a single prompt."),
-        deltaVsBaseline: s(78, "Automated prompt/weight optimization does something hand-prompting genuinely can't do consistently."),
-        easeOfAdoption: s(50, "Steep learning curve — you must think in signatures, modules, and metrics, not prompts."),
-        maturity: s(65, "Active and improving, but the API has churned and the abstractions are still moving."),
-        leanness: s(48, "Introduces a whole programming model and optimizer state — significant conceptual and runtime weight."),
-        traction: s(78, "Strong academic and practitioner interest; 22k stars and real production use."),
-        composability: s(70, "Modules compose well internally; less so with non-DSPy prompting code."),
-        longevity: s(68, "The idea (optimize, don't hand-tune) has legs; whether DSPy is the winning implementation is open."),
-        clarity: s(60, "Concepts are deep and the docs demand real investment; not a skim-and-go library."),
+        novelty: s(
+          85,
+          "Treating prompts as compiled, optimizable programs against a metric is a real paradigm shift.",
+        ),
+        utility: s(
+          72,
+          "High for measured multi-stage pipelines; low if you're writing a single prompt.",
+        ),
+        deltaVsBaseline: s(
+          78,
+          "Automated prompt/weight optimization does something hand-prompting genuinely can't do consistently.",
+        ),
+        easeOfAdoption: s(
+          50,
+          "Steep learning curve — you must think in signatures, modules, and metrics, not prompts.",
+        ),
+        maturity: s(
+          65,
+          "Active and improving, but the API has churned and the abstractions are still moving.",
+        ),
+        leanness: s(
+          48,
+          "Introduces a whole programming model and optimizer state — significant conceptual and runtime weight.",
+        ),
+        traction: s(
+          78,
+          "Strong academic and practitioner interest; 22k stars and real production use.",
+        ),
+        composability: s(
+          70,
+          "Modules compose well internally; less so with non-DSPy prompting code.",
+        ),
+        longevity: s(
+          68,
+          "The idea (optimize, don't hand-tune) has legs; whether DSPy is the winning implementation is open.",
+        ),
+        clarity: s(
+          60,
+          "Concepts are deep and the docs demand real investment; not a skim-and-go library.",
+        ),
       },
-      tagline: "Compile prompts against a metric instead of hand-tuning them — a real paradigm, and real overkill for one-offs.",
+      tagline:
+        "Compile prompts against a metric instead of hand-tuning them — a real paradigm, and real overkill for one-offs.",
       body: {
         whatItIs:
           "DSPy is a framework for building LLM pipelines as declarative modules with typed input/output 'signatures,' then compiling them: an optimizer searches over prompt phrasings (and optionally few-shot examples or weights) to maximize a metric you define on a dev set. The pitch is 'program, don't prompt' — you specify what each stage should do and let DSPy tune how.",
@@ -373,7 +505,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
         url: "https://github.com/logseq/logseq",
         title: "Logseq",
         author: "Logseq",
-        description: "A privacy-first, open-source knowledge base on local plain-text Markdown and Org files.",
+        description:
+          "A privacy-first, open-source knowledge base on local plain-text Markdown and Org files.",
         stars: 34000,
         language: "Clojure",
         license: "AGPL-3.0",
@@ -391,18 +524,43 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "A good local-first PKM for people who think in outlines and backlinks. Niche because it's a personal-workflow choice, not an AI-engineering tool — its relevance to agents is that your notes stay as plain Markdown.",
       },
       scores: {
-        novelty: s(50, "Outliner + backlinks + local Markdown is a well-trodden space (Roam, Obsidian). Execution, not invention."),
-        utility: s(68, "Genuinely useful if outline-based networked notes fit your brain; irrelevant if they don't."),
-        deltaVsBaseline: s(40, "For most, a folder of Markdown files an agent can read does 80% of this with none of the app."),
-        easeOfAdoption: s(65, "Free and local, but the block/outline model has a real learning curve and some rough edges."),
-        maturity: s(58, "Capable but historically buggy; the DB rewrite has been a long, disruptive transition."),
+        novelty: s(
+          50,
+          "Outliner + backlinks + local Markdown is a well-trodden space (Roam, Obsidian). Execution, not invention.",
+        ),
+        utility: s(
+          68,
+          "Genuinely useful if outline-based networked notes fit your brain; irrelevant if they don't.",
+        ),
+        deltaVsBaseline: s(
+          40,
+          "For most, a folder of Markdown files an agent can read does 80% of this with none of the app.",
+        ),
+        easeOfAdoption: s(
+          65,
+          "Free and local, but the block/outline model has a real learning curve and some rough edges.",
+        ),
+        maturity: s(
+          58,
+          "Capable but historically buggy; the DB rewrite has been a long, disruptive transition.",
+        ),
         leanness: s(55, "A full desktop app for what is, underneath, a pile of Markdown files."),
         traction: s(70, "Sizable, devoted community; a leading open-source PKM."),
-        composability: s(72, "Plain-text storage means your notes stay portable and agent-readable — the best thing about it."),
-        longevity: s(55, "PKM apps come and go; the plain-text files will outlive the app, which is the point."),
-        clarity: s(62, "Docs are decent; the conceptual model (blocks, not pages) trips up newcomers."),
+        composability: s(
+          72,
+          "Plain-text storage means your notes stay portable and agent-readable — the best thing about it.",
+        ),
+        longevity: s(
+          55,
+          "PKM apps come and go; the plain-text files will outlive the app, which is the point.",
+        ),
+        clarity: s(
+          62,
+          "Docs are decent; the conceptual model (blocks, not pages) trips up newcomers.",
+        ),
       },
-      tagline: "Local-first outliner PKM on plain Markdown — nice if outlines fit your brain, a folder of notes if they don't.",
+      tagline:
+        "Local-first outliner PKM on plain Markdown — nice if outlines fit your brain, a folder of notes if they don't.",
       body: {
         whatItIs:
           "Logseq is an open-source, privacy-first knowledge base built around an outliner: everything is a nested block, notes link to each other with [[backlinks]], and it all lives in local plain-text Markdown or Org files you own. Think Roam Research, but local-first and open-source.",
@@ -430,7 +588,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
         url: "https://github.com/stackblitz/bolt.new",
         title: "bolt.new",
         author: "StackBlitz",
-        description: "Prompt, run, edit, and deploy full-stack web apps entirely in the browser via an in-browser Node runtime.",
+        description:
+          "Prompt, run, edit, and deploy full-stack web apps entirely in the browser via an in-browser Node runtime.",
         stars: 14000,
         language: "TypeScript",
         license: "MIT",
@@ -448,18 +607,43 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "A slick in-browser 'describe an app, watch it build and run' experience. Great for non-experts and fast prototypes; for an engineer with a real agent in their editor it's a demo, not a workflow.",
       },
       scores: {
-        novelty: s(72, "Running a full Node toolchain in the browser (WebContainers) to build-and-run generated apps live is genuinely clever."),
-        utility: s(62, "Fast for zero-to-prototype; limited once you need to leave the sandbox and own the code."),
-        deltaVsBaseline: s(48, "An agent in your own editor generates the same app with your real tools and no sandbox ceiling."),
-        easeOfAdoption: s(88, "Open a URL, type a prompt, watch it run. Nothing to install — the whole appeal."),
+        novelty: s(
+          72,
+          "Running a full Node toolchain in the browser (WebContainers) to build-and-run generated apps live is genuinely clever.",
+        ),
+        utility: s(
+          62,
+          "Fast for zero-to-prototype; limited once you need to leave the sandbox and own the code.",
+        ),
+        deltaVsBaseline: s(
+          48,
+          "An agent in your own editor generates the same app with your real tools and no sandbox ceiling.",
+        ),
+        easeOfAdoption: s(
+          88,
+          "Open a URL, type a prompt, watch it run. Nothing to install — the whole appeal.",
+        ),
         maturity: s(60, "Impressive but sandbox-bound; complex or long-lived projects hit walls."),
-        leanness: s(58, "Zero local footprint, but you're inside someone else's environment with its constraints."),
-        traction: s(80, "Big launch splash and strong ongoing interest in the 'prompt-to-app' category."),
-        composability: s(45, "The browser sandbox is the point and the cage — it doesn't compose with your local toolchain."),
-        longevity: s(50, "The whole prompt-to-app category is being commoditized fast by every coding agent."),
+        leanness: s(
+          58,
+          "Zero local footprint, but you're inside someone else's environment with its constraints.",
+        ),
+        traction: s(
+          80,
+          "Big launch splash and strong ongoing interest in the 'prompt-to-app' category.",
+        ),
+        composability: s(
+          45,
+          "The browser sandbox is the point and the cage — it doesn't compose with your local toolchain.",
+        ),
+        longevity: s(
+          50,
+          "The whole prompt-to-app category is being commoditized fast by every coding agent.",
+        ),
         clarity: s(70, "The experience explains itself; that immediacy is the product."),
       },
-      tagline: "Prompt-to-full-stack-app live in the browser — magic for prototypes, a walled garden for real projects.",
+      tagline:
+        "Prompt-to-full-stack-app live in the browser — magic for prototypes, a walled garden for real projects.",
       body: {
         whatItIs:
           "bolt.new lets you describe a web app in a prompt and watch an AI build, run, and let you edit it entirely in the browser. It uses StackBlitz's WebContainers to run a real Node.js toolchain client-side, so the generated app actually executes and previews live, and you can deploy from there. It's a prompt-to-app studio with no local setup.",
@@ -505,18 +689,46 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "A comprehensive RAG toolkit that gets you a demo fast — and then abstracts away the exact retrieval details you need to control in production. Fine for prototyping; a liability if you mistake it for the finished system.",
       },
       scores: {
-        novelty: s(40, "Bundles known RAG techniques (chunk, embed, retrieve, rerank) behind one API; convenience, not invention."),
-        utility: s(65, "Real leverage for a quick RAG prototype; diminishing once you need to tune each stage."),
-        deltaVsBaseline: s(45, "The core loop — embed, store, retrieve, stuff context — is a few hundred lines you can own and understand."),
-        easeOfAdoption: s(75, "Five lines to a working demo. That accessibility is exactly the seduction."),
-        maturity: s(62, "Widely used but sprawling; the surface area and abstraction churn are real maintenance costs."),
-        leanness: s(35, "Enormous surface area and a deep abstraction stack to hide what is, underneath, fairly simple plumbing."),
+        novelty: s(
+          40,
+          "Bundles known RAG techniques (chunk, embed, retrieve, rerank) behind one API; convenience, not invention.",
+        ),
+        utility: s(
+          65,
+          "Real leverage for a quick RAG prototype; diminishing once you need to tune each stage.",
+        ),
+        deltaVsBaseline: s(
+          45,
+          "The core loop — embed, store, retrieve, stuff context — is a few hundred lines you can own and understand.",
+        ),
+        easeOfAdoption: s(
+          75,
+          "Five lines to a working demo. That accessibility is exactly the seduction.",
+        ),
+        maturity: s(
+          62,
+          "Widely used but sprawling; the surface area and abstraction churn are real maintenance costs.",
+        ),
+        leanness: s(
+          35,
+          "Enormous surface area and a deep abstraction stack to hide what is, underneath, fairly simple plumbing.",
+        ),
         traction: s(80, "37k stars and heavy adoption; a default name in the RAG conversation."),
-        composability: s(55, "Many integrations, but its abstractions can fight the lower-level libraries you'd rather call directly."),
-        longevity: s(58, "RAG matters; whether you want it behind this much framework is the open question."),
-        clarity: s(50, "Vast docs, but the layers of abstraction make it hard to know what's actually happening on a query."),
+        composability: s(
+          55,
+          "Many integrations, but its abstractions can fight the lower-level libraries you'd rather call directly.",
+        ),
+        longevity: s(
+          58,
+          "RAG matters; whether you want it behind this much framework is the open question.",
+        ),
+        clarity: s(
+          50,
+          "Vast docs, but the layers of abstraction make it hard to know what's actually happening on a query.",
+        ),
       },
-      tagline: "A RAG toolkit that demos in five lines and hides the retrieval details you'll need to control in production.",
+      tagline:
+        "A RAG toolkit that demos in five lines and hides the retrieval details you'll need to control in production.",
       body: {
         whatItIs:
           "LlamaIndex is a Python (and TypeScript) data framework for building retrieval-augmented generation and agent apps over your own documents. It provides loaders, chunking, embeddings, vector-store integrations, query engines, and rerankers behind a high-level API, so you can go from a pile of documents to a queryable index quickly.",
@@ -562,18 +774,49 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "Enormous mindshare, but for most projects it adds layers of abstraction over a few direct API calls. Serious engineers increasingly rip it out; beginners drown in its indirection. Great tutorials, heavy production tax.",
       },
       scores: {
-        novelty: s(35, "Early on it named useful patterns (chains, agents); today those patterns are a few lines of plain code."),
-        utility: s(45, "Fast for a tutorial demo; a tax the moment you need to debug or customize what it's doing."),
-        deltaVsBaseline: s(30, "Most of what LangChain does is a direct API call plus a loop — the abstraction adds indirection, not capability."),
-        easeOfAdoption: s(40, "Easy to start, hard to master: sprawling API, leaky abstractions, and heavy version churn."),
-        maturity: s(50, "Massive but unstable — frequent breaking changes and a reputation for churn have burned teams."),
-        leanness: s(20, "The canonical example of too many moving parts: deep abstraction stacks over simple LLM calls."),
-        traction: s(90, "95k stars, ubiquitous in tutorials — traction is the one thing it undeniably has."),
-        composability: s(38, "Composes beautifully with itself and awkwardly with everything you'd rather call directly."),
-        longevity: s(42, "As base models absorb orchestration, the case for a heavy framework keeps shrinking."),
-        clarity: s(45, "Voluminous docs, but the abstraction layers obscure what actually happens on any given call."),
+        novelty: s(
+          35,
+          "Early on it named useful patterns (chains, agents); today those patterns are a few lines of plain code.",
+        ),
+        utility: s(
+          45,
+          "Fast for a tutorial demo; a tax the moment you need to debug or customize what it's doing.",
+        ),
+        deltaVsBaseline: s(
+          30,
+          "Most of what LangChain does is a direct API call plus a loop — the abstraction adds indirection, not capability.",
+        ),
+        easeOfAdoption: s(
+          40,
+          "Easy to start, hard to master: sprawling API, leaky abstractions, and heavy version churn.",
+        ),
+        maturity: s(
+          50,
+          "Massive but unstable — frequent breaking changes and a reputation for churn have burned teams.",
+        ),
+        leanness: s(
+          20,
+          "The canonical example of too many moving parts: deep abstraction stacks over simple LLM calls.",
+        ),
+        traction: s(
+          90,
+          "95k stars, ubiquitous in tutorials — traction is the one thing it undeniably has.",
+        ),
+        composability: s(
+          38,
+          "Composes beautifully with itself and awkwardly with everything you'd rather call directly.",
+        ),
+        longevity: s(
+          42,
+          "As base models absorb orchestration, the case for a heavy framework keeps shrinking.",
+        ),
+        clarity: s(
+          45,
+          "Voluminous docs, but the abstraction layers obscure what actually happens on any given call.",
+        ),
       },
-      tagline: "The most-starred way to turn three API calls into ten abstractions — great tutorials, a real production tax.",
+      tagline:
+        "The most-starred way to turn three API calls into ten abstractions — great tutorials, a real production tax.",
       body: {
         whatItIs:
           "LangChain is a framework for building LLM applications. It provides abstractions — chains, agents, tools, memory, retrievers, prompt templates — meant to compose into pipelines without wiring everything by hand. It's the most-starred project in the space and the default entry point for a huge number of developers building their first LLM app.",
@@ -619,18 +862,46 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "The viral face of 'fully autonomous agents,' and the clearest lesson in why unbounded autonomy loops fail: they spiral, burn tokens, and rarely finish. Historically important, practically a cautionary tale.",
       },
       scores: {
-        novelty: s(55, "In 2023 the 'set a goal, let it run forever' loop was a striking demo; the idea aged faster than almost anything."),
-        utility: s(28, "Rarely completes a real task without spiraling, looping, or wandering off. Impressive to watch, hard to trust."),
-        deltaVsBaseline: s(25, "A single well-scoped agent turn with a human in the loop beats an unbounded autonomous spiral on almost every real task."),
-        easeOfAdoption: s(45, "Easy to launch, hard to get useful output from; you spend more time babysitting than it saves."),
-        maturity: s(48, "Has pivoted repeatedly (now a platform); the original autonomous-agent promise never became reliable."),
-        leanness: s(22, "Maximal moving parts in service of autonomy that usually makes results worse, not better."),
-        traction: s(92, "168k stars — one of the most-starred repos ever. Traction is entirely the point and entirely the story."),
+        novelty: s(
+          55,
+          "In 2023 the 'set a goal, let it run forever' loop was a striking demo; the idea aged faster than almost anything.",
+        ),
+        utility: s(
+          28,
+          "Rarely completes a real task without spiraling, looping, or wandering off. Impressive to watch, hard to trust.",
+        ),
+        deltaVsBaseline: s(
+          25,
+          "A single well-scoped agent turn with a human in the loop beats an unbounded autonomous spiral on almost every real task.",
+        ),
+        easeOfAdoption: s(
+          45,
+          "Easy to launch, hard to get useful output from; you spend more time babysitting than it saves.",
+        ),
+        maturity: s(
+          48,
+          "Has pivoted repeatedly (now a platform); the original autonomous-agent promise never became reliable.",
+        ),
+        leanness: s(
+          22,
+          "Maximal moving parts in service of autonomy that usually makes results worse, not better.",
+        ),
+        traction: s(
+          92,
+          "168k stars — one of the most-starred repos ever. Traction is entirely the point and entirely the story.",
+        ),
         composability: s(35, "Built to run itself, not to slot into your workflow."),
-        longevity: s(30, "The unbounded-autonomy thesis has largely been abandoned in favor of scoped, supervised agents."),
-        clarity: s(50, "The concept is legible; what it actually does on a given run is anyone's guess."),
+        longevity: s(
+          30,
+          "The unbounded-autonomy thesis has largely been abandoned in favor of scoped, supervised agents.",
+        ),
+        clarity: s(
+          50,
+          "The concept is legible; what it actually does on a given run is anyone's guess.",
+        ),
       },
-      tagline: "The viral 'fully autonomous agent' that taught the field why unbounded autonomy loops spiral and rarely finish.",
+      tagline:
+        "The viral 'fully autonomous agent' that taught the field why unbounded autonomy loops spiral and rarely finish.",
       body: {
         whatItIs:
           "AutoGPT is the project that made 'autonomous AI agents' go viral in early 2023: give it a goal, and it loops — planning, spawning sub-tasks, calling tools, and critiquing itself — attempting to reach the objective with no human in the loop. It became one of the most-starred repositories on GitHub almost overnight and has since pivoted toward being an agent-building platform.",
@@ -650,15 +921,16 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
 
 /* --------------------------------------------------------------------- runner */
 
-function upsertUser(username: string, role: "user" | "bot", displayName: string, bio: string): string {
+function upsertUser(
+  username: string,
+  role: "user" | "bot",
+  displayName: string,
+  bio: string,
+): string {
   const db = getDb();
   const existing = db.select().from(users).where(eq(users.username, username)).get();
   if (existing) return existing.id;
-  const row = db
-    .insert(users)
-    .values({ username, role, displayName, bio })
-    .returning()
-    .get();
+  const row = db.insert(users).values({ username, role, displayName, bio }).returning().get();
   return row.id;
 }
 
@@ -670,7 +942,12 @@ function contentDir(): string {
 function seed() {
   const db = getDb();
 
-  const botId = upsertUser("aixbot", "bot", "AIx", "The resident skeptic. I distill trending repos, tools, and papers into a harsh verdict.");
+  const botId = upsertUser(
+    "aixbot",
+    "bot",
+    "AIx",
+    "The resident skeptic. I distill trending repos, tools, and papers into a harsh verdict.",
+  );
   const demoId = upsertUser("aixdemo", "user", "Dana (demo)", "Kicking the tires on AIx.");
 
   const dir = contentDir();

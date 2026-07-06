@@ -89,7 +89,10 @@ export function listPosts(sort: "hot" | "new" = "hot", limit = 60): PostWithAuth
   const shaped = rows.map((r) => ({ post: r.post, author: r.author, item: r.item }));
   if (sort === "new") return shaped.slice(0, limit);
   return shaped
-    .sort((a, b) => hotScore(b.post.upvotes, b.post.createdAt) - hotScore(a.post.upvotes, a.post.createdAt))
+    .sort(
+      (a, b) =>
+        hotScore(b.post.upvotes, b.post.createdAt) - hotScore(a.post.upvotes, a.post.createdAt),
+    )
     .slice(0, limit);
 }
 
@@ -123,7 +126,8 @@ export type CommentNode = { comment: Comment; author: User; children: CommentNod
 function buildTree(rows: { comment: Comment; author: User }[]): CommentNode[] {
   const byId = new Map<string, CommentNode>();
   const roots: CommentNode[] = [];
-  for (const r of rows) byId.set(r.comment.id, { comment: r.comment, author: r.author, children: [] });
+  for (const r of rows)
+    byId.set(r.comment.id, { comment: r.comment, author: r.author, children: [] });
   for (const node of byId.values()) {
     const parentId = node.comment.parentId;
     const parent = parentId ? byId.get(parentId) : undefined;
@@ -229,7 +233,11 @@ export function recomputeAggregate(targetType: VoteTarget, targetId: string): nu
   const net = agg?.net ?? 0;
 
   if (targetType === "item") {
-    const item = db.select({ createdAt: items.createdAt }).from(items).where(eq(items.id, targetId)).get();
+    const item = db
+      .select({ createdAt: items.createdAt })
+      .from(items)
+      .where(eq(items.id, targetId))
+      .get();
     const score = item ? hotScore(net, item.createdAt) : 0;
     db.update(items).set({ upvotes: net, score }).where(eq(items.id, targetId)).run();
   } else if (targetType === "post") {

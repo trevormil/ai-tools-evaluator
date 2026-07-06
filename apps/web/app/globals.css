@@ -153,7 +153,10 @@
     box-shadow: var(--shadow-card);
   }
   .card-hover {
-    transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition:
+      box-shadow 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
   }
   .card-hover:hover {
     box-shadow: var(--shadow-lift);
@@ -214,12 +217,30 @@
     background: currentColor;
     box-shadow: 0 0 0 3px color-mix(in srgb, currentColor 22%, transparent);
   }
-  .verdict-essential { background: var(--v-essential-bg); color: var(--v-essential-fg); }
-  .verdict-worthwhile { background: var(--v-worthwhile-bg); color: var(--v-worthwhile-fg); }
-  .verdict-niche { background: var(--v-niche-bg); color: var(--v-niche-fg); }
-  .verdict-marginal { background: var(--v-marginal-bg); color: var(--v-marginal-fg); }
-  .verdict-redundant { background: var(--v-redundant-bg); color: var(--v-redundant-fg); }
-  .verdict-trap { background: var(--v-trap-bg); color: var(--v-trap-fg); }
+  .verdict-essential {
+    background: var(--v-essential-bg);
+    color: var(--v-essential-fg);
+  }
+  .verdict-worthwhile {
+    background: var(--v-worthwhile-bg);
+    color: var(--v-worthwhile-fg);
+  }
+  .verdict-niche {
+    background: var(--v-niche-bg);
+    color: var(--v-niche-fg);
+  }
+  .verdict-marginal {
+    background: var(--v-marginal-bg);
+    color: var(--v-marginal-fg);
+  }
+  .verdict-redundant {
+    background: var(--v-redundant-bg);
+    color: var(--v-redundant-fg);
+  }
+  .verdict-trap {
+    background: var(--v-trap-bg);
+    color: var(--v-trap-fg);
+  }
 
   /* Score meter — benchmark-printout fill. */
   .meter-track {
@@ -230,10 +251,18 @@
     @apply h-full rounded-full;
     transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
   }
-  .band-strong { background: var(--band-strong); }
-  .band-solid { background: var(--band-solid); }
-  .band-mixed { background: var(--band-mixed); }
-  .band-weak { background: var(--band-weak); }
+  .band-strong {
+    background: var(--band-strong);
+  }
+  .band-solid {
+    background: var(--band-solid);
+  }
+  .band-mixed {
+    background: var(--band-mixed);
+  }
+  .band-weak {
+    background: var(--band-weak);
+  }
 
   .data {
     @apply font-mono tabular-nums;
@@ -250,12 +279,28 @@
 
 /* Text color helpers bound to theme tokens (utility layer so they win over base). */
 @layer utilities {
-  .text-ink { color: var(--ink); }
-  .text-muted { color: var(--muted); }
-  .text-faint { color: var(--faint); }
-  .text-brand { color: var(--brand); }
-  .bg-surface { background: var(--surface); }
-  .bg-surface-2 { background: var(--surface-2); }
-  .border-token { border-color: var(--border); }
-  .border-token-strong { border-color: var(--border-strong); }
+  .text-ink {
+    color: var(--ink);
+  }
+  .text-muted {
+    color: var(--muted);
+  }
+  .text-faint {
+    color: var(--faint);
+  }
+  .text-brand {
+    color: var(--brand);
+  }
+  .bg-surface {
+    background: var(--surface);
+  }
+  .bg-surface-2 {
+    background: var(--surface-2);
+  }
+  .border-token {
+    border-color: var(--border);
+  }
+  .border-token-strong {
+    border-color: var(--border-strong);
+  }
 }

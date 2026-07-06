@@ -34,16 +34,21 @@ const sample: Evaluation = {
     primary: "ai-engineer",
     aiEngineerFit: 55,
     vibeCoderFit: 20,
-    rationale: "Only an engineer running sandboxed/remote setups gets value; a vibe coder gains nothing over native file tools.",
+    rationale:
+      "Only an engineer running sandboxed/remote setups gets value; a vibe coder gains nothing over native file tools.",
   },
   scores,
   overallScore: computeOverall(scores),
   tagline: "A tidy MCP wrapper, but Claude already reads files fine on its own.",
   body: {
-    whatItIs: "It exposes a filesystem over MCP so an agent can read and write files through a server process instead of native tools.",
-    vsVanilla: "Vanilla Claude Code already has first-class file read/write tools; this routes the same operations through an extra network hop and config surface.",
-    surfaceArea: "It is an MCP server: you register it, it advertises tools. Additive, but it is real infrastructure you now run and secure.",
-    devilsAdvocate: "The base agent reads and writes files natively with better ergonomics and no server to run. The only genuine delta is remote/sandboxed access, which most users do not need. For the common case this is complexity for complexity's sake.",
+    whatItIs:
+      "It exposes a filesystem over MCP so an agent can read and write files through a server process instead of native tools.",
+    vsVanilla:
+      "Vanilla Claude Code already has first-class file read/write tools; this routes the same operations through an extra network hop and config surface.",
+    surfaceArea:
+      "It is an MCP server: you register it, it advertises tools. Additive, but it is real infrastructure you now run and secure.",
+    devilsAdvocate:
+      "The base agent reads and writes files natively with better ergonomics and no server to run. The only genuine delta is remote/sandboxed access, which most users do not need. For the common case this is complexity for complexity's sake.",
   },
   media: [],
   evaluatedBy: "ai",

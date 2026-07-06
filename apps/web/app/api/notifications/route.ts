@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
-import { listNotifications, markAllNotificationsRead, unreadNotificationCount } from "@/lib/notifications";
+import {
+  listNotifications,
+  markAllNotificationsRead,
+  unreadNotificationCount,
+} from "@/lib/notifications";
 
 export const dynamic = "force-dynamic";
 

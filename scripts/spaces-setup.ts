@@ -48,11 +48,17 @@ async function main() {
   }
 
   // Apply CORS.
-  const cors = await aws.fetch(`${bucketUrl}?cors`, { method: "PUT", body: CORS, headers: { "content-type": "application/xml" } });
+  const cors = await aws.fetch(`${bucketUrl}?cors`, {
+    method: "PUT",
+    body: CORS,
+    headers: { "content-type": "application/xml" },
+  });
   console.log(cors.ok ? "✓ CORS applied" : `CORS failed ${cors.status}: ${await cors.text()}`);
 
   console.log(`\nMedia base URL: https://${bucket}.${region}.digitaloceanspaces.com`);
-  console.log("(To use a CDN URL instead, enable the Spaces CDN in the DO panel and use the .cdn. host.)");
+  console.log(
+    "(To use a CDN URL instead, enable the Spaces CDN in the DO panel and use the .cdn. host.)",
+  );
   console.log("Done. The app can now upload via AIX_SPACES_* env.");
 }
 

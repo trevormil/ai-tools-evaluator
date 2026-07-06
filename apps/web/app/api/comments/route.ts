@@ -48,9 +48,15 @@ export async function POST(req: Request) {
 
     // Keep the denormalized comment counters honest.
     if (input.itemId) {
-      db.update(items).set({ commentCount: sql`${items.commentCount} + 1` }).where(eq(items.id, input.itemId)).run();
+      db.update(items)
+        .set({ commentCount: sql`${items.commentCount} + 1` })
+        .where(eq(items.id, input.itemId))
+        .run();
     } else if (input.postId) {
-      db.update(posts).set({ commentCount: sql`${posts.commentCount} + 1` }).where(eq(posts.id, input.postId)).run();
+      db.update(posts)
+        .set({ commentCount: sql`${posts.commentCount} + 1` })
+        .where(eq(posts.id, input.postId))
+        .run();
     }
 
     // Feed activity + reply notification (best-effort).
@@ -62,13 +68,23 @@ export async function POST(req: Request) {
     // post author, else the item's poster.
     let recipientId: string | null = null;
     if (input.parentId) {
-      recipientId = db.select({ id: comments.authorId }).from(comments).where(eq(comments.id, input.parentId)).get()?.id ?? null;
+      recipientId =
+        db
+          .select({ id: comments.authorId })
+          .from(comments)
+          .where(eq(comments.id, input.parentId))
+          .get()?.id ?? null;
     } else if (input.postId) {
-      recipientId = db.select({ id: posts.authorId }).from(posts).where(eq(posts.id, input.postId)).get()?.id ?? null;
+      recipientId =
+        db.select({ id: posts.authorId }).from(posts).where(eq(posts.id, input.postId)).get()?.id ??
+        null;
     } else if (input.itemId) {
-      recipientId = db.select({ id: items.postedById }).from(items).where(eq(items.id, input.itemId)).get()?.id ?? null;
+      recipientId =
+        db.select({ id: items.postedById }).from(items).where(eq(items.id, input.itemId)).get()
+          ?.id ?? null;
     }
-    if (recipientId) notify({ userId: recipientId, actorId: user.id, type: "reply", objectType, objectId });
+    if (recipientId)
+      notify({ userId: recipientId, actorId: user.id, type: "reply", objectType, objectId });
 
     return NextResponse.json({ comment }, { status: 201 });
   } catch (err) {

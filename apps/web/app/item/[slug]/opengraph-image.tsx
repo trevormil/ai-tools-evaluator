@@ -25,7 +25,7 @@ export default async function Image({ params }: Params) {
   const title = item?.title ?? "Not found";
   const verdict = item?.verdict ?? "—";
   const score = item?.overallScore ?? 0;
-  const category = item ? CATEGORY_LABELS[item.category as Category] ?? item.category : "AIx";
+  const category = item ? (CATEGORY_LABELS[item.category as Category] ?? item.category) : "AIx";
   const tagline = item?.tagline ?? "This item could not be found.";
   const verdictColor = VERDICT_COLOR[verdict] ?? "#525252";
 

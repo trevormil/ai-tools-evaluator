@@ -66,7 +66,9 @@ export function markThreadRead(userId: string, otherId: string): void {
   getDb()
     .update(messages)
     .set({ readAt: Math.floor(Date.now() / 1000) })
-    .where(and(eq(messages.toUserId, userId), eq(messages.fromUserId, otherId), isNull(messages.readAt)))
+    .where(
+      and(eq(messages.toUserId, userId), eq(messages.fromUserId, otherId), isNull(messages.readAt)),
+    )
     .run();
 }
 

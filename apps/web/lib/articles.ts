@@ -21,7 +21,11 @@ function uniqueSlug(title: string): string {
   const base = slugify(title);
   let candidate = base;
   for (let i = 0; i < 5; i++) {
-    const taken = db.select({ id: articles.id }).from(articles).where(eq(articles.slug, candidate)).get();
+    const taken = db
+      .select({ id: articles.id })
+      .from(articles)
+      .where(eq(articles.slug, candidate))
+      .get();
     if (!taken) return candidate;
     candidate = `${base}-${crypto.randomUUID().slice(0, 5)}`;
   }
@@ -29,7 +33,12 @@ function uniqueSlug(title: string): string {
 }
 
 export function listArticlesByAuthor(authorId: string): Article[] {
-  return getDb().select().from(articles).where(eq(articles.authorId, authorId)).orderBy(desc(articles.createdAt)).all();
+  return getDb()
+    .select()
+    .from(articles)
+    .where(eq(articles.authorId, authorId))
+    .orderBy(desc(articles.createdAt))
+    .all();
 }
 
 export function getArticleBySlug(slug: string): Article | undefined {
@@ -73,7 +82,11 @@ export function createArticle(authorId: string, input: CreateArticleInput): Arti
 export type UpdateArticleInput = { title?: string; bodyMd?: string; published?: boolean };
 
 /** Update an article the caller owns. Returns null if missing or not the author. */
-export function updateArticle(authorId: string, slug: string, patch: UpdateArticleInput): Article | null {
+export function updateArticle(
+  authorId: string,
+  slug: string,
+  patch: UpdateArticleInput,
+): Article | null {
   const db = getDb();
   const existing = db.select().from(articles).where(eq(articles.slug, slug)).get();
   if (!existing || existing.authorId !== authorId) return null;
@@ -93,10 +106,17 @@ export function updateArticle(authorId: string, slug: string, patch: UpdateArtic
 /** Delete an article the caller owns. Returns false if missing or not the author. */
 export function deleteArticle(authorId: string, slug: string): boolean {
   const db = getDb();
-  const existing = db.select().from(articles).where(and(eq(articles.slug, slug), eq(articles.authorId, authorId))).get();
+  const existing = db
+    .select()
+    .from(articles)
+    .where(and(eq(articles.slug, slug), eq(articles.authorId, authorId)))
+    .get();
   if (!existing) return false;
   // If this article backed anyone's "My Workflow", clear that pointer first.
-  db.update(users).set({ workflowArticleId: null }).where(eq(users.workflowArticleId, existing.id)).run();
+  db.update(users)
+    .set({ workflowArticleId: null })
+    .where(eq(users.workflowArticleId, existing.id))
+    .run();
   db.delete(articles).where(eq(articles.id, existing.id)).run();
   return true;
 }

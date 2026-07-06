@@ -42,10 +42,12 @@ export function parseArxivFeed(xml: string): ItemSource[] {
   for (const e of entries) {
     if (!e.id || !e.title) continue;
     const idUrl = String(e.id);
-    const arxivId = idUrl
-      .replace(/^https?:\/\/arxiv\.org\/abs\//i, "")
-      .replace(/v\d+$/i, "");
-    const authorsRaw: AtomAuthor[] = Array.isArray(e.author) ? e.author : e.author ? [e.author] : [];
+    const arxivId = idUrl.replace(/^https?:\/\/arxiv\.org\/abs\//i, "").replace(/v\d+$/i, "");
+    const authorsRaw: AtomAuthor[] = Array.isArray(e.author)
+      ? e.author
+      : e.author
+        ? [e.author]
+        : [];
     const authors = authorsRaw
       .map((a) => (a.name ? clean(String(a.name)).slice(0, 120) : ""))
       .filter(Boolean)

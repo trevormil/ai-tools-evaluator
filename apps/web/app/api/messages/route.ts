@@ -22,7 +22,11 @@ export async function POST(req: Request) {
     if (input.toUserId === user.id) {
       return NextResponse.json({ error: "Cannot message yourself" }, { status: 400 });
     }
-    const target = getDb().select({ id: users.id }).from(users).where(eq(users.id, input.toUserId)).get();
+    const target = getDb()
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.id, input.toUserId))
+      .get();
     if (!target) return NextResponse.json({ error: "User not found" }, { status: 404 });
 
     const message = sendMessage(user.id, input.toUserId, input.body);

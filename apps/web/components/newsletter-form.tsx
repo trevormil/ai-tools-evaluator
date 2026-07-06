@@ -19,7 +19,11 @@ export function NewsletterForm() {
         body: JSON.stringify({ email }),
       });
       const data = await res.json();
-      setMsg(res.ok ? (data.message ?? "Check your inbox to confirm.") : (data.error ?? "Something went wrong."));
+      setMsg(
+        res.ok
+          ? (data.message ?? "Check your inbox to confirm.")
+          : (data.error ?? "Something went wrong."),
+      );
       if (res.ok) setEmail("");
     } catch {
       setMsg("Network error — try again.");
@@ -31,7 +35,9 @@ export function NewsletterForm() {
   return (
     <div className="card p-4">
       <h3 className="font-semibold">Daily digest</h3>
-      <p className="mt-1 text-sm text-neutral-500">New tools & papers, each with a harsh verdict — one email a day.</p>
+      <p className="mt-1 text-sm text-neutral-500">
+        New tools & papers, each with a harsh verdict — one email a day.
+      </p>
       <form onSubmit={submit} className="mt-3 flex gap-2">
         <input
           type="email"

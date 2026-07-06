@@ -37,7 +37,9 @@ export function renderAtomFeed(items: Item[], feedPath: string, titleSuffix = ""
   const self = absoluteUrl(feedPath);
   const title = `AIx — trending dev tools, harshly judged${titleSuffix}`;
   const updated =
-    items.length > 0 ? new Date(items[0]!.createdAt * 1000).toISOString() : new Date().toISOString();
+    items.length > 0
+      ? new Date(items[0]!.createdAt * 1000).toISOString()
+      : new Date().toISOString();
 
   return `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">

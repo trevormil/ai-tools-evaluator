@@ -28,7 +28,13 @@ export async function POST(req: Request) {
     const existing = db
       .select()
       .from(votes)
-      .where(and(eq(votes.userId, user.id), eq(votes.targetType, targetType), eq(votes.targetId, targetId)))
+      .where(
+        and(
+          eq(votes.userId, user.id),
+          eq(votes.targetType, targetType),
+          eq(votes.targetId, targetId),
+        ),
+      )
       .get();
 
     let currentValue: number = value;

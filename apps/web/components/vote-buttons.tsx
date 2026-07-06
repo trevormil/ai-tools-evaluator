@@ -11,7 +11,13 @@ type Props = {
   signedIn: boolean;
 };
 
-export function VoteButtons({ targetType, targetId, initialNet, initialVote = 0, signedIn }: Props) {
+export function VoteButtons({
+  targetType,
+  targetId,
+  initialNet,
+  initialVote = 0,
+  signedIn,
+}: Props) {
   const router = useRouter();
   const [net, setNet] = useState(initialNet);
   const [vote, setVote] = useState(initialVote);

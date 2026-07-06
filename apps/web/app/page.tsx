@@ -19,53 +19,55 @@ export default async function HomePage() {
     <div className="flex flex-col gap-8">
       <Hero />
       <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <section className="flex flex-col gap-4">
-        <p className="eyebrow">The feed</p>
-        <PostComposer signedIn={!!user} />
-        {feed.length === 0 ? (
-          <div className="card p-8 text-center text-sm text-neutral-500">
-            Nothing here yet. Post something or follow a few people to fill your feed.
-          </div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            {feed.map((entry) =>
-              entry.kind === "post" ? (
-                <PostCard
-                  key={`post-${entry.post.post.id}`}
-                  post={entry.post.post}
-                  author={entry.post.author}
-                  item={entry.post.item}
-                  myVote={entry.myVote}
-                  signedIn={!!user}
-                  repostCount={entry.repostCount}
-                  reposted={entry.reposted}
-                />
-              ) : (
-                <ActivityRow key={`act-${entry.view.activity.id}`} view={entry.view} />
-              ),
-            )}
-          </div>
-        )}
-      </section>
+        <section className="flex flex-col gap-4">
+          <p className="eyebrow">The feed</p>
+          <PostComposer signedIn={!!user} />
+          {feed.length === 0 ? (
+            <div className="card p-8 text-center text-sm text-neutral-500">
+              Nothing here yet. Post something or follow a few people to fill your feed.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {feed.map((entry) =>
+                entry.kind === "post" ? (
+                  <PostCard
+                    key={`post-${entry.post.post.id}`}
+                    post={entry.post.post}
+                    author={entry.post.author}
+                    item={entry.post.item}
+                    myVote={entry.myVote}
+                    signedIn={!!user}
+                    repostCount={entry.repostCount}
+                    reposted={entry.reposted}
+                  />
+                ) : (
+                  <ActivityRow key={`act-${entry.view.activity.id}`} view={entry.view} />
+                ),
+              )}
+            </div>
+          )}
+        </section>
 
-      <aside className="flex flex-col gap-4">
-        <NewsletterForm />
-        <div className="flex items-center justify-between">
-          <p className="eyebrow">Trending tools</p>
-          <Link href="/directory" className="data text-[11px] text-muted hover:text-brand">
-            Browse all →
-          </Link>
-        </div>
-        {trending.length === 0 ? (
-          <p className="text-sm text-muted">The directory is empty. The scanner hasn&apos;t run yet.</p>
-        ) : (
-          <div className="grid gap-3">
-            {trending.map((item) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
+        <aside className="flex flex-col gap-4">
+          <NewsletterForm />
+          <div className="flex items-center justify-between">
+            <p className="eyebrow">Trending tools</p>
+            <Link href="/directory" className="data text-[11px] text-muted hover:text-brand">
+              Browse all →
+            </Link>
           </div>
-        )}
-      </aside>
+          {trending.length === 0 ? (
+            <p className="text-sm text-muted">
+              The directory is empty. The scanner hasn&apos;t run yet.
+            </p>
+          ) : (
+            <div className="grid gap-3">
+              {trending.map((item) => (
+                <ItemCard key={item.id} item={item} />
+              ))}
+            </div>
+          )}
+        </aside>
       </div>
     </div>
   );
@@ -91,8 +93,7 @@ function Hero() {
       />
       <p className="eyebrow">The verdict is in</p>
       <h1 className="mt-3 max-w-2xl text-3xl font-black leading-[1.05] tracking-tight sm:text-5xl">
-        The fast-moving world of dev tools,{" "}
-        <span className="text-brand">harshly judged.</span>
+        The fast-moving world of dev tools, <span className="text-brand">harshly judged.</span>
       </h1>
       <p className="mt-4 max-w-xl text-sm text-muted sm:text-base">
         Every trending AI tool and paper, run through a ten-metric scorecard and handed a blunt
@@ -134,7 +135,10 @@ function ActivityRow({ view }: { view: FeedActivityView }) {
         </span>
       )}
       <span className="min-w-0 flex-1 truncate">
-        <span className="font-medium text-neutral-800 dark:text-neutral-100">@{actor.username}</span> {label}
+        <span className="font-medium text-neutral-800 dark:text-neutral-100">
+          @{actor.username}
+        </span>{" "}
+        {label}
       </span>
       <span className="shrink-0 text-xs text-neutral-400">{timeAgo(activity.createdAt)}</span>
     </Link>

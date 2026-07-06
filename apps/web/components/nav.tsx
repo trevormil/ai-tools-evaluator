@@ -8,7 +8,10 @@ export async function Nav() {
   return (
     <header
       className="sticky top-0 z-20 border-b backdrop-blur"
-      style={{ borderColor: "var(--border)", background: "color-mix(in srgb, var(--bg) 82%, transparent)" }}
+      style={{
+        borderColor: "var(--border)",
+        background: "color-mix(in srgb, var(--bg) 82%, transparent)",
+      }}
     >
       <nav className="mx-auto flex max-w-5xl items-center gap-1 px-4 py-3 sm:gap-3">
         <Link href="/" className="mr-1 flex items-center gap-2" aria-label="AIx home">

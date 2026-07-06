@@ -31,11 +31,32 @@ export async function POST(req: Request) {
 
     // Feed activity + notify the item's original poster (best-effort).
     if (entry.itemId) {
-      emitActivity({ actorId: user.id, verb: "stack_added", objectType: "item", objectId: entry.itemId });
-      const poster = getDb().select({ id: items.postedById }).from(items).where(eq(items.id, entry.itemId)).get();
-      if (poster?.id) notify({ userId: poster.id, actorId: user.id, type: "stack_add", objectType: "item", objectId: entry.itemId });
+      emitActivity({
+        actorId: user.id,
+        verb: "stack_added",
+        objectType: "item",
+        objectId: entry.itemId,
+      });
+      const poster = getDb()
+        .select({ id: items.postedById })
+        .from(items)
+        .where(eq(items.id, entry.itemId))
+        .get();
+      if (poster?.id)
+        notify({
+          userId: poster.id,
+          actorId: user.id,
+          type: "stack_add",
+          objectType: "item",
+          objectId: entry.itemId,
+        });
     } else {
-      emitActivity({ actorId: user.id, verb: "stack_added", objectType: "stack", objectId: entry.id });
+      emitActivity({
+        actorId: user.id,
+        verb: "stack_added",
+        objectType: "stack",
+        objectId: entry.id,
+      });
     }
 
     return NextResponse.json({ entry }, { status: 201 });

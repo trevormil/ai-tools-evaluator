@@ -13,7 +13,9 @@ export default async function LeaderboardPage() {
     <div className="flex flex-col gap-10">
       <div>
         <p className="eyebrow">Leaderboard</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Credit where it&apos;s due.</h1>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+          Credit where it&apos;s due.
+        </h1>
         <p className="mt-1 text-sm text-muted">
           The best, the most argued-over, and the ones that got what they deserved.
         </p>

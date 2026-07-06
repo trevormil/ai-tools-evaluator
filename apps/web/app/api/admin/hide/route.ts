@@ -30,7 +30,11 @@ export async function POST(req: Request) {
     const db = getDb();
 
     if (type === "item") {
-      const item = db.select({ published: items.published }).from(items).where(eq(items.id, id)).get();
+      const item = db
+        .select({ published: items.published })
+        .from(items)
+        .where(eq(items.id, id))
+        .get();
       if (!item) return NextResponse.json({ error: "Not found" }, { status: 404 });
       const published = !item.published;
       db.update(items).set({ published }).where(eq(items.id, id)).run();

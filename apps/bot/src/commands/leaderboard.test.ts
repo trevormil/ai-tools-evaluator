@@ -50,9 +50,7 @@ describe("fetchLeaderboard", () => {
   });
 
   it("defaults to the top 10", async () => {
-    const many = Array.from({ length: 25 }, (_, i) =>
-      item({ slug: `s${i}`, overallScore: i }),
-    );
+    const many = Array.from({ length: 25 }, (_, i) => item({ slug: `s${i}`, overallScore: i }));
     const { client } = fakeClient(many);
     const top = await fetchLeaderboard(client);
     expect(top).toHaveLength(10);

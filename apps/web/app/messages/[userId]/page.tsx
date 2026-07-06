@@ -28,7 +28,10 @@ export default async function ThreadPage({ params }: { params: Params }) {
         <Link href="/messages" className="text-sm text-neutral-500 hover:underline">
           ← Messages
         </Link>
-        <Link href={`/u/${other.username}`} className="ml-auto flex items-center gap-2 font-medium hover:underline">
+        <Link
+          href={`/u/${other.username}`}
+          className="ml-auto flex items-center gap-2 font-medium hover:underline"
+        >
           {other.avatarUrl && (
             // eslint-disable-next-line @next/next/no-img-element
             <img src={other.avatarUrl} alt="" className="h-6 w-6 rounded-full" />
@@ -55,7 +58,9 @@ export default async function ThreadPage({ params }: { params: Params }) {
                   }`}
                 >
                   <p className="whitespace-pre-wrap break-words">{m.body}</p>
-                  <p className={`mt-0.5 text-[10px] ${mine ? "text-orange-100" : "text-neutral-400"}`}>
+                  <p
+                    className={`mt-0.5 text-[10px] ${mine ? "text-orange-100" : "text-neutral-400"}`}
+                  >
                     {timeAgo(m.createdAt)}
                   </p>
                 </div>

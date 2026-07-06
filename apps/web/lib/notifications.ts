@@ -54,7 +54,11 @@ function resolve(n: Notification, actor: User | null): { label: string; href: st
   const objectLink = (): string => {
     if (n.objectType === "post") return `/post/${n.objectId}`;
     if (n.objectType === "item") {
-      const it = db.select({ slug: items.slug }).from(items).where(eq(items.id, n.objectId ?? "")).get();
+      const it = db
+        .select({ slug: items.slug })
+        .from(items)
+        .where(eq(items.id, n.objectId ?? ""))
+        .get();
       return it ? `/item/${it.slug}` : "/";
     }
     return "/";
@@ -63,7 +67,10 @@ function resolve(n: Notification, actor: User | null): { label: string; href: st
     case "reply":
       return { label: `${who} replied to you`, href: objectLink() };
     case "dm":
-      return { label: `${who} sent you a message`, href: actor ? `/messages/${actor.id}` : "/messages" };
+      return {
+        label: `${who} sent you a message`,
+        href: actor ? `/messages/${actor.id}` : "/messages",
+      };
     case "repost":
       return { label: `${who} reposted your ${n.objectType ?? "post"}`, href: objectLink() };
     case "follow":
@@ -86,7 +93,11 @@ export function listNotifications(userId: string, limit = 50): NotificationView[
     .orderBy(desc(notifications.createdAt))
     .limit(limit)
     .all();
-  return rows.map((r) => ({ notification: r.notification, actor: r.actor, ...resolve(r.notification, r.actor) }));
+  return rows.map((r) => ({
+    notification: r.notification,
+    actor: r.actor,
+    ...resolve(r.notification, r.actor),
+  }));
 }
 
 export function markAllNotificationsRead(userId: string): void {

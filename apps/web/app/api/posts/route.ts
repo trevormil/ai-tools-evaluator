@@ -20,7 +20,11 @@ export async function POST(req: Request) {
 
     let itemId: string | null = null;
     if (input.itemId) {
-      const item = getDb().select({ id: items.id }).from(items).where(eq(items.id, input.itemId)).get();
+      const item = getDb()
+        .select({ id: items.id })
+        .from(items)
+        .where(eq(items.id, input.itemId))
+        .get();
       if (!item) return NextResponse.json({ error: "Item not found" }, { status: 404 });
       itemId = item.id;
     }

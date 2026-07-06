@@ -23,7 +23,10 @@ export async function PUT(req: Request) {
   try {
     const user = await requireUser();
     const { links } = Body.parse(await req.json());
-    const saved = setProfileLinks(user.id, links.filter((l) => l.url !== ""));
+    const saved = setProfileLinks(
+      user.id,
+      links.filter((l) => l.url !== ""),
+    );
     return NextResponse.json({ links: saved });
   } catch (err) {
     return errorResponse(err);

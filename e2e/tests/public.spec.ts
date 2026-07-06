@@ -34,7 +34,10 @@ test("newsletter subscribe accepts an email", async ({ page }) => {
   await page.goto("/");
   const email = page.getByPlaceholder(/@/).first();
   await email.fill("e2e-subscriber@example.com");
-  await page.getByRole("button", { name: /subscribe/i }).first().click();
+  await page
+    .getByRole("button", { name: /subscribe/i })
+    .first()
+    .click();
   await expect(page.getByText(/confirm|inbox/i)).toBeVisible();
 });
 

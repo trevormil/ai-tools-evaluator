@@ -20,7 +20,12 @@ export async function POST(req: Request) {
     const body = CreateBody.parse(await req.json());
     const article = createArticle(user.id, body);
     if (article.published) {
-      emitActivity({ actorId: user.id, verb: "article_published", objectType: "article", objectId: article.id });
+      emitActivity({
+        actorId: user.id,
+        verb: "article_published",
+        objectType: "article",
+        objectId: article.id,
+      });
     }
     return NextResponse.json({ article }, { status: 201 });
   } catch (err) {

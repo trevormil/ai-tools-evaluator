@@ -8,7 +8,10 @@ export const submitCommand = new SlashCommandBuilder()
     o.setName("url").setDescription("Link to the tool, repo, or paper").setRequired(true),
   )
   .addStringOption((o) =>
-    o.setName("note").setDescription("Optional context on why it's worth a look").setRequired(false),
+    o
+      .setName("note")
+      .setDescription("Optional context on why it's worth a look")
+      .setRequired(false),
   );
 
 export async function handleSubmit(

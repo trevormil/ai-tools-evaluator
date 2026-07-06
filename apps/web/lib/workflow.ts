@@ -35,8 +35,18 @@ export function setWorkflow(userId: string, input: SetWorkflowInput): User | nul
   if (articleId) {
     const article = getArticleById(articleId);
     if (!article || article.authorId !== userId) return null;
-    return db.update(users).set({ workflowArticleId: articleId, workflowUrl: null }).where(eq(users.id, userId)).returning().get();
+    return db
+      .update(users)
+      .set({ workflowArticleId: articleId, workflowUrl: null })
+      .where(eq(users.id, userId))
+      .returning()
+      .get();
   }
 
-  return db.update(users).set({ workflowArticleId: null, workflowUrl: url }).where(eq(users.id, userId)).returning().get();
+  return db
+    .update(users)
+    .set({ workflowArticleId: null, workflowUrl: url })
+    .where(eq(users.id, userId))
+    .returning()
+    .get();
 }

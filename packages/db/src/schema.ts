@@ -2,7 +2,10 @@ import { sql } from "drizzle-orm";
 import { sqliteTable, text, integer, real, index, uniqueIndex } from "drizzle-orm/sqlite-core";
 
 const now = sql`(unixepoch())`;
-const cuid = () => text("id").primaryKey().$defaultFn(() => crypto.randomUUID());
+const cuid = () =>
+  text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID());
 
 /* ------------------------------------------------------------------ users */
 
@@ -15,7 +18,9 @@ export const users = sqliteTable(
     displayName: text("display_name"),
     avatarUrl: text("avatar_url"),
     bio: text("bio"),
-    role: text("role", { enum: ["user", "mod", "admin", "bot"] }).notNull().default("user"),
+    role: text("role", { enum: ["user", "mod", "admin", "bot"] })
+      .notNull()
+      .default("user"),
     // My Workflow: either an external link OR a long-form article (articleId).
     workflowUrl: text("workflow_url"),
     workflowArticleId: text("workflow_article_id"),
@@ -83,7 +88,9 @@ export const submissions = sqliteTable(
     id: cuid(),
     url: text("url").notNull(),
     note: text("note"),
-    source: text("source", { enum: ["web", "discord", "api"] }).notNull().default("web"),
+    source: text("source", { enum: ["web", "discord", "api"] })
+      .notNull()
+      .default("web"),
     submittedById: text("submitted_by_id").references(() => users.id),
     discordUserId: text("discord_user_id"),
     status: text("status", {
@@ -105,14 +112,20 @@ export const posts = sqliteTable(
   "posts",
   {
     id: cuid(),
-    authorId: text("author_id").notNull().references(() => users.id),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id),
     itemId: text("item_id").references(() => items.id), // optional: post about an item
     body: text("body").notNull(),
     upvotes: integer("upvotes").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [index("posts_author_idx").on(t.authorId), index("posts_item_idx").on(t.itemId), index("posts_created_idx").on(t.createdAt)],
+  (t) => [
+    index("posts_author_idx").on(t.authorId),
+    index("posts_item_idx").on(t.itemId),
+    index("posts_created_idx").on(t.createdAt),
+  ],
 );
 
 /* ----------------------------------------------------- social: comments */
@@ -122,7 +135,9 @@ export const comments = sqliteTable(
   "comments",
   {
     id: cuid(),
-    authorId: text("author_id").notNull().references(() => users.id),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id),
     itemId: text("item_id").references(() => items.id),
     postId: text("post_id").references(() => posts.id),
     parentId: text("parent_id"),
@@ -130,7 +145,11 @@ export const comments = sqliteTable(
     upvotes: integer("upvotes").notNull().default(0),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [index("comments_item_idx").on(t.itemId), index("comments_post_idx").on(t.postId), index("comments_parent_idx").on(t.parentId)],
+  (t) => [
+    index("comments_item_idx").on(t.itemId),
+    index("comments_post_idx").on(t.postId),
+    index("comments_parent_idx").on(t.parentId),
+  ],
 );
 
 /* ---------------------------------------------------------------- votes */
@@ -139,7 +158,9 @@ export const votes = sqliteTable(
   "votes",
   {
     id: cuid(),
-    userId: text("user_id").notNull().references(() => users.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
     targetType: text("target_type", { enum: ["item", "post", "comment"] }).notNull(),
     targetId: text("target_id").notNull(),
     value: integer("value").notNull(), // +1 / -1
@@ -153,8 +174,12 @@ export const votes = sqliteTable(
 export const follows = sqliteTable(
   "follows",
   {
-    followerId: text("follower_id").notNull().references(() => users.id),
-    followeeId: text("followee_id").notNull().references(() => users.id),
+    followerId: text("follower_id")
+      .notNull()
+      .references(() => users.id),
+    followeeId: text("followee_id")
+      .notNull()
+      .references(() => users.id),
     createdAt: integer("created_at").notNull().default(now),
   },
   (t) => [uniqueIndex("follows_unique_idx").on(t.followerId, t.followeeId)],
@@ -166,7 +191,9 @@ export const follows = sqliteTable(
 export const scanRuns = sqliteTable("scan_runs", {
   id: cuid(),
   source: text("source").notNull(), // github | arxiv | queue | mixed
-  status: text("status", { enum: ["running", "success", "error"] }).notNull().default("running"),
+  status: text("status", { enum: ["running", "success", "error"] })
+    .notNull()
+    .default("running"),
   discovered: integer("discovered").notNull().default(0),
   published: integer("published").notNull().default(0),
   skippedDuplicate: integer("skipped_duplicate").notNull().default(0),
@@ -187,13 +214,18 @@ export const subscribers = sqliteTable(
   {
     id: cuid(),
     email: text("email").notNull().unique(),
-    status: text("status", { enum: ["pending", "active", "unsubscribed"] }).notNull().default("pending"),
+    status: text("status", { enum: ["pending", "active", "unsubscribed"] })
+      .notNull()
+      .default("pending"),
     token: text("token").notNull(),
     createdAt: integer("created_at").notNull().default(now),
     confirmedAt: integer("confirmed_at"),
     unsubscribedAt: integer("unsubscribed_at"),
   },
-  (t) => [index("subscribers_status_idx").on(t.status), uniqueIndex("subscribers_token_idx").on(t.token)],
+  (t) => [
+    index("subscribers_status_idx").on(t.status),
+    uniqueIndex("subscribers_token_idx").on(t.token),
+  ],
 );
 
 /* ------------------------------------------------------------ my stack */
@@ -208,10 +240,14 @@ export const stackItems = sqliteTable(
   "stack_items",
   {
     id: cuid(),
-    userId: text("user_id").notNull().references(() => users.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
     itemId: text("item_id").references(() => items.id),
     toolName: text("tool_name"), // set when the tool isn't a catalogued item
-    status: text("status", { enum: ["using", "trying", "want-to-try", "dropped"] }).notNull().default("using"),
+    status: text("status", { enum: ["using", "trying", "want-to-try", "dropped"] })
+      .notNull()
+      .default("using"),
     take: text("take"),
     rating: integer("rating"), // 1..5, optional
     createdAt: integer("created_at").notNull().default(now),
@@ -232,13 +268,18 @@ export const reposts = sqliteTable(
   "reposts",
   {
     id: cuid(),
-    userId: text("user_id").notNull().references(() => users.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
     targetType: text("target_type", { enum: ["post", "item"] }).notNull(),
     targetId: text("target_id").notNull(),
     quote: text("quote"),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [uniqueIndex("reposts_unique_idx").on(t.userId, t.targetType, t.targetId), index("reposts_user_idx").on(t.userId)],
+  (t) => [
+    uniqueIndex("reposts_unique_idx").on(t.userId, t.targetType, t.targetId),
+    index("reposts_user_idx").on(t.userId),
+  ],
 );
 
 /* ------------------------------------------------------- direct messages */
@@ -248,13 +289,21 @@ export const messages = sqliteTable(
   "messages",
   {
     id: cuid(),
-    fromUserId: text("from_user_id").notNull().references(() => users.id),
-    toUserId: text("to_user_id").notNull().references(() => users.id),
+    fromUserId: text("from_user_id")
+      .notNull()
+      .references(() => users.id),
+    toUserId: text("to_user_id")
+      .notNull()
+      .references(() => users.id),
     body: text("body").notNull(),
     readAt: integer("read_at"),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [index("messages_from_idx").on(t.fromUserId), index("messages_to_idx").on(t.toUserId), index("messages_pair_idx").on(t.fromUserId, t.toUserId)],
+  (t) => [
+    index("messages_from_idx").on(t.fromUserId),
+    index("messages_to_idx").on(t.toUserId),
+    index("messages_pair_idx").on(t.fromUserId, t.toUserId),
+  ],
 );
 
 /* --------------------------------------------------------- activity feed */
@@ -264,13 +313,18 @@ export const activities = sqliteTable(
   "activities",
   {
     id: cuid(),
-    actorId: text("actor_id").notNull().references(() => users.id),
+    actorId: text("actor_id")
+      .notNull()
+      .references(() => users.id),
     verb: text("verb").notNull(), // posted | reposted | commented | stack_added | followed | submitted | article_published
     objectType: text("object_type").notNull(), // post | item | comment | user | stack | article
     objectId: text("object_id").notNull(),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [index("activities_actor_idx").on(t.actorId), index("activities_created_idx").on(t.createdAt)],
+  (t) => [
+    index("activities_actor_idx").on(t.actorId),
+    index("activities_created_idx").on(t.createdAt),
+  ],
 );
 
 /* --------------------------------------------------------- notifications */
@@ -280,7 +334,9 @@ export const notifications = sqliteTable(
   "notifications",
   {
     id: cuid(),
-    userId: text("user_id").notNull().references(() => users.id), // recipient
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id), // recipient
     actorId: text("actor_id").references(() => users.id),
     type: text("type").notNull(), // reply | dm | repost | follow | stack_add | mention
     objectType: text("object_type"),
@@ -288,7 +344,10 @@ export const notifications = sqliteTable(
     readAt: integer("read_at"),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [index("notifications_user_idx").on(t.userId), index("notifications_unread_idx").on(t.userId, t.readAt)],
+  (t) => [
+    index("notifications_user_idx").on(t.userId),
+    index("notifications_unread_idx").on(t.userId, t.readAt),
+  ],
 );
 
 /* -------------------------------------------------- long-form articles */
@@ -298,7 +357,9 @@ export const articles = sqliteTable(
   "articles",
   {
     id: cuid(),
-    authorId: text("author_id").notNull().references(() => users.id),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => users.id),
     slug: text("slug").notNull().unique(),
     title: text("title").notNull(),
     bodyMd: text("body_md").notNull(),
@@ -306,7 +367,10 @@ export const articles = sqliteTable(
     createdAt: integer("created_at").notNull().default(now),
     updatedAt: integer("updated_at").notNull().default(now),
   },
-  (t) => [index("articles_author_idx").on(t.authorId), index("articles_created_idx").on(t.createdAt)],
+  (t) => [
+    index("articles_author_idx").on(t.authorId),
+    index("articles_created_idx").on(t.createdAt),
+  ],
 );
 
 /* ------------------------------------------------------- profile links */
@@ -316,19 +380,26 @@ export const profileLinks = sqliteTable(
   "profile_links",
   {
     id: cuid(),
-    userId: text("user_id").notNull().references(() => users.id),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id),
     kind: text("kind").notNull(), // github | x | linkedin | substack | website | youtube | mastodon | bluesky | telegram
     url: text("url").notNull(),
     createdAt: integer("created_at").notNull().default(now),
   },
-  (t) => [uniqueIndex("profile_links_user_kind_idx").on(t.userId, t.kind), index("profile_links_user_idx").on(t.userId)],
+  (t) => [
+    uniqueIndex("profile_links_user_kind_idx").on(t.userId, t.kind),
+    index("profile_links_user_idx").on(t.userId),
+  ],
 );
 
 /* ------------------------------------------------------ auth sessions */
 
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(), // opaque session token
-  userId: text("user_id").notNull().references(() => users.id),
+  userId: text("user_id")
+    .notNull()
+    .references(() => users.id),
   expiresAt: integer("expires_at").notNull(),
   createdAt: integer("created_at").notNull().default(now),
 });

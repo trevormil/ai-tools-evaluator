@@ -50,7 +50,9 @@ export default async function ProfilePage({ params }: { params: Params }) {
     <section className="flex flex-col gap-6">
       {isSelf && submissions.length > 0 && (
         <div>
-          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">Your submissions</h3>
+          <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            Your submissions
+          </h3>
           <ul className="flex flex-col gap-2">
             {submissions.map((s) => (
               <li key={s.id} className="card flex items-center justify-between gap-3 p-3 text-sm">
@@ -64,7 +66,9 @@ export default async function ProfilePage({ params }: { params: Params }) {
 
       {submittedItems.length > 0 && (
         <div>
-          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Published items</h3>
+          <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+            Published items
+          </h3>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {submittedItems.map((item) => (
               <ItemCard key={item.id} item={item} />
@@ -74,7 +78,9 @@ export default async function ProfilePage({ params }: { params: Params }) {
       )}
 
       <div>
-        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">Posts</h3>
+        <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-neutral-500">
+          Posts
+        </h3>
         {posts.length === 0 ? (
           <p className="text-sm text-neutral-500">No posts yet.</p>
         ) : (
@@ -97,9 +103,21 @@ export default async function ProfilePage({ params }: { params: Params }) {
 
   const tabs: ProfileTab[] = [
     { key: "posts", label: "Posts", content: postsTab },
-    { key: "stack", label: "My Stack", content: <StackSection stack={stack} isSelf={isSelf} username={profile.username} /> },
-    { key: "workflow", label: "My Workflow", content: <WorkflowSection profile={profile} isSelf={isSelf} articles={articles} /> },
-    { key: "articles", label: "Articles", content: <ArticleList articles={articles} isSelf={isSelf} /> },
+    {
+      key: "stack",
+      label: "My Stack",
+      content: <StackSection stack={stack} isSelf={isSelf} username={profile.username} />,
+    },
+    {
+      key: "workflow",
+      label: "My Workflow",
+      content: <WorkflowSection profile={profile} isSelf={isSelf} articles={articles} />,
+    },
+    {
+      key: "articles",
+      label: "Articles",
+      content: <ArticleList articles={articles} isSelf={isSelf} />,
+    },
   ];
 
   return (
@@ -118,12 +136,15 @@ export default async function ProfilePage({ params }: { params: Params }) {
           <p className="text-sm text-neutral-500">@{profile.username}</p>
           {profile.bio && <p className="mt-1 text-sm">{profile.bio}</p>}
           <p className="mt-1 text-xs text-neutral-500">
-            {counts.followers} followers · {counts.following} following · joined {timeAgo(profile.createdAt)} ago
+            {counts.followers} followers · {counts.following} following · joined{" "}
+            {timeAgo(profile.createdAt)} ago
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
             <ProfileLinks links={links} />
             {isSelf && <ProfileLinksEditor initial={linksByKind} />}
-            {isSelf && <EditProfile displayName={profile.displayName ?? ""} bio={profile.bio ?? ""} />}
+            {isSelf && (
+              <EditProfile displayName={profile.displayName ?? ""} bio={profile.bio ?? ""} />
+            )}
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -135,7 +156,11 @@ export default async function ProfilePage({ params }: { params: Params }) {
               </a>
             </>
           )}
-          {!viewer && <a href="/api/auth/github" className="btn-ghost">Sign in to follow</a>}
+          {!viewer && (
+            <a href="/api/auth/github" className="btn-ghost">
+              Sign in to follow
+            </a>
+          )}
           {isSelf && (
             <a href="/api/auth/logout" className="text-xs text-neutral-500 hover:underline">
               Sign out

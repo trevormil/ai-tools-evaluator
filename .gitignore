@@ -53,3 +53,4 @@ yarn.lock
 
 # TypeScript incremental build info
 *.tsbuildinfo
+.gstack/

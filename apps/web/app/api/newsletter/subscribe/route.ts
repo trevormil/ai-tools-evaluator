@@ -28,7 +28,10 @@ export async function POST(req: Request) {
     }
 
     if (existing) {
-      db.update(subscribers).set({ status: "pending", token }).where(eq(subscribers.id, existing.id)).run();
+      db.update(subscribers)
+        .set({ status: "pending", token })
+        .where(eq(subscribers.id, existing.id))
+        .run();
     } else {
       db.insert(subscribers).values({ email: normalized, status: "pending", token }).run();
     }

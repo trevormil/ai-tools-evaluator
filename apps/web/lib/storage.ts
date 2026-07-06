@@ -54,7 +54,8 @@ export async function uploadImage(
   contentType: string,
   keyHint = "img",
 ): Promise<string> {
-  if (!isStorageConfigured()) throw new Error("Object storage is not configured (AIX_SPACES_* env unset).");
+  if (!isStorageConfigured())
+    throw new Error("Object storage is not configured (AIX_SPACES_* env unset).");
   const ext = ALLOWED.get(contentType);
   if (!ext) throw new Error(`Unsupported image type: ${contentType}`);
   const size = bytes instanceof Uint8Array ? bytes.byteLength : bytes.byteLength;

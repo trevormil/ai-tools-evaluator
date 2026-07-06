@@ -15,7 +15,12 @@ export function MediaGallery({ media }: { media: MediaAsset[] }) {
             className="w-full rounded-lg border border-neutral-200 object-cover dark:border-neutral-800"
           />
         ) : (
-          <video key={i} src={src} controls className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800" />
+          <video
+            key={i}
+            src={src}
+            controls
+            className="w-full rounded-lg border border-neutral-200 dark:border-neutral-800"
+          />
         );
       })}
     </div>

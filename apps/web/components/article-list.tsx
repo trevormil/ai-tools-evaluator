@@ -15,7 +15,9 @@ export function ArticleList({ articles, isSelf }: { articles: Article[]; isSelf:
 
       {articles.length === 0 ? (
         <p className="text-sm text-neutral-500">
-          {isSelf ? "No articles yet. Write up a deep-dive, guide, or opinion piece." : "No articles yet."}
+          {isSelf
+            ? "No articles yet. Write up a deep-dive, guide, or opinion piece."
+            : "No articles yet."}
         </p>
       ) : (
         <ul className="flex flex-col gap-2">
@@ -29,7 +31,10 @@ export function ArticleList({ articles, isSelf }: { articles: Article[]; isSelf:
               </div>
               {isSelf && (
                 <div className="flex shrink-0 items-center gap-2 text-xs">
-                  <Link href={`/articles/${a.slug}/edit`} className="text-neutral-500 hover:underline">
+                  <Link
+                    href={`/articles/${a.slug}/edit`}
+                    className="text-neutral-500 hover:underline"
+                  >
                     Edit
                   </Link>
                   <ArticleDeleteControl slug={a.slug} />

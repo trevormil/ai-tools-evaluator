@@ -38,7 +38,8 @@ export default async function ArticlePage({ params }: { params: Params }) {
               {author.displayName ?? author.username}
             </Link>{" "}
             · {timeAgo(article.createdAt)} ago
-            {article.updatedAt > article.createdAt && ` · updated ${timeAgo(article.updatedAt)} ago`}
+            {article.updatedAt > article.createdAt &&
+              ` · updated ${timeAgo(article.updatedAt)} ago`}
           </span>
           {isAuthor && (
             <span className="flex shrink-0 items-center gap-3 text-xs">

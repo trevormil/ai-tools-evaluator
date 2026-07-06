@@ -24,7 +24,10 @@ export async function POST(req: Request) {
 
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid evaluation", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid evaluation", details: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
   const { evaluation, submissionId } = parsed.data;
   const db = getDb();

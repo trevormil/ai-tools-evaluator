@@ -45,7 +45,10 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
 }
 
 /** Kick off an immediate run, then repeat on an interval. Returns the timer. */
-export function startDigestScheduler(deps: DigestDeps, intervalMs = DAY_MS): ReturnType<typeof setInterval> {
+export function startDigestScheduler(
+  deps: DigestDeps,
+  intervalMs = DAY_MS,
+): ReturnType<typeof setInterval> {
   const tick = () => {
     runDigest(deps).catch((err) => console.error("[digest] run failed:", err));
   };
@@ -77,9 +80,7 @@ export async function runWeeklyDigest(deps: WeeklyDigestDeps): Promise<DigestIte
   const items = await deps.client.fetchDigest(since);
   if (items.length === 0) return [];
 
-  const top = [...items]
-    .sort((a, b) => b.overallScore - a.overallScore)
-    .slice(0, deps.topN ?? 5);
+  const top = [...items].sort((a, b) => b.overallScore - a.overallScore).slice(0, deps.topN ?? 5);
 
   const channel = await deps.getChannel();
   await channel.send({ content: "🏆 **Best of the week**" });

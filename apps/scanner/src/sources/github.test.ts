@@ -7,9 +7,7 @@ const now = new Date("2026-07-06T00:00:00.000Z");
 
 describe("buildQueries facet rotation", () => {
   const topicsOf = (queries: string[]) =>
-    queries
-      .map((q) => q.match(/topic:(\S+)/)?.[1])
-      .filter((t): t is string => Boolean(t));
+    queries.map((q) => q.match(/topic:(\S+)/)?.[1]).filter((t): t is string => Boolean(t));
 
   test("consecutive seeds explore different, non-overlapping topic slices", () => {
     const a = topicsOf(buildQueries(now, 0));
@@ -69,11 +67,45 @@ function fakeOctokit(rows: RepoRow[]): { octokit: Octokit; readmeCalls: string[]
 
 describe("createGitHubSource discovery quality gate", () => {
   const rows: RepoRow[] = [
-    { full_name: "good/high", name: "high", html_url: "https://github.com/good/high", owner: { login: "good" }, stargazers_count: 500 },
-    { full_name: "good/rising", name: "rising", html_url: "https://github.com/good/rising", owner: { login: "good" }, stargazers_count: 30, created_at: new Date(now.getTime() - 2 * 86_400_000).toISOString() },
-    { full_name: "bad/low", name: "low", html_url: "https://github.com/bad/low", owner: { login: "bad" }, stargazers_count: 5, created_at: new Date(now.getTime() - 400 * 86_400_000).toISOString() },
-    { full_name: "bad/archived", name: "arch", html_url: "https://github.com/bad/archived", owner: { login: "bad" }, stargazers_count: 800, archived: true },
-    { full_name: "bad/fork", name: "fork", html_url: "https://github.com/bad/fork", owner: { login: "bad" }, stargazers_count: 800, fork: true },
+    {
+      full_name: "good/high",
+      name: "high",
+      html_url: "https://github.com/good/high",
+      owner: { login: "good" },
+      stargazers_count: 500,
+    },
+    {
+      full_name: "good/rising",
+      name: "rising",
+      html_url: "https://github.com/good/rising",
+      owner: { login: "good" },
+      stargazers_count: 30,
+      created_at: new Date(now.getTime() - 2 * 86_400_000).toISOString(),
+    },
+    {
+      full_name: "bad/low",
+      name: "low",
+      html_url: "https://github.com/bad/low",
+      owner: { login: "bad" },
+      stargazers_count: 5,
+      created_at: new Date(now.getTime() - 400 * 86_400_000).toISOString(),
+    },
+    {
+      full_name: "bad/archived",
+      name: "arch",
+      html_url: "https://github.com/bad/archived",
+      owner: { login: "bad" },
+      stargazers_count: 800,
+      archived: true,
+    },
+    {
+      full_name: "bad/fork",
+      name: "fork",
+      html_url: "https://github.com/bad/fork",
+      owner: { login: "bad" },
+      stargazers_count: 800,
+      fork: true,
+    },
   ];
 
   test("only surfaces repos that clear the gate, and never fetches READMEs for the rest", async () => {

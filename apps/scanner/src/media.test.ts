@@ -1,11 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { MediaAsset } from "@aix/core";
-import {
-  buildMedia,
-  extractReadmeImages,
-  githubSocialPreviewUrl,
-  coverImageUrl,
-} from "./media";
+import { buildMedia, extractReadmeImages, githubSocialPreviewUrl, coverImageUrl } from "./media";
 import { slugify } from "./slug";
 import { makeGithubSource } from "./test-fixtures";
 
@@ -45,7 +40,12 @@ describe("media", () => {
 
   test("buildMedia for a paper: a single placeholder cover", () => {
     const media = buildMedia(
-      { kind: "arxiv_paper", externalId: "2401.1", url: "http://arxiv.org/abs/2401.1", title: "Paper" },
+      {
+        kind: "arxiv_paper",
+        externalId: "2401.1",
+        url: "http://arxiv.org/abs/2401.1",
+        title: "Paper",
+      },
       "abstract",
     );
     expect(media).toHaveLength(1);

@@ -31,7 +31,10 @@ export default async function ConfirmPage({ searchParams }: { searchParams: Sear
           ? "You'll get the AIx daily digest — new tools & papers, each with a harsh verdict."
           : "This confirmation link isn't valid. Try subscribing again."}
       </p>
-      <a href="/" className="mt-6 inline-block text-orange-600 hover:underline dark:text-orange-400">
+      <a
+        href="/"
+        className="mt-6 inline-block text-orange-600 hover:underline dark:text-orange-400"
+      >
         ← Back to AIx
       </a>
     </div>

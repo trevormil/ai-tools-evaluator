@@ -2,7 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { PROFILE_LINK_KINDS, PROFILE_LINK_META, type ProfileLinkKind } from "@/lib/profile-link-kinds";
+import {
+  PROFILE_LINK_KINDS,
+  PROFILE_LINK_META,
+  type ProfileLinkKind,
+} from "@/lib/profile-link-kinds";
 import { ProfileLinkIcon } from "@/components/profile-link-icon";
 
 /** Owner-only editor: one URL field per service, saved as a full replace. */
@@ -16,7 +20,10 @@ export function ProfileLinksEditor({ initial }: { initial: Record<string, string
   async function save() {
     setBusy(true);
     setMsg(null);
-    const links = PROFILE_LINK_KINDS.map((kind) => ({ kind, url: (urls[kind] ?? "").trim() })).filter((l) => l.url);
+    const links = PROFILE_LINK_KINDS.map((kind) => ({
+      kind,
+      url: (urls[kind] ?? "").trim(),
+    })).filter((l) => l.url);
     const res = await fetch("/api/profile/links", {
       method: "PUT",
       headers: { "content-type": "application/json" },

@@ -46,15 +46,29 @@ export function StackEditor() {
   return (
     <form onSubmit={add} className="card flex flex-col gap-2 p-3">
       <div className="flex flex-col gap-2 sm:flex-row">
-        <input className="input flex-1" placeholder="Tool name (e.g. ripgrep)" value={toolName} onChange={(e) => setToolName(e.target.value)} required />
-        <select className="input sm:w-40" value={status} onChange={(e) => setStatus(e.target.value as StackStatus)}>
+        <input
+          className="input flex-1"
+          placeholder="Tool name (e.g. ripgrep)"
+          value={toolName}
+          onChange={(e) => setToolName(e.target.value)}
+          required
+        />
+        <select
+          className="input sm:w-40"
+          value={status}
+          onChange={(e) => setStatus(e.target.value as StackStatus)}
+        >
           {STACK_STATUSES.map((s) => (
             <option key={s} value={s}>
               {STACK_STATUS_LABELS[s]}
             </option>
           ))}
         </select>
-        <select className="input sm:w-24" value={rating} onChange={(e) => setRating(e.target.value === "" ? "" : Number(e.target.value))}>
+        <select
+          className="input sm:w-24"
+          value={rating}
+          onChange={(e) => setRating(e.target.value === "" ? "" : Number(e.target.value))}
+        >
           <option value="">★ —</option>
           {[1, 2, 3, 4, 5].map((n) => (
             <option key={n} value={n}>
@@ -63,7 +77,13 @@ export function StackEditor() {
           ))}
         </select>
       </div>
-      <textarea className="input" rows={2} placeholder="Your take — why you run it, or why you dropped it" value={take} onChange={(e) => setTake(e.target.value)} />
+      <textarea
+        className="input"
+        rows={2}
+        placeholder="Your take — why you run it, or why you dropped it"
+        value={take}
+        onChange={(e) => setTake(e.target.value)}
+      />
       <div className="flex items-center gap-3">
         <button className="btn-primary" disabled={busy || !toolName.trim()}>
           {busy ? "Adding…" : "Add to stack"}
@@ -78,11 +98,19 @@ export function StackEditor() {
 export function StackDeleteButton({ entryId }: { entryId: string }) {
   const router = useRouter();
   async function remove() {
-    await fetch("/api/stack", { method: "DELETE", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: entryId }) });
+    await fetch("/api/stack", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id: entryId }),
+    });
     router.refresh();
   }
   return (
-    <button onClick={remove} className="ml-auto text-xs text-neutral-400 hover:text-red-500" title="Remove">
+    <button
+      onClick={remove}
+      className="ml-auto text-xs text-neutral-400 hover:text-red-500"
+      title="Remove"
+    >
       ✕
     </button>
   );

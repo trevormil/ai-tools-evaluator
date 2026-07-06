@@ -16,7 +16,10 @@ export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
 
-const SECTIONS: { key: "whatItIs" | "vsVanilla" | "surfaceArea" | "devilsAdvocate" | "steelman"; title: string }[] = [
+const SECTIONS: {
+  key: "whatItIs" | "vsVanilla" | "surfaceArea" | "devilsAdvocate" | "steelman";
+  title: string;
+}[] = [
   { key: "whatItIs", title: "What it is" },
   { key: "vsVanilla", title: "How it differs from vanilla Claude" },
   { key: "surfaceArea", title: "Skill, plugin, or workflow shift?" },
@@ -32,21 +35,31 @@ export default async function ItemPage({ params }: { params: Params }) {
   const evaluation = parseEvaluation(item);
   const user = await getCurrentUser();
   const commentNodes = getItemComments(item.id);
-  const myItemVote = user ? userVotes(user.id, "item")[item.id] ?? 0 : 0;
+  const myItemVote = user ? (userVotes(user.id, "item")[item.id] ?? 0) : 0;
   const myCommentVotes = user ? userVotes(user.id, "comment") : {};
   const comments = toCommentViews(commentNodes, myCommentVotes);
 
   return (
     <article className="flex flex-col gap-8">
       <header className="flex gap-4">
-        <VoteButtons targetType="item" targetId={item.id} initialNet={item.upvotes} initialVote={myItemVote} signedIn={!!user} />
+        <VoteButtons
+          targetType="item"
+          targetId={item.id}
+          initialNet={item.upvotes}
+          initialVote={myItemVote}
+          signedIn={!!user}
+        />
         <div className="flex-1">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <VerdictBadge verdict={item.verdict} />
-            <span className="chip">{CATEGORY_LABELS[item.category as Category] ?? item.category}</span>
+            <span className="chip">
+              {CATEGORY_LABELS[item.category as Category] ?? item.category}
+            </span>
             <span className="chip">{item.integration}</span>
             <span className="chip">noise {item.noiseScore}/100</span>
-            <span className="chip !border-[var(--brand)] !text-brand font-bold">overall {item.overallScore}/100</span>
+            <span className="chip !border-[var(--brand)] !text-brand font-bold">
+              overall {item.overallScore}/100
+            </span>
           </div>
           <h1 className="text-2xl font-black tracking-tight sm:text-3xl">{item.title}</h1>
           <p className="mt-1.5 text-muted">{item.tagline}</p>
@@ -55,7 +68,9 @@ export default async function ItemPage({ params }: { params: Params }) {
               {item.kind === "arxiv_paper" ? "View paper ↗" : "Source ↗"}
             </a>
             <span className="data text-xs text-faint">{evaluation.source.externalId}</span>
-            {evaluation.source.stars != null && <span className="data text-xs text-faint">★ {evaluation.source.stars}</span>}
+            {evaluation.source.stars != null && (
+              <span className="data text-xs text-faint">★ {evaluation.source.stars}</span>
+            )}
           </div>
         </div>
       </header>

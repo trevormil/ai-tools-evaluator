@@ -29,8 +29,12 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
     <div className="flex flex-col gap-6">
       <div>
         <p className="eyebrow">Directory</p>
-        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">Every tool, on the record.</h1>
-        <p className="mt-1 text-sm text-muted">Trending tools, distilled into a harsh verdict and a 10-metric scorecard.</p>
+        <h1 className="mt-2 text-2xl font-black tracking-tight sm:text-3xl">
+          Every tool, on the record.
+        </h1>
+        <p className="mt-1 text-sm text-muted">
+          Trending tools, distilled into a harsh verdict and a 10-metric scorecard.
+        </p>
       </div>
       <Filters />
       {items.length === 0 ? (
@@ -39,7 +43,9 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
         </div>
       ) : (
         <>
-          <p className="data text-[11px] uppercase tracking-wider text-faint">{items.length} results</p>
+          <p className="data text-[11px] uppercase tracking-wider text-faint">
+            {items.length} results
+          </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {items.map((item) => (
               <ItemCard key={item.id} item={item} />

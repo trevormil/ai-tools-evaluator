@@ -58,7 +58,11 @@ export function EditProfile({ displayName, bio }: { displayName: string; bio: st
   return (
     <div className="card flex w-full flex-col gap-3 p-4">
       <div className="flex items-center gap-3">
-        <button className="btn-ghost text-xs" onClick={() => fileRef.current?.click()} disabled={busy}>
+        <button
+          className="btn-ghost text-xs"
+          onClick={() => fileRef.current?.click()}
+          disabled={busy}
+        >
           Upload avatar
         </button>
         <input
@@ -73,8 +77,21 @@ export function EditProfile({ displayName, bio }: { displayName: string; bio: st
         />
         <span className="text-xs text-neutral-500">PNG/JPG/WebP/GIF, max 5 MB</span>
       </div>
-      <input className="input" placeholder="Display name" value={name} onChange={(e) => setName(e.target.value)} maxLength={80} />
-      <textarea className="input" rows={2} placeholder="Bio" value={bioText} onChange={(e) => setBioText(e.target.value)} maxLength={500} />
+      <input
+        className="input"
+        placeholder="Display name"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        maxLength={80}
+      />
+      <textarea
+        className="input"
+        rows={2}
+        placeholder="Bio"
+        value={bioText}
+        onChange={(e) => setBioText(e.target.value)}
+        maxLength={500}
+      />
       <div className="flex items-center gap-3">
         <button onClick={saveText} disabled={busy} className="btn-primary">
           {busy ? "Saving…" : "Save"}

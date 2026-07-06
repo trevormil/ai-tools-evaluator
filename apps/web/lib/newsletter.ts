@@ -59,7 +59,10 @@ export function renderConfirmEmail(token: string): { subject: string; html: stri
   };
 }
 
-export function renderDigestEmail(items: DigestItem[], token: string): { subject: string; html: string } {
+export function renderDigestEmail(
+  items: DigestItem[],
+  token: string,
+): { subject: string; html: string } {
   const unsub = publicUrl(`/newsletter/unsubscribe?token=${token}`);
   const rows = items
     .map((i) => {
@@ -87,5 +90,8 @@ export function renderDigestEmail(items: DigestItem[], token: string): { subject
 }
 
 function escapeHtml(s: string): string {
-  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!);
+  return s.replace(
+    /[&<>"]/g,
+    (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]!,
+  );
 }

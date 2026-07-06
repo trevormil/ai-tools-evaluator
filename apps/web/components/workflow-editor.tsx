@@ -17,7 +17,9 @@ export function WorkflowEditor({
   currentArticleId: string | null;
 }) {
   const router = useRouter();
-  const [mode, setMode] = useState<Mode>(currentArticleId ? "article" : currentUrl ? "url" : "none");
+  const [mode, setMode] = useState<Mode>(
+    currentArticleId ? "article" : currentUrl ? "url" : "none",
+  );
   const [url, setUrl] = useState(currentUrl ?? "");
   const [articleId, setArticleId] = useState(currentArticleId ?? articles[0]?.id ?? "");
   const [busy, setBusy] = useState(false);
@@ -29,7 +31,11 @@ export function WorkflowEditor({
     setBusy(true);
     setErr(null);
     const payload =
-      mode === "url" ? { url: url.trim() } : mode === "article" ? { articleId } : { url: null, articleId: null };
+      mode === "url"
+        ? { url: url.trim() }
+        : mode === "article"
+          ? { articleId }
+          : { url: null, articleId: null };
     try {
       const res = await fetch("/api/workflow", {
         method: "PUT",
@@ -63,7 +69,8 @@ export function WorkflowEditor({
           <input type="radio" checked={mode === "none"} onChange={() => setMode("none")} /> None
         </label>
         <label className="flex items-center gap-1">
-          <input type="radio" checked={mode === "url"} onChange={() => setMode("url")} /> External link
+          <input type="radio" checked={mode === "url"} onChange={() => setMode("url")} /> External
+          link
         </label>
         <label className="flex items-center gap-1">
           <input
@@ -97,7 +104,9 @@ export function WorkflowEditor({
         </select>
       )}
       {mode === "article" && articles.length === 0 && (
-        <p className="text-xs text-neutral-500">Write an article first to feature it as your workflow.</p>
+        <p className="text-xs text-neutral-500">
+          Write an article first to feature it as your workflow.
+        </p>
       )}
 
       <div className="flex items-center gap-3">

@@ -6,7 +6,14 @@ import { isInternalAuthorized } from "@/lib/internal-auth";
 
 export const dynamic = "force-dynamic";
 
-const SUB_STATUSES = ["queued", "processing", "published", "duplicate", "rejected", "failed"] as const;
+const SUB_STATUSES = [
+  "queued",
+  "processing",
+  "published",
+  "duplicate",
+  "rejected",
+  "failed",
+] as const;
 
 /** List submissions (default queued, oldest-first — the scanner's drain order). */
 export async function GET(req: Request) {
@@ -43,7 +50,10 @@ export async function POST(req: Request) {
   }
   const parsed = PostBody.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid body", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid body", details: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
   const { url, note, source, discordUserId } = parsed.data;
   const db = getDb();
@@ -57,7 +67,13 @@ export async function POST(req: Request) {
 
   const submission = db
     .insert(submissions)
-    .values({ url, note: note ?? null, source, discordUserId: discordUserId ?? null, status: "queued" })
+    .values({
+      url,
+      note: note ?? null,
+      source,
+      discordUserId: discordUserId ?? null,
+      status: "queued",
+    })
     .returning()
     .get();
 

@@ -13,7 +13,9 @@ export async function GET(req: Request) {
   }
 
   const now = new Date();
-  const midnight = Math.floor(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 1000);
+  const midnight = Math.floor(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 1000,
+  );
 
   const row = getDb()
     .select({ n: sql<number>`count(*)` })

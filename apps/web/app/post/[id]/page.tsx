@@ -16,13 +16,19 @@ export default async function PostPage({ params }: { params: Params }) {
   if (!data) notFound();
 
   const user = await getCurrentUser();
-  const myPostVote = user ? userVotes(user.id, "post")[data.post.id] ?? 0 : 0;
+  const myPostVote = user ? (userVotes(user.id, "post")[data.post.id] ?? 0) : 0;
   const myCommentVotes = user ? userVotes(user.id, "comment") : {};
   const comments = toCommentViews(getPostComments(data.post.id), myCommentVotes);
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-4">
-      <PostCard post={data.post} author={data.author} item={data.item} myVote={myPostVote} signedIn={!!user} />
+      <PostCard
+        post={data.post}
+        author={data.author}
+        item={data.item}
+        myVote={myPostVote}
+        signedIn={!!user}
+      />
       <div className="card p-4">
         <CommentForm postId={data.post.id} signedIn={!!user} />
       </div>

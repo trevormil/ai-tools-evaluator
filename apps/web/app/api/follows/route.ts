@@ -30,11 +30,18 @@ export async function POST(req: Request) {
       .get();
 
     if (existing) {
-      db.delete(follows).where(and(eq(follows.followerId, user.id), eq(follows.followeeId, targetUserId))).run();
+      db.delete(follows)
+        .where(and(eq(follows.followerId, user.id), eq(follows.followeeId, targetUserId)))
+        .run();
       return NextResponse.json({ following: false });
     }
     db.insert(follows).values({ followerId: user.id, followeeId: targetUserId }).run();
-    emitActivity({ actorId: user.id, verb: "followed", objectType: "user", objectId: targetUserId });
+    emitActivity({
+      actorId: user.id,
+      verb: "followed",
+      objectType: "user",
+      objectId: targetUserId,
+    });
     notify({ userId: targetUserId, actorId: user.id, type: "follow" });
     return NextResponse.json({ following: true });
   } catch (err) {

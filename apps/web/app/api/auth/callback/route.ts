@@ -7,7 +7,13 @@ import { createSession, SESSION_COOKIE } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
-type GithubUser = { id: number; login: string; name?: string | null; avatar_url?: string; bio?: string | null };
+type GithubUser = {
+  id: number;
+  login: string;
+  name?: string | null;
+  avatar_url?: string;
+  bio?: string | null;
+};
 
 /** OAuth callback: verify state, exchange the code, upsert the user, open a session. */
 export async function GET(req: Request) {
@@ -70,7 +76,11 @@ function upsertGithubUser(gh: GithubUser): User {
   const existing = db.select().from(users).where(eq(users.githubId, gh.id)).get();
   if (existing) {
     db.update(users)
-      .set({ displayName: gh.name ?? existing.displayName, avatarUrl: gh.avatar_url ?? existing.avatarUrl, bio: gh.bio ?? existing.bio })
+      .set({
+        displayName: gh.name ?? existing.displayName,
+        avatarUrl: gh.avatar_url ?? existing.avatarUrl,
+        bio: gh.bio ?? existing.bio,
+      })
       .where(eq(users.id, existing.id))
       .run();
     return db.select().from(users).where(eq(users.id, existing.id)).get()!;
@@ -83,7 +93,13 @@ function upsertGithubUser(gh: GithubUser): User {
   if (clash) username = `${gh.login}-${gh.id}`;
 
   db.insert(users)
-    .values({ githubId: gh.id, username, displayName: gh.name ?? gh.login, avatarUrl: gh.avatar_url, bio: gh.bio })
+    .values({
+      githubId: gh.id,
+      username,
+      displayName: gh.name ?? gh.login,
+      avatarUrl: gh.avatar_url,
+      bio: gh.bio,
+    })
     .run();
   return db.select().from(users).where(eq(users.githubId, gh.id)).get()!;
 }

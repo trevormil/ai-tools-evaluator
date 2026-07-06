@@ -106,7 +106,9 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
     return assembleEvaluation(d, draft, opts);
   }
 
-  throw new Error(`evaluator failed for ${d.source.externalId} after ${maxRetries + 1} attempts: ${lastError}`);
+  throw new Error(
+    `evaluator failed for ${d.source.externalId} after ${maxRetries + 1} attempts: ${lastError}`,
+  );
 }
 
 function assembleEvaluation(

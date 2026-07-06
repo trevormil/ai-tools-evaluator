@@ -19,9 +19,7 @@ export function runMigrations(): void {
   ];
   const folder = candidates.find((p) => existsSync(p));
   if (!folder) {
-    throw new Error(
-      `Could not locate packages/db/migrations from cwd=${process.cwd()}`,
-    );
+    throw new Error(`Could not locate packages/db/migrations from cwd=${process.cwd()}`);
   }
   migrate(getDb(), { migrationsFolder: folder });
 }

@@ -57,7 +57,12 @@ export function buildMedia(source: ItemSource, readme: string): MediaAsset[] {
       alt: `${source.title} social preview`,
     });
     for (const url of extractReadmeImages(readme)) {
-      media.push({ type: "image", url, source: "repo-readme", alt: `${source.title} README image` });
+      media.push({
+        type: "image",
+        url,
+        source: "repo-readme",
+        alt: `${source.title} README image`,
+      });
     }
   } else {
     // arXiv papers and other kinds have no imagery of their own.

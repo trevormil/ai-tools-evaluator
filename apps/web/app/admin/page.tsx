@@ -44,10 +44,15 @@ export default async function AdminPage() {
           {recentItems.map((it) => (
             <div key={it.id} className="card flex items-center gap-3 p-3 text-sm">
               <VerdictBadge verdict={it.verdict} />
-              <Link href={`/item/${it.slug}`} className="min-w-0 flex-1 truncate font-medium hover:underline">
+              <Link
+                href={`/item/${it.slug}`}
+                className="min-w-0 flex-1 truncate font-medium hover:underline"
+              >
                 {it.title}
               </Link>
-              <span className="hidden shrink-0 text-xs text-neutral-400 sm:inline">score {it.overallScore}</span>
+              <span className="hidden shrink-0 text-xs text-neutral-400 sm:inline">
+                score {it.overallScore}
+              </span>
               {!it.published && <span className="chip shrink-0">hidden</span>}
               <HideButton type="item" id={it.id} label={it.published ? "Hide" : "Unhide"} />
             </div>
@@ -66,7 +71,9 @@ export default async function AdminPage() {
               <Link href={`/post/${post.id}`} className="min-w-0 flex-1 truncate hover:underline">
                 {post.body.slice(0, 100)}
               </Link>
-              <span className="hidden shrink-0 text-xs text-neutral-400 sm:inline">▲ {post.upvotes}</span>
+              <span className="hidden shrink-0 text-xs text-neutral-400 sm:inline">
+                ▲ {post.upvotes}
+              </span>
               <HideButton type="post" id={post.id} label="Remove" />
             </div>
           ))}

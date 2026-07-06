@@ -41,7 +41,13 @@ export function hasReposted(userId: string, targetType: RepostTarget, targetId: 
   const row = getDb()
     .select({ id: reposts.id })
     .from(reposts)
-    .where(and(eq(reposts.userId, userId), eq(reposts.targetType, targetType), eq(reposts.targetId, targetId)))
+    .where(
+      and(
+        eq(reposts.userId, userId),
+        eq(reposts.targetType, targetType),
+        eq(reposts.targetId, targetId),
+      ),
+    )
     .get();
   return !!row;
 }

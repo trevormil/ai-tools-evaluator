@@ -33,7 +33,11 @@ export default defineConfig({
     url: `http://localhost:${E2E_PORT}`,
     reuseExistingServer: false,
     timeout: 180_000,
-    env: { AIX_DB_PATH: E2E_DB, AIX_INTERNAL_TOKEN: E2E_TOKEN, AIX_PUBLIC_URL: `http://localhost:${E2E_PORT}` },
+    env: {
+      AIX_DB_PATH: E2E_DB,
+      AIX_INTERNAL_TOKEN: E2E_TOKEN,
+      AIX_PUBLIC_URL: `http://localhost:${E2E_PORT}`,
+    },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

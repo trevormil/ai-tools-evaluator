@@ -76,10 +76,10 @@ export function createInternalClient(opts: InternalClientOptions): InternalClien
 
     async fetchDigest(since) {
       const iso = typeof since === "string" ? since : since.toISOString();
-      const res = await doFetch(
-        `${base}/api/internal/digest?since=${encodeURIComponent(iso)}`,
-        { method: "GET", headers },
-      );
+      const res = await doFetch(`${base}/api/internal/digest?since=${encodeURIComponent(iso)}`, {
+        method: "GET",
+        headers,
+      });
       if (!res.ok) {
         throw new Error(`GET /api/internal/digest failed: ${res.status}`);
       }

@@ -27,8 +27,8 @@ export default function Image() {
           Trending dev tools, harshly judged.
         </div>
         <div style={{ fontSize: 34, color: "#a3a3a3", lineHeight: 1.3 }}>
-          A GitHub-tools directory for AI-first engineers. Every tool distilled to one
-          verdict and a score out of 100.
+          A GitHub-tools directory for AI-first engineers. Every tool distilled to one verdict and a
+          score out of 100.
         </div>
       </div>
     ),

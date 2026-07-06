@@ -23,10 +23,19 @@ export function PostCard({
 }) {
   return (
     <div className="card flex gap-3 p-4">
-      <VoteButtons targetType="post" targetId={post.id} initialNet={post.upvotes} initialVote={myVote} signedIn={signedIn} />
+      <VoteButtons
+        targetType="post"
+        targetId={post.id}
+        initialNet={post.upvotes}
+        initialVote={myVote}
+        signedIn={signedIn}
+      />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 text-xs text-neutral-500">
-          <Link href={`/u/${author.username}`} className="flex items-center gap-1 font-medium text-neutral-700 hover:underline dark:text-neutral-300">
+          <Link
+            href={`/u/${author.username}`}
+            className="flex items-center gap-1 font-medium text-neutral-700 hover:underline dark:text-neutral-300"
+          >
             {author.avatarUrl && (
               // eslint-disable-next-line @next/next/no-img-element
               <img src={author.avatarUrl} alt="" className="h-5 w-5 rounded-full" />
@@ -35,7 +44,10 @@ export function PostCard({
           </Link>
           <span>· {timeAgo(post.createdAt)}</span>
         </div>
-        <Link href={`/post/${post.id}`} className="mt-1 block whitespace-pre-wrap text-sm hover:opacity-90">
+        <Link
+          href={`/post/${post.id}`}
+          className="mt-1 block whitespace-pre-wrap text-sm hover:opacity-90"
+        >
           {post.body}
         </Link>
         {item && (
@@ -55,7 +67,13 @@ export function PostCard({
           <Link href={`/post/${post.id}`} className="hover:underline">
             {post.commentCount} comments
           </Link>
-          <RepostButton targetType="post" targetId={post.id} initialCount={repostCount} initialReposted={reposted} signedIn={signedIn} />
+          <RepostButton
+            targetType="post"
+            targetId={post.id}
+            initialCount={repostCount}
+            initialReposted={reposted}
+            signedIn={signedIn}
+          />
         </div>
       </div>
     </div>

@@ -8,9 +8,15 @@ export function Scorecard({ scores, overall }: { scores: ScorecardType; overall:
       <table className="w-full border-collapse text-sm">
         <thead>
           <tr className="text-left [&>th]:border-b [&>th]:border-[var(--border)]">
-            <th className="py-2 pr-4"><span className="eyebrow before:content-none">Metric</span></th>
-            <th className="w-44 py-2 pr-4"><span className="eyebrow before:content-none">Score</span></th>
-            <th className="py-2"><span className="eyebrow before:content-none">Why</span></th>
+            <th className="py-2 pr-4">
+              <span className="eyebrow before:content-none">Metric</span>
+            </th>
+            <th className="w-44 py-2 pr-4">
+              <span className="eyebrow before:content-none">Score</span>
+            </th>
+            <th className="py-2">
+              <span className="eyebrow before:content-none">Why</span>
+            </th>
           </tr>
         </thead>
         <tbody>
@@ -20,7 +26,9 @@ export function Scorecard({ scores, overall }: { scores: ScorecardType; overall:
               <tr key={m.key} className="align-top [&>td]:border-b [&>td]:border-[var(--border)]">
                 <td className="py-3 pr-4">
                   <div className="font-semibold">{m.label}</div>
-                  <div className="data text-[11px] text-faint">{Math.round(m.weight * 100)}% weight</div>
+                  <div className="data text-[11px] text-faint">
+                    {Math.round(m.weight * 100)}% weight
+                  </div>
                 </td>
                 <td className="py-3 pr-4">
                   <ScoreBar score={s.score} />

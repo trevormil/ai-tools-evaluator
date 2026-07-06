@@ -44,7 +44,9 @@ describe("evaluateQualityGate", () => {
 
 describe("starVelocity", () => {
   test("is stars/day since creation", () => {
-    expect(starVelocity({ stars: 30, archived: false, fork: false, createdAt: daysAgo(3) }, now)).toBeCloseTo(10);
+    expect(
+      starVelocity({ stars: 30, archived: false, fork: false, createdAt: daysAgo(3) }, now),
+    ).toBeCloseTo(10);
   });
 
   test("is 0 when createdAt is missing or unparseable", () => {

@@ -1,22 +1,12 @@
 import { join } from "node:path";
-import {
-  Client,
-  Events,
-  GatewayIntentBits,
-  type Interaction,
-  type TextChannel,
-} from "discord.js";
+import { Client, Events, GatewayIntentBits, type Interaction, type TextChannel } from "discord.js";
 import { loadEnv } from "./env";
 import { createInternalClient } from "./client";
 import { registerCommands } from "./commands";
 import { handleSubmit } from "./commands/submit";
 import { handleEval } from "./commands/eval";
 import { handleLeaderboard } from "./commands/leaderboard";
-import {
-  startDigestScheduler,
-  startWeeklyDigestScheduler,
-  type SendableChannel,
-} from "./digest";
+import { startDigestScheduler, startWeeklyDigestScheduler, type SendableChannel } from "./digest";
 
 const STATE_PATH = join(import.meta.dir, "..", ".state.json");
 

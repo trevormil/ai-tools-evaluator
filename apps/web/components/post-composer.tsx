@@ -4,7 +4,15 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 /** Compose a new post, optionally attached to an item (by id). */
-export function PostComposer({ signedIn, itemId, itemTitle }: { signedIn: boolean; itemId?: string; itemTitle?: string }) {
+export function PostComposer({
+  signedIn,
+  itemId,
+  itemTitle,
+}: {
+  signedIn: boolean;
+  itemId?: string;
+  itemTitle?: string;
+}) {
   const router = useRouter();
   const [body, setBody] = useState("");
   const [busy, setBusy] = useState(false);
@@ -46,7 +54,11 @@ export function PostComposer({ signedIn, itemId, itemTitle }: { signedIn: boolea
 
   return (
     <form onSubmit={submit} className="card flex flex-col gap-2 p-4">
-      {itemTitle && <p className="text-xs text-neutral-500">Posting about <span className="font-medium">{itemTitle}</span></p>}
+      {itemTitle && (
+        <p className="text-xs text-neutral-500">
+          Posting about <span className="font-medium">{itemTitle}</span>
+        </p>
+      )}
       <textarea
         value={body}
         onChange={(e) => setBody(e.target.value)}

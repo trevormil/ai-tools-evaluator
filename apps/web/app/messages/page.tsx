@@ -38,7 +38,9 @@ export default async function MessagesPage() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-sm">
                   <span className="font-medium">@{c.correspondent.username}</span>
-                  <span className="text-xs text-neutral-400">· {timeAgo(c.lastMessage.createdAt)}</span>
+                  <span className="text-xs text-neutral-400">
+                    · {timeAgo(c.lastMessage.createdAt)}
+                  </span>
                 </div>
                 <p className="truncate text-xs text-neutral-500">
                   {c.lastMessage.fromUserId === user.id ? "You: " : ""}

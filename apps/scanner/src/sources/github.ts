@@ -59,7 +59,8 @@ export function rotationSeed(now: Date): number {
  */
 export function buildQueries(now: Date, seed: number = rotationSeed(now)): string[] {
   const base = seed * 3;
-  const pick = (offset: number) => TOPICS[((base + offset) % TOPICS.length + TOPICS.length) % TOPICS.length]!;
+  const pick = (offset: number) =>
+    TOPICS[(((base + offset) % TOPICS.length) + TOPICS.length) % TOPICS.length]!;
   const week = day(now, 7);
   const month = day(now, 30);
   return [
@@ -101,7 +102,11 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
       try {
         return await fn();
       } catch (err: unknown) {
-        const e = err as { status?: number; message?: string; response?: { headers?: Record<string, string> } };
+        const e = err as {
+          status?: number;
+          message?: string;
+          response?: { headers?: Record<string, string> };
+        };
         const msg = e?.message ?? "";
         const remaining = e?.response?.headers?.["x-ratelimit-remaining"];
         const rateLimited =

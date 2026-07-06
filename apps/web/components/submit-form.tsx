@@ -25,7 +25,12 @@ export function SubmitForm() {
       if (res.ok) {
         setUrl("");
         setNote("");
-        setMsg({ ok: true, text: data.duplicate ? "Already in the queue — thanks!" : "Queued! The scanner will evaluate it on its next run." });
+        setMsg({
+          ok: true,
+          text: data.duplicate
+            ? "Already in the queue — thanks!"
+            : "Queued! The scanner will evaluate it on its next run.",
+        });
         router.refresh();
       } else {
         setMsg({ ok: false, text: data.error ?? "Failed to submit" });

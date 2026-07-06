@@ -5,7 +5,9 @@ import { STACK_STATUSES, STACK_STATUS_LABELS, type StackStatus } from "./stack-t
 export { STACK_STATUSES, STACK_STATUS_LABELS, type StackStatus };
 
 /** A stack entry joined to its catalogued item (if any). */
-export type StackEntry = StackItem & { item: Pick<Item, "slug" | "title" | "verdict" | "overallScore" | "coverImageUrl"> | null };
+export type StackEntry = StackItem & {
+  item: Pick<Item, "slug" | "title" | "verdict" | "overallScore" | "coverImageUrl"> | null;
+};
 
 /** A user's full stack, newest first, each joined to its directory item. */
 export function getUserStack(userId: string): StackEntry[] {
@@ -20,7 +22,13 @@ export function getUserStack(userId: string): StackEntry[] {
   return rows.map((r) => ({
     ...r.stack,
     item: r.item
-      ? { slug: r.item.slug, title: r.item.title, verdict: r.item.verdict, overallScore: r.item.overallScore, coverImageUrl: r.item.coverImageUrl }
+      ? {
+          slug: r.item.slug,
+          title: r.item.title,
+          verdict: r.item.verdict,
+          overallScore: r.item.overallScore,
+          coverImageUrl: r.item.coverImageUrl,
+        }
       : null,
   }));
 }
@@ -43,19 +51,37 @@ export function upsertStackEntry(userId: string, input: UpsertStackInput): Stack
   const db = getDb();
   const nowSec = Math.floor(Date.now() / 1000);
   const itemId = input.itemId ?? null;
-  const toolName = itemId ? null : (input.toolName?.trim() || null);
+  const toolName = itemId ? null : input.toolName?.trim() || null;
 
   // Find an existing entry for the same identity (item or tool name).
   const existing = itemId
-    ? db.select().from(stackItems).where(and(eq(stackItems.userId, userId), eq(stackItems.itemId, itemId))).get()
+    ? db
+        .select()
+        .from(stackItems)
+        .where(and(eq(stackItems.userId, userId), eq(stackItems.itemId, itemId)))
+        .get()
     : toolName
-      ? db.select().from(stackItems).where(and(eq(stackItems.userId, userId), sql`lower(${stackItems.toolName}) = lower(${toolName})`)).get()
+      ? db
+          .select()
+          .from(stackItems)
+          .where(
+            and(
+              eq(stackItems.userId, userId),
+              sql`lower(${stackItems.toolName}) = lower(${toolName})`,
+            ),
+          )
+          .get()
       : undefined;
 
   if (existing) {
     return db
       .update(stackItems)
-      .set({ status: input.status, take: input.take ?? null, rating: input.rating ?? null, updatedAt: nowSec })
+      .set({
+        status: input.status,
+        take: input.take ?? null,
+        rating: input.rating ?? null,
+        updatedAt: nowSec,
+      })
       .where(eq(stackItems.id, existing.id))
       .returning()
       .get();
@@ -63,7 +89,16 @@ export function upsertStackEntry(userId: string, input: UpsertStackInput): Stack
 
   return db
     .insert(stackItems)
-    .values({ userId, itemId, toolName, status: input.status, take: input.take ?? null, rating: input.rating ?? null, createdAt: nowSec, updatedAt: nowSec })
+    .values({
+      userId,
+      itemId,
+      toolName,
+      status: input.status,
+      take: input.take ?? null,
+      rating: input.rating ?? null,
+      createdAt: nowSec,
+      updatedAt: nowSec,
+    })
     .returning()
     .get();
 }

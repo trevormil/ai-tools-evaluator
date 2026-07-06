@@ -69,23 +69,17 @@
       "indexes": {
         "comments_item_idx": {
           "name": "comments_item_idx",
-          "columns": [
-            "item_id"
-          ],
+          "columns": ["item_id"],
           "isUnique": false
         },
         "comments_post_idx": {
           "name": "comments_post_idx",
-          "columns": [
-            "post_id"
-          ],
+          "columns": ["post_id"],
           "isUnique": false
         },
         "comments_parent_idx": {
           "name": "comments_parent_idx",
-          "columns": [
-            "parent_id"
-          ],
+          "columns": ["parent_id"],
           "isUnique": false
         }
       },
@@ -94,12 +88,8 @@
           "name": "comments_author_id_users_id_fk",
           "tableFrom": "comments",
           "tableTo": "users",
-          "columnsFrom": [
-            "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -107,12 +97,8 @@
           "name": "comments_item_id_items_id_fk",
           "tableFrom": "comments",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -120,12 +106,8 @@
           "name": "comments_post_id_posts_id_fk",
           "tableFrom": "comments",
           "tableTo": "posts",
-          "columnsFrom": [
-            "post_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["post_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -163,10 +145,7 @@
       "indexes": {
         "follows_unique_idx": {
           "name": "follows_unique_idx",
-          "columns": [
-            "follower_id",
-            "followee_id"
-          ],
+          "columns": ["follower_id", "followee_id"],
           "isUnique": true
         }
       },
@@ -175,12 +154,8 @@
           "name": "follows_follower_id_users_id_fk",
           "tableFrom": "follows",
           "tableTo": "users",
-          "columnsFrom": [
-            "follower_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["follower_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -188,12 +163,8 @@
           "name": "follows_followee_id_users_id_fk",
           "tableFrom": "follows",
           "tableTo": "users",
-          "columnsFrom": [
-            "followee_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["followee_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -406,52 +377,37 @@
       "indexes": {
         "items_slug_unique": {
           "name": "items_slug_unique",
-          "columns": [
-            "slug"
-          ],
+          "columns": ["slug"],
           "isUnique": true
         },
         "items_external_idx": {
           "name": "items_external_idx",
-          "columns": [
-            "kind",
-            "external_id"
-          ],
+          "columns": ["kind", "external_id"],
           "isUnique": true
         },
         "items_category_idx": {
           "name": "items_category_idx",
-          "columns": [
-            "category"
-          ],
+          "columns": ["category"],
           "isUnique": false
         },
         "items_verdict_idx": {
           "name": "items_verdict_idx",
-          "columns": [
-            "verdict"
-          ],
+          "columns": ["verdict"],
           "isUnique": false
         },
         "items_audience_idx": {
           "name": "items_audience_idx",
-          "columns": [
-            "primary_audience"
-          ],
+          "columns": ["primary_audience"],
           "isUnique": false
         },
         "items_created_idx": {
           "name": "items_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         },
         "items_score_idx": {
           "name": "items_score_idx",
-          "columns": [
-            "score"
-          ],
+          "columns": ["score"],
           "isUnique": false
         }
       },
@@ -460,12 +416,8 @@
           "name": "items_posted_by_id_users_id_fk",
           "tableFrom": "items",
           "tableTo": "users",
-          "columnsFrom": [
-            "posted_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["posted_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -533,23 +485,17 @@
       "indexes": {
         "posts_author_idx": {
           "name": "posts_author_idx",
-          "columns": [
-            "author_id"
-          ],
+          "columns": ["author_id"],
           "isUnique": false
         },
         "posts_item_idx": {
           "name": "posts_item_idx",
-          "columns": [
-            "item_id"
-          ],
+          "columns": ["item_id"],
           "isUnique": false
         },
         "posts_created_idx": {
           "name": "posts_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -558,12 +504,8 @@
           "name": "posts_author_id_users_id_fk",
           "tableFrom": "posts",
           "tableTo": "users",
-          "columnsFrom": [
-            "author_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["author_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -571,12 +513,8 @@
           "name": "posts_item_id_items_id_fk",
           "tableFrom": "posts",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -702,12 +640,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -789,32 +723,22 @@
       "indexes": {
         "stack_user_idx": {
           "name": "stack_user_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "stack_item_idx": {
           "name": "stack_item_idx",
-          "columns": [
-            "item_id"
-          ],
+          "columns": ["item_id"],
           "isUnique": false
         },
         "stack_user_item_idx": {
           "name": "stack_user_item_idx",
-          "columns": [
-            "user_id",
-            "item_id"
-          ],
+          "columns": ["user_id", "item_id"],
           "isUnique": true
         },
         "stack_user_tool_idx": {
           "name": "stack_user_tool_idx",
-          "columns": [
-            "user_id",
-            "tool_name"
-          ],
+          "columns": ["user_id", "tool_name"],
           "isUnique": true
         }
       },
@@ -823,12 +747,8 @@
           "name": "stack_items_user_id_users_id_fk",
           "tableFrom": "stack_items",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -836,12 +756,8 @@
           "name": "stack_items_item_id_items_id_fk",
           "tableFrom": "stack_items",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -937,16 +853,12 @@
       "indexes": {
         "submissions_status_idx": {
           "name": "submissions_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "submissions_url_idx": {
           "name": "submissions_url_idx",
-          "columns": [
-            "url"
-          ],
+          "columns": ["url"],
           "isUnique": false
         }
       },
@@ -955,12 +867,8 @@
           "name": "submissions_submitted_by_id_users_id_fk",
           "tableFrom": "submissions",
           "tableTo": "users",
-          "columnsFrom": [
-            "submitted_by_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["submitted_by_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -968,12 +876,8 @@
           "name": "submissions_item_id_items_id_fk",
           "tableFrom": "submissions",
           "tableTo": "items",
-          "columnsFrom": [
-            "item_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["item_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1040,23 +944,17 @@
       "indexes": {
         "subscribers_email_unique": {
           "name": "subscribers_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         },
         "subscribers_status_idx": {
           "name": "subscribers_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "subscribers_token_idx": {
           "name": "subscribers_token_idx",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         }
       },
@@ -1130,23 +1028,17 @@
       "indexes": {
         "users_github_id_unique": {
           "name": "users_github_id_unique",
-          "columns": [
-            "github_id"
-          ],
+          "columns": ["github_id"],
           "isUnique": true
         },
         "users_username_unique": {
           "name": "users_username_unique",
-          "columns": [
-            "username"
-          ],
+          "columns": ["username"],
           "isUnique": true
         },
         "users_username_idx": {
           "name": "users_username_idx",
-          "columns": [
-            "username"
-          ],
+          "columns": ["username"],
           "isUnique": false
         }
       },
@@ -1205,11 +1097,7 @@
       "indexes": {
         "votes_unique_idx": {
           "name": "votes_unique_idx",
-          "columns": [
-            "user_id",
-            "target_type",
-            "target_id"
-          ],
+          "columns": ["user_id", "target_type", "target_id"],
           "isUnique": true
         }
       },
@@ -1218,12 +1106,8 @@
           "name": "votes_user_id_users_id_fk",
           "tableFrom": "votes",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }

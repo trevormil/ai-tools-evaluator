@@ -20,9 +20,13 @@ const Body = z.object({
 function targetAuthorId(targetType: "post" | "item", targetId: string): string | null {
   const db = getDb();
   if (targetType === "post") {
-    return db.select({ id: posts.authorId }).from(posts).where(eq(posts.id, targetId)).get()?.id ?? null;
+    return (
+      db.select({ id: posts.authorId }).from(posts).where(eq(posts.id, targetId)).get()?.id ?? null
+    );
   }
-  return db.select({ id: items.postedById }).from(items).where(eq(items.id, targetId)).get()?.id ?? null;
+  return (
+    db.select({ id: items.postedById }).from(items).where(eq(items.id, targetId)).get()?.id ?? null
+  );
 }
 
 /** Toggle a repost of a post|item. Returns the resulting state + count. */
@@ -40,7 +44,13 @@ export async function POST(req: Request) {
     const existing = db
       .select()
       .from(reposts)
-      .where(and(eq(reposts.userId, user.id), eq(reposts.targetType, targetType), eq(reposts.targetId, targetId)))
+      .where(
+        and(
+          eq(reposts.userId, user.id),
+          eq(reposts.targetType, targetType),
+          eq(reposts.targetId, targetId),
+        ),
+      )
       .get();
 
     if (existing) {
@@ -48,11 +58,28 @@ export async function POST(req: Request) {
       return NextResponse.json({ reposted: false, count: repostCount(targetType, targetId) });
     }
 
-    db.insert(reposts).values({ userId: user.id, targetType, targetId, quote: quote ?? null }).run();
-    emitActivity({ actorId: user.id, verb: "reposted", objectType: targetType, objectId: targetId });
-    if (authorId) notify({ userId: authorId, actorId: user.id, type: "repost", objectType: targetType, objectId: targetId });
+    db.insert(reposts)
+      .values({ userId: user.id, targetType, targetId, quote: quote ?? null })
+      .run();
+    emitActivity({
+      actorId: user.id,
+      verb: "reposted",
+      objectType: targetType,
+      objectId: targetId,
+    });
+    if (authorId)
+      notify({
+        userId: authorId,
+        actorId: user.id,
+        type: "repost",
+        objectType: targetType,
+        objectId: targetId,
+      });
 
-    return NextResponse.json({ reposted: true, count: repostCount(targetType, targetId) }, { status: 201 });
+    return NextResponse.json(
+      { reposted: true, count: repostCount(targetType, targetId) },
+      { status: 201 },
+    );
   } catch (err) {
     return errorResponse(err);
   }
@@ -69,7 +96,13 @@ export async function DELETE(req: Request) {
     const { targetType, targetId } = DeleteBody.parse(await req.json());
     getDb()
       .delete(reposts)
-      .where(and(eq(reposts.userId, user.id), eq(reposts.targetType, targetType), eq(reposts.targetId, targetId)))
+      .where(
+        and(
+          eq(reposts.userId, user.id),
+          eq(reposts.targetType, targetType),
+          eq(reposts.targetId, targetId),
+        ),
+      )
       .run();
     return NextResponse.json({ reposted: false, count: repostCount(targetType, targetId) });
   } catch (err) {

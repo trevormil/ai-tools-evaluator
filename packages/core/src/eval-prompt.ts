@@ -28,7 +28,9 @@ export function buildEvaluatorPrompt(source: ItemSource, readme: string): string
     source.language ? `language: ${source.language}` : null,
     source.license ? `license: ${source.license}` : null,
     source.stars != null ? `stars: ${source.stars}` : null,
-    source.starsGainedRecently != null ? `stars gained recently: ${source.starsGainedRecently}` : null,
+    source.starsGainedRecently != null
+      ? `stars gained recently: ${source.starsGainedRecently}`
+      : null,
     source.authors?.length ? `authors: ${source.authors.join(", ")}` : null,
     source.publishedAt ? `published: ${source.publishedAt}` : null,
   ].filter(Boolean) as string[];

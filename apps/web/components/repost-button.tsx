@@ -12,7 +12,13 @@ type Props = {
 };
 
 /** Toggle a repost of a post|item; shows the live repost count. */
-export function RepostButton({ targetType, targetId, initialCount = 0, initialReposted = false, signedIn }: Props) {
+export function RepostButton({
+  targetType,
+  targetId,
+  initialCount = 0,
+  initialReposted = false,
+  signedIn,
+}: Props) {
   const router = useRouter();
   const [count, setCount] = useState(initialCount);
   const [reposted, setReposted] = useState(initialReposted);

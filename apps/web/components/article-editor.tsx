@@ -57,17 +57,28 @@ export function ArticleEditor({ article }: { article?: ExistingArticle }) {
       />
 
       <div className="flex items-center gap-2 text-xs">
-        <button type="button" onClick={() => setPreview(false)} className={preview ? "btn-ghost" : "btn-primary"}>
+        <button
+          type="button"
+          onClick={() => setPreview(false)}
+          className={preview ? "btn-ghost" : "btn-primary"}
+        >
           Write
         </button>
-        <button type="button" onClick={() => setPreview(true)} className={preview ? "btn-primary" : "btn-ghost"}>
+        <button
+          type="button"
+          onClick={() => setPreview(true)}
+          className={preview ? "btn-primary" : "btn-ghost"}
+        >
           Preview
         </button>
         <span className="text-neutral-400">Markdown supported</span>
       </div>
 
       {preview ? (
-        <div className={`card min-h-[16rem] p-4 ${MARKDOWN_CLASSES}`} dangerouslySetInnerHTML={{ __html: renderMarkdown(bodyMd) }} />
+        <div
+          className={`card min-h-[16rem] p-4 ${MARKDOWN_CLASSES}`}
+          dangerouslySetInnerHTML={{ __html: renderMarkdown(bodyMd) }}
+        />
       ) : (
         <textarea
           className="input min-h-[16rem] font-mono text-sm"

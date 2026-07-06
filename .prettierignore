@@ -1,0 +1,10 @@
+node_modules
+.next
+dist
+content/items
+*.tsbuildinfo
+bun.lock
+k8s
+ios
+.TerMinal
+*.md

@@ -37,9 +37,7 @@ function fakeItem(overrides: Partial<Item> = {}): Item {
 }
 
 test("xmlEscape escapes all five XML metacharacters", () => {
-  expect(xmlEscape(`a & b < c > d " e ' f`)).toBe(
-    "a &amp; b &lt; c &gt; d &quot; e &apos; f",
-  );
+  expect(xmlEscape(`a & b < c > d " e ' f`)).toBe("a &amp; b &lt; c &gt; d &quot; e &apos; f");
 });
 
 test("renderAtomFeed escapes hostile title/tagline so no raw markup leaks", () => {

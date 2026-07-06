@@ -63,40 +63,82 @@ function resolveActivity(activity: Activity, actor: User): FeedActivityView | nu
   switch (activity.verb) {
     case "stack_added": {
       if (activity.objectType === "item") {
-        const it = db.select({ slug: items.slug, title: items.title }).from(items).where(eq(items.id, activity.objectId)).get();
+        const it = db
+          .select({ slug: items.slug, title: items.title })
+          .from(items)
+          .where(eq(items.id, activity.objectId))
+          .get();
         if (!it) return null;
-        return { activity, actor, label: `added ${it.title} to their stack`, href: `/item/${it.slug}` };
+        return {
+          activity,
+          actor,
+          label: `added ${it.title} to their stack`,
+          href: `/item/${it.slug}`,
+        };
       }
-      const s = db.select({ toolName: stackItems.toolName }).from(stackItems).where(eq(stackItems.id, activity.objectId)).get();
-      return { activity, actor, label: `added ${s?.toolName ?? "a tool"} to their stack`, href: `/u/${actor.username}` };
+      const s = db
+        .select({ toolName: stackItems.toolName })
+        .from(stackItems)
+        .where(eq(stackItems.id, activity.objectId))
+        .get();
+      return {
+        activity,
+        actor,
+        label: `added ${s?.toolName ?? "a tool"} to their stack`,
+        href: `/u/${actor.username}`,
+      };
     }
     case "reposted": {
       if (activity.objectType === "item") {
-        const it = db.select({ slug: items.slug, title: items.title }).from(items).where(eq(items.id, activity.objectId)).get();
+        const it = db
+          .select({ slug: items.slug, title: items.title })
+          .from(items)
+          .where(eq(items.id, activity.objectId))
+          .get();
         if (!it) return null;
         return { activity, actor, label: `reposted ${it.title}`, href: `/item/${it.slug}` };
       }
-      const p = db.select({ id: posts.id }).from(posts).where(eq(posts.id, activity.objectId)).get();
+      const p = db
+        .select({ id: posts.id })
+        .from(posts)
+        .where(eq(posts.id, activity.objectId))
+        .get();
       if (!p) return null;
       return { activity, actor, label: `reposted a post`, href: `/post/${p.id}` };
     }
     case "commented": {
       if (activity.objectType === "item") {
-        const it = db.select({ slug: items.slug, title: items.title }).from(items).where(eq(items.id, activity.objectId)).get();
+        const it = db
+          .select({ slug: items.slug, title: items.title })
+          .from(items)
+          .where(eq(items.id, activity.objectId))
+          .get();
         if (!it) return null;
         return { activity, actor, label: `commented on ${it.title}`, href: `/item/${it.slug}` };
       }
-      const p = db.select({ id: posts.id }).from(posts).where(eq(posts.id, activity.objectId)).get();
+      const p = db
+        .select({ id: posts.id })
+        .from(posts)
+        .where(eq(posts.id, activity.objectId))
+        .get();
       if (!p) return null;
       return { activity, actor, label: `commented on a post`, href: `/post/${p.id}` };
     }
     case "followed": {
-      const u = db.select({ username: users.username }).from(users).where(eq(users.id, activity.objectId)).get();
+      const u = db
+        .select({ username: users.username })
+        .from(users)
+        .where(eq(users.id, activity.objectId))
+        .get();
       if (!u) return null;
       return { activity, actor, label: `followed @${u.username}`, href: `/u/${u.username}` };
     }
     case "article_published": {
-      const art = db.select({ slug: articles.slug, title: articles.title }).from(articles).where(eq(articles.id, activity.objectId)).get();
+      const art = db
+        .select({ slug: articles.slug, title: articles.title })
+        .from(articles)
+        .where(eq(articles.id, activity.objectId))
+        .get();
       if (!art) return null;
       return { activity, actor, label: `published “${art.title}”`, href: `/a/${art.slug}` };
     }
@@ -144,13 +186,22 @@ export function getHomeFeed(viewer: User | null, limit = 50): FeedEntry[] {
   for (const r of actRows) {
     const view = resolveActivity(r.activity, r.actor);
     if (!view) continue;
-    activityEntries.push({ kind: "activity", createdAt: r.activity.createdAt, actorId: r.activity.actorId, view });
+    activityEntries.push({
+      kind: "activity",
+      createdAt: r.activity.createdAt,
+      actorId: r.activity.actorId,
+      view,
+    });
   }
 
   let entries = [...postEntries, ...activityEntries].sort((a, b) => b.createdAt - a.createdAt);
 
   if (viewer) {
-    const following = db.select({ id: follows.followeeId }).from(follows).where(eq(follows.followerId, viewer.id)).all();
+    const following = db
+      .select({ id: follows.followeeId })
+      .from(follows)
+      .where(eq(follows.followerId, viewer.id))
+      .all();
     if (following.length > 0) {
       const circle = new Set<string>([viewer.id, ...following.map((f) => f.id)]);
       const focused = entries.filter((e) => circle.has(e.actorId));

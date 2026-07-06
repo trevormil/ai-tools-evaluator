@@ -21,7 +21,12 @@ export function ThemeToggle() {
   }
 
   return (
-    <button onClick={toggle} className="btn-ghost !px-2" aria-label="Toggle theme" title="Toggle theme">
+    <button
+      onClick={toggle}
+      className="btn-ghost !px-2"
+      aria-label="Toggle theme"
+      title="Toggle theme"
+    >
       {dark ? "☀️" : "🌙"}
     </button>
   );

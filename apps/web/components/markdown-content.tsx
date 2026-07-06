@@ -5,5 +5,7 @@ import { renderMarkdown, MARKDOWN_CLASSES } from "@/lib/markdown";
  * `dangerouslySetInnerHTML` below can never inject live script/handlers).
  */
 export function MarkdownContent({ md }: { md: string }) {
-  return <div className={MARKDOWN_CLASSES} dangerouslySetInnerHTML={{ __html: renderMarkdown(md) }} />;
+  return (
+    <div className={MARKDOWN_CLASSES} dangerouslySetInnerHTML={{ __html: renderMarkdown(md) }} />
+  );
 }

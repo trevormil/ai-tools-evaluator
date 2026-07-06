@@ -24,7 +24,12 @@ export function ArticleDeleteControl({ slug, redirectTo }: { slug: string; redir
   }
 
   return (
-    <button onClick={remove} disabled={busy} className="text-neutral-400 hover:text-red-500" title="Delete">
+    <button
+      onClick={remove}
+      disabled={busy}
+      className="text-neutral-400 hover:text-red-500"
+      title="Delete"
+    >
       Delete
     </button>
   );

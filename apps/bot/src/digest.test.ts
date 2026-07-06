@@ -19,7 +19,10 @@ const item = (over: Partial<DigestItem> = {}): DigestItem => ({
   ...over,
 });
 
-const statePath = join(tmpdir(), `aix-digest-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
+const statePath = join(
+  tmpdir(),
+  `aix-digest-${process.pid}-${Math.random().toString(36).slice(2)}.json`,
+);
 afterEach(async () => rm(statePath, { force: true }));
 
 function fakeClient(items: DigestItem[]): { client: InternalClient; sinceSeen: string[] } {

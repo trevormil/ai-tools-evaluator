@@ -1,4 +1,9 @@
-import { AUDIENCE_AXES, PRIMARY_AUDIENCE_LABELS, scoreBand, type AudienceFit as AudienceFitData } from "@aix/core";
+import {
+  AUDIENCE_AXES,
+  PRIMARY_AUDIENCE_LABELS,
+  scoreBand,
+  type AudienceFit as AudienceFitData,
+} from "@aix/core";
 import { scoreColorClass } from "@/lib/format";
 
 /** "Who it's for" — independent AI-engineer vs vibe-coder fit scores + rationale. */

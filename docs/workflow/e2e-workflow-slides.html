@@ -39,10 +39,8 @@
       body {
         margin: 0;
         min-height: 100%;
-        background:
-          linear-gradient(90deg, rgba(21, 17, 15, 0.06) 1px, transparent 1px),
-          linear-gradient(rgba(21, 17, 15, 0.06) 1px, transparent 1px),
-          var(--paper);
+        background: linear-gradient(90deg, rgba(21, 17, 15, 0.06) 1px, transparent 1px),
+          linear-gradient(rgba(21, 17, 15, 0.06) 1px, transparent 1px), var(--paper);
         background-size: 28px 28px;
         color: var(--ink);
         font-family: "Chalkboard SE", "Marker Felt", "Avenir Next", "Trebuchet MS", sans-serif;
@@ -84,8 +82,12 @@
         height: 41px;
         border: 3px solid var(--line);
         border-radius: 11px;
-        background:
-          linear-gradient(90deg, transparent 0 16px, var(--line) 16px 19px, transparent 19px),
+        background: linear-gradient(
+            90deg,
+            transparent 0 16px,
+            var(--line) 16px 19px,
+            transparent 19px
+          ),
           linear-gradient(var(--teal) 0 42%, var(--yellow) 42% 72%, var(--coral) 72%);
         box-shadow: 5px 5px 0 var(--sky);
         position: relative;
@@ -150,8 +152,7 @@
         height: 14px;
         border: 2px solid var(--line);
         border-radius: 999px;
-        background:
-          repeating-linear-gradient(
+        background: repeating-linear-gradient(
             -45deg,
             rgba(21, 17, 15, 0.12) 0 8px,
             transparent 8px 16px
@@ -331,10 +332,8 @@
         min-height: 540px;
         border: 4px solid var(--line);
         border-radius: 24px;
-        background:
-          linear-gradient(90deg, rgba(21, 17, 15, 0.08) 1px, transparent 1px),
-          linear-gradient(rgba(21, 17, 15, 0.08) 1px, transparent 1px),
-          var(--cream);
+        background: linear-gradient(90deg, rgba(21, 17, 15, 0.08) 1px, transparent 1px),
+          linear-gradient(rgba(21, 17, 15, 0.08) 1px, transparent 1px), var(--cream);
         background-size: 34px 34px;
         box-shadow: var(--shadow);
         position: relative;
@@ -349,14 +348,13 @@
         height: 54px;
         border: 4px solid var(--line);
         border-radius: 999px;
-        background:
-          repeating-linear-gradient(
-            90deg,
-            var(--line) 0 18px,
-            var(--yellow) 18px 40px,
-            var(--line) 40px 44px,
-            var(--teal-soft) 44px 70px
-          );
+        background: repeating-linear-gradient(
+          90deg,
+          var(--line) 0 18px,
+          var(--yellow) 18px 40px,
+          var(--line) 40px 44px,
+          var(--teal-soft) 44px 70px
+        );
       }
 
       .chip {
@@ -1224,7 +1222,6 @@
       .route-sequence .route-node span {
         font-size: 0.74rem;
       }
-
 
       .factory-map {
         display: grid;
@@ -2680,10 +2677,10 @@
               <div class="kicker">Architecture Defense</div>
               <h2>The Factory Runs On Tickets</h2>
               <p class="lede">
-                This project-template turns software work into durable, observable,
-                reviewable units. Agents do not free-roam the repo. They pick up
-                tickets, produce artifacts, open pull requests, and leave enough state for a
-                human or another agent to understand exactly what happened.
+                This project-template turns software work into durable, observable, reviewable
+                units. Agents do not free-roam the repo. They pick up tickets, produce artifacts,
+                open pull requests, and leave enough state for a human or another agent to
+                understand exactly what happened.
               </p>
             </div>
             <div class="toy-factory" aria-label="Software factory illustration">
@@ -2694,7 +2691,9 @@
               <div class="chip chip-a"><strong>Ticket</strong><span>Scope, owner, deps.</span></div>
               <div class="chip chip-b"><strong>Agent</strong><span>Role, run, session.</span></div>
               <div class="chip chip-c"><strong>MR</strong><span>Branch, tests, review.</span></div>
-              <div class="chip chip-d"><strong>Sync</strong><span>Merge reality back to state.</span></div>
+              <div class="chip chip-d">
+                <strong>Sync</strong><span>Merge reality back to state.</span>
+              </div>
             </div>
           </div>
         </article>
@@ -2708,7 +2707,9 @@
             <div class="lifecycle-map">
               <div class="flow-card flow-intent">
                 <strong>Intake</strong>
-                <p>Human request, scheduled check, review finding, audit issue, or agent follow-up.</p>
+                <p>
+                  Human request, scheduled check, review finding, audit issue, or agent follow-up.
+                </p>
               </div>
               <div class="flow-arrow ar1" aria-hidden="true"></div>
               <div class="flow-card flow-backlog">
@@ -2733,7 +2734,9 @@
               <div class="flow-arrow ar3" aria-hidden="true"></div>
               <div class="flow-card flow-agent">
                 <strong>1 Agent Per Ticket</strong>
-                <p>One specialist owns the slice, leaves a clear trail, and drives it to an artifact.</p>
+                <p>
+                  One specialist owns the slice, leaves a clear trail, and drives it to an artifact.
+                </p>
                 <p>Assigned to Backend Builder</p>
               </div>
               <div class="flow-arrow down" aria-hidden="true"></div>
@@ -2749,12 +2752,18 @@
               <div class="flow-arrow left al2" aria-hidden="true"></div>
               <div class="flow-card flow-human">
                 <strong>Human PR Gate</strong>
-                <p>Human inspects the pull request, artifacts, and blockers. Human owns merge to main.</p>
+                <p>
+                  Human inspects the pull request, artifacts, and blockers. Human owns merge to
+                  main.
+                </p>
               </div>
               <div class="flow-arrow left al3" aria-hidden="true"></div>
               <div class="flow-card flow-sync">
                 <strong>Merge Update</strong>
-                <p>Observed merge reality updates ticket status, pull request links, and follow-up state.</p>
+                <p>
+                  Observed merge reality updates ticket status, pull request links, and follow-up
+                  state.
+                </p>
               </div>
             </div>
             <div class="followup-lane" aria-label="Follow-up ticket loop">
@@ -2781,21 +2790,48 @@
             <div class="kicker">Core Component</div>
             <h2>Ticket Properties</h2>
             <p class="lede">
-              A ticket is the durable work object. It is simple enough to inspect
-              in a Markdown file, but structured enough for routing, dashboards,
-              agent runs, PR linkage, handoffs, and recovery.
+              A ticket is the durable work object. It is simple enough to inspect in a Markdown
+              file, but structured enough for routing, dashboards, agent runs, PR linkage, handoffs,
+              and recovery.
             </p>
           </div>
           <div class="ticket-properties">
-            <div class="ticket-prop"><strong>Identity</strong><p>Name, source, and stable place in the backlog.</p></div>
-            <div class="ticket-prop"><strong>Scope</strong><p>The smallest useful slice: clear enough to finish, narrow enough to review.</p></div>
-            <div class="ticket-prop"><strong>Kind + Urgency</strong><p>Classifies the work and how quickly the factory should treat it.</p></div>
-            <div class="ticket-prop"><strong>Status</strong><p>Tracks whether work is ready, active, blocked, deferred, or done.</p></div>
-            <div class="ticket-prop"><strong>Owner</strong><p>Exactly one agent lane owns the slice.</p></div>
-            <div class="ticket-prop"><strong>Dependencies</strong><p>Links ordered work without making one ticket own the whole project.</p></div>
-            <div class="ticket-prop"><strong>Run Trail</strong><p>Connects the ticket to the agent session that touched it.</p></div>
-            <div class="ticket-prop"><strong>PR Links</strong><p>Connects implementation output back to the control plane.</p></div>
-            <div class="ticket-prop"><strong>Artifacts</strong><p>Review reports, request notes, logs, and follow-up evidence.</p></div>
+            <div class="ticket-prop">
+              <strong>Identity</strong>
+              <p>Name, source, and stable place in the backlog.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Scope</strong>
+              <p>The smallest useful slice: clear enough to finish, narrow enough to review.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Kind + Urgency</strong>
+              <p>Classifies the work and how quickly the factory should treat it.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Status</strong>
+              <p>Tracks whether work is ready, active, blocked, deferred, or done.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Owner</strong>
+              <p>Exactly one agent lane owns the slice.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Dependencies</strong>
+              <p>Links ordered work without making one ticket own the whole project.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Run Trail</strong>
+              <p>Connects the ticket to the agent session that touched it.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>PR Links</strong>
+              <p>Connects implementation output back to the control plane.</p>
+            </div>
+            <div class="ticket-prop">
+              <strong>Artifacts</strong>
+              <p>Review reports, request notes, logs, and follow-up evidence.</p>
+            </div>
           </div>
         </article>
 
@@ -2804,37 +2840,82 @@
             <div class="kicker">Agent Layer</div>
             <h2>Agents Are Hyperspecific Roles</h2>
             <p class="lede">
-              The factory does not depend on one generalist agent. It keeps a
-              broad roster of narrow specialists, and tickets route to the role
-              best shaped for that slice of work.
+              The factory does not depend on one generalist agent. It keeps a broad roster of narrow
+              specialists, and tickets route to the role best shaped for that slice of work.
             </p>
           </div>
           <div class="agent-roster-grid" aria-label="Example agent roster">
-            <div class="agent-pill"><strong>Ticket Triage</strong><span>shape and route work</span></div>
-            <div class="agent-pill"><strong>Feature Planner</strong><span>turn intent into slices</span></div>
-            <div class="agent-pill"><strong>Backend Builder</strong><span>server changes</span></div>
-            <div class="agent-pill"><strong>Frontend Builder</strong><span>interface changes</span></div>
-            <div class="agent-pill"><strong>API Designer</strong><span>contracts and endpoints</span></div>
-            <div class="agent-pill"><strong>Database Migrator</strong><span>schema and data movement</span></div>
-            <div class="agent-pill"><strong>Bug Reproducer</strong><span>pin down failures</span></div>
+            <div class="agent-pill">
+              <strong>Ticket Triage</strong><span>shape and route work</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Feature Planner</strong><span>turn intent into slices</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Backend Builder</strong><span>server changes</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Frontend Builder</strong><span>interface changes</span>
+            </div>
+            <div class="agent-pill">
+              <strong>API Designer</strong><span>contracts and endpoints</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Database Migrator</strong><span>schema and data movement</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Bug Reproducer</strong><span>pin down failures</span>
+            </div>
             <div class="agent-pill"><strong>PR Fixer</strong><span>narrow review fixes</span></div>
-            <div class="agent-pill"><strong>Test Runner</strong><span>verification passes</span></div>
-            <div class="agent-pill"><strong>Integration Tester</strong><span>cross-system checks</span></div>
-            <div class="agent-pill"><strong>Code Reviewer</strong><span>quality verdicts</span></div>
-            <div class="agent-pill"><strong>Security Reviewer</strong><span>risk and dependency checks</span></div>
-            <div class="agent-pill"><strong>Performance Profiler</strong><span>speed and bottlenecks</span></div>
-            <div class="agent-pill"><strong>Accessibility Checker</strong><span>usable interfaces</span></div>
+            <div class="agent-pill">
+              <strong>Test Runner</strong><span>verification passes</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Integration Tester</strong><span>cross-system checks</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Code Reviewer</strong><span>quality verdicts</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Security Reviewer</strong><span>risk and dependency checks</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Performance Profiler</strong><span>speed and bottlenecks</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Accessibility Checker</strong><span>usable interfaces</span>
+            </div>
             <div class="agent-pill"><strong>Design QA</strong><span>visual polish</span></div>
-            <div class="agent-pill"><strong>Docs Writer</strong><span>runbooks and notes</span></div>
-            <div class="agent-pill"><strong>Architecture Scribe</strong><span>decisions and structure</span></div>
-            <div class="agent-pill"><strong>Docs Auditor</strong><span>stale or broken docs</span></div>
-            <div class="agent-pill"><strong>Release Drafter</strong><span>change summaries</span></div>
-            <div class="agent-pill"><strong>Merge Watcher</strong><span>sync merged reality</span></div>
-            <div class="agent-pill"><strong>Incident Fixer</strong><span>urgent repair work</span></div>
-            <div class="agent-pill"><strong>CI Unblocker</strong><span>pipeline failures</span></div>
-            <div class="agent-pill"><strong>Refactor Scout</strong><span>find cleanup slices</span></div>
-            <div class="agent-pill"><strong>Knowledge Scout</strong><span>focused context requests</span></div>
-            <div class="agent-pill"><strong>Factory Runner</strong><span>choose next runnable work</span></div>
+            <div class="agent-pill">
+              <strong>Docs Writer</strong><span>runbooks and notes</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Architecture Scribe</strong><span>decisions and structure</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Docs Auditor</strong><span>stale or broken docs</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Release Drafter</strong><span>change summaries</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Merge Watcher</strong><span>sync merged reality</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Incident Fixer</strong><span>urgent repair work</span>
+            </div>
+            <div class="agent-pill">
+              <strong>CI Unblocker</strong><span>pipeline failures</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Refactor Scout</strong><span>find cleanup slices</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Knowledge Scout</strong><span>focused context requests</span>
+            </div>
+            <div class="agent-pill">
+              <strong>Factory Runner</strong><span>choose next runnable work</span>
+            </div>
           </div>
         </article>
 
@@ -2843,9 +2924,9 @@
             <div class="kicker">Ticket Contract</div>
             <h2>One Agent, One Slice</h2>
             <p class="lede">
-              A ticket is not a vague backlog wish. It names one concrete slice
-              and one agent responsible for moving that slice to a reviewable
-              artifact. Related work becomes another ticket.
+              A ticket is not a vague backlog wish. It names one concrete slice and one agent
+              responsible for moving that slice to a reviewable artifact. Related work becomes
+              another ticket.
             </p>
           </div>
           <div class="assignment-grid">
@@ -2890,17 +2971,32 @@
             <div class="kicker">Build Loop</div>
             <h2>Worktree To Pull Request</h2>
             <p class="lede">
-              Implementation happens away from the shared checkout. Agents work in
-              isolated branches, open pull requests, and stop at the human gate:
-              main and master merges are human-only.
+              Implementation happens away from the shared checkout. Agents work in isolated
+              branches, open pull requests, and stop at the human gate: main and master merges are
+              human-only.
             </p>
           </div>
           <div class="factory-loop">
-            <div class="loop-card"><div><h3>Ticket</h3><p class="lede">Agent picks one owned ticket and leaves a clear run trail.</p></div></div>
+            <div class="loop-card">
+              <div>
+                <h3>Ticket</h3>
+                <p class="lede">Agent picks one owned ticket and leaves a clear run trail.</p>
+              </div>
+            </div>
             <div class="arrow"></div>
-            <div class="loop-card"><div><h3>Worktree</h3><p class="lede">The change happens in an isolated branch checkout.</p></div></div>
+            <div class="loop-card">
+              <div>
+                <h3>Worktree</h3>
+                <p class="lede">The change happens in an isolated branch checkout.</p>
+              </div>
+            </div>
             <div class="arrow"></div>
-            <div class="loop-card"><div><h3>Pull Request</h3><p class="lede">The output is reviewable, linked, and ready for gates.</p></div></div>
+            <div class="loop-card">
+              <div>
+                <h3>Pull Request</h3>
+                <p class="lede">The output is reviewable, linked, and ready for gates.</p>
+              </div>
+            </div>
           </div>
           <div class="takeaway">
             <p>Agents prepare the pull request. Humans decide when main or master changes.</p>
@@ -2912,24 +3008,47 @@
             <div class="kicker">Code Review</div>
             <h2>Code Review</h2>
             <p class="lede">
-              Review has three layers: deterministic CI and tests, automated
-              agent review, and human judgment before anything reaches main.
+              Review has three layers: deterministic CI and tests, automated agent review, and human
+              judgment before anything reaches main.
             </p>
           </div>
           <div class="review-duo">
             <div class="review-panel agent">
               <h3>Automated Review</h3>
-              <p>Agent reviewers run tests, inspect the change, score the result, and leave concrete findings.</p>
+              <p>
+                Agent reviewers run tests, inspect the change, score the result, and leave concrete
+                findings.
+              </p>
               <div class="score-total">
                 <span>Example verdict</span>
                 <strong>84/100</strong>
               </div>
               <div class="scorecard" aria-label="Example automated review score breakdown">
-                <div class="score-row"><span>Correctness</span><div class="score-bar"><span style="width: 88%"></span></div><span>88</span></div>
-                <div class="score-row"><span>Security</span><div class="score-bar"><span style="width: 82%"></span></div><span>82</span></div>
-                <div class="score-row"><span>Architecture</span><div class="score-bar"><span style="width: 80%"></span></div><span>80</span></div>
-                <div class="score-row"><span>Quality</span><div class="score-bar"><span style="width: 86%"></span></div><span>86</span></div>
-                <div class="score-row"><span>Dependencies</span><div class="score-bar"><span style="width: 84%"></span></div><span>84</span></div>
+                <div class="score-row">
+                  <span>Correctness</span>
+                  <div class="score-bar"><span style="width: 88%"></span></div>
+                  <span>88</span>
+                </div>
+                <div class="score-row">
+                  <span>Security</span>
+                  <div class="score-bar"><span style="width: 82%"></span></div>
+                  <span>82</span>
+                </div>
+                <div class="score-row">
+                  <span>Architecture</span>
+                  <div class="score-bar"><span style="width: 80%"></span></div>
+                  <span>80</span>
+                </div>
+                <div class="score-row">
+                  <span>Quality</span>
+                  <div class="score-bar"><span style="width: 86%"></span></div>
+                  <span>86</span>
+                </div>
+                <div class="score-row">
+                  <span>Dependencies</span>
+                  <div class="score-bar"><span style="width: 84%"></span></div>
+                  <span>84</span>
+                </div>
               </div>
             </div>
             <div class="review-panel ci">
@@ -2945,11 +3064,23 @@
             </div>
             <div class="review-panel human">
               <h3>Human Review</h3>
-              <p>The human sees the ticket, pull request, automated verdict, findings, and unresolved risks.</p>
+              <p>
+                The human sees the ticket, pull request, automated verdict, findings, and unresolved
+                risks.
+              </p>
               <div class="human-list">
-                <div><strong>Inspect the evidence</strong><span>Read the diff, tests, review findings, and linked ticket context.</span></div>
-                <div><strong>Decide on risk</strong><span>Approve, request changes, or send the work back to another agent.</span></div>
-                <div><strong>Own the merge</strong><span>Main and master change only after human approval.</span></div>
+                <div>
+                  <strong>Inspect the evidence</strong
+                  ><span>Read the diff, tests, review findings, and linked ticket context.</span>
+                </div>
+                <div>
+                  <strong>Decide on risk</strong
+                  ><span>Approve, request changes, or send the work back to another agent.</span>
+                </div>
+                <div>
+                  <strong>Own the merge</strong
+                  ><span>Main and master change only after human approval.</span>
+                </div>
               </div>
             </div>
           </div>
@@ -2959,33 +3090,52 @@
           <div>
             <div class="kicker">Communication Layer</div>
             <h2>Inter-Agent Communication</h2>
-            <p class="lede">
-              Every agent knows every other agent.
-            </p>
+            <p class="lede">Every agent knows every other agent.</p>
           </div>
           <div class="routing-diagrams">
             <div class="route-panel">
               <h3>Knowledge Request</h3>
-              <p>The owning agent keeps the ticket, but collaborates with a specialist through a focused artifact.</p>
+              <p>
+                The owning agent keeps the ticket, but collaborates with a specialist through a
+                focused artifact.
+              </p>
               <div class="route-chain">
-                <div class="route-node"><strong>Owning Agent</strong><span>Needs focused help</span></div>
+                <div class="route-node">
+                  <strong>Owning Agent</strong><span>Needs focused help</span>
+                </div>
                 <div class="route-arrow both" aria-hidden="true"><span></span></div>
-                <div class="route-node" style="background: var(--lime-soft)"><strong>Shared Artifact</strong><span>Question, answer, finding, or recommendation</span></div>
+                <div class="route-node" style="background: var(--lime-soft)">
+                  <strong>Shared Artifact</strong
+                  ><span>Question, answer, finding, or recommendation</span>
+                </div>
                 <div class="route-arrow both" aria-hidden="true"><span></span></div>
-                <div class="route-node"><strong>Specialist Agent</strong><span>Answers one narrow question</span></div>
+                <div class="route-node">
+                  <strong>Specialist Agent</strong><span>Answers one narrow question</span>
+                </div>
               </div>
             </div>
             <div class="route-panel">
               <h3>New Ticket Handoff</h3>
-              <p>When work reveals a different slice, the agent does not silently expand scope. It creates the next ticket.</p>
+              <p>
+                When work reveals a different slice, the agent does not silently expand scope. It
+                creates the next ticket.
+              </p>
               <div class="route-sequence">
-                <div class="route-node"><strong>Completed Slice</strong><span>Current work is done or reviewed</span></div>
+                <div class="route-node">
+                  <strong>Completed Slice</strong><span>Current work is done or reviewed</span>
+                </div>
                 <div class="route-arrow" aria-hidden="true"></div>
-                <div class="route-node"><strong>New Ticket</strong><span>Clear owner, scope, and reason</span></div>
+                <div class="route-node">
+                  <strong>New Ticket</strong><span>Clear owner, scope, and reason</span>
+                </div>
                 <div class="route-arrow" aria-hidden="true"></div>
-                <div class="route-node" style="background: var(--pink-soft)"><strong>Next Agent</strong><span>Another specialist picks it up</span></div>
+                <div class="route-node" style="background: var(--pink-soft)">
+                  <strong>Next Agent</strong><span>Another specialist picks it up</span>
+                </div>
                 <div class="route-arrow" aria-hidden="true"></div>
-                <div class="route-node" style="background: var(--teal-soft)"><strong>Factory Continues</strong><span>The backlog stays alive</span></div>
+                <div class="route-node" style="background: var(--teal-soft)">
+                  <strong>Factory Continues</strong><span>The backlog stays alive</span>
+                </div>
               </div>
             </div>
           </div>
@@ -2996,15 +3146,17 @@
             <div class="kicker">Quality Layer</div>
             <h2>Per-Agent Evals</h2>
             <p class="lede">
-              Hyperspecific agents make hyperspecific evaluation possible. Each
-              role can be judged against the work it is actually supposed to do,
-              instead of one generic quality checklist for every task.
+              Hyperspecific agents make hyperspecific evaluation possible. Each role can be judged
+              against the work it is actually supposed to do, instead of one generic quality
+              checklist for every task.
             </p>
           </div>
           <div class="eval-board" aria-label="Per-agent evaluation matrix">
             <div class="eval-head"><span>Agent</span><span>Eval Rubric</span></div>
             <div class="eval-row">
-              <div class="eval-agent"><strong>Backend Builder</strong><span>server-side implementation</span></div>
+              <div class="eval-agent">
+                <strong>Backend Builder</strong><span>server-side implementation</span>
+              </div>
               <div class="eval-checks">
                 <div class="eval-chip">Tests pass</div>
                 <div class="eval-chip">Failure paths</div>
@@ -3013,7 +3165,9 @@
               </div>
             </div>
             <div class="eval-row">
-              <div class="eval-agent"><strong>Frontend Builder</strong><span>user-facing interface work</span></div>
+              <div class="eval-agent">
+                <strong>Frontend Builder</strong><span>user-facing interface work</span>
+              </div>
               <div class="eval-checks">
                 <div class="eval-chip">Responsive</div>
                 <div class="eval-chip">Accessible</div>
@@ -3022,7 +3176,9 @@
               </div>
             </div>
             <div class="eval-row">
-              <div class="eval-agent"><strong>Security Reviewer</strong><span>risk and abuse surfaces</span></div>
+              <div class="eval-agent">
+                <strong>Security Reviewer</strong><span>risk and abuse surfaces</span>
+              </div>
               <div class="eval-checks">
                 <div class="eval-chip">Risk map</div>
                 <div class="eval-chip">Dependencies</div>
@@ -3031,7 +3187,9 @@
               </div>
             </div>
             <div class="eval-row">
-              <div class="eval-agent"><strong>Docs Writer</strong><span>durable project memory</span></div>
+              <div class="eval-agent">
+                <strong>Docs Writer</strong><span>durable project memory</span>
+              </div>
               <div class="eval-checks">
                 <div class="eval-chip">Accurate</div>
                 <div class="eval-chip">Findable</div>
@@ -3040,7 +3198,9 @@
               </div>
             </div>
             <div class="eval-row">
-              <div class="eval-agent"><strong>Code Reviewer</strong><span>quality judgment</span></div>
+              <div class="eval-agent">
+                <strong>Code Reviewer</strong><span>quality judgment</span>
+              </div>
               <div class="eval-checks">
                 <div class="eval-chip">Diff-grounded</div>
                 <div class="eval-chip">Severity clear</div>
@@ -3049,7 +3209,9 @@
               </div>
             </div>
             <div class="eval-row">
-              <div class="eval-agent"><strong>Factory Runner</strong><span>autonomous coordination</span></div>
+              <div class="eval-agent">
+                <strong>Factory Runner</strong><span>autonomous coordination</span>
+              </div>
               <div class="eval-checks">
                 <div class="eval-chip">Runnable work</div>
                 <div class="eval-chip">Blockers respected</div>
@@ -3065,46 +3227,73 @@
             <div class="kicker">Ticket Sources</div>
             <h2>Who Creates Tickets?</h2>
             <p class="lede">
-              Tickets enter the factory from humans, agents, and scheduled
-              maintenance. The source can vary; the control plane stays the same.
+              Tickets enter the factory from humans, agents, and scheduled maintenance. The source
+              can vary; the control plane stays the same.
             </p>
           </div>
           <div class="ticket-source-grid">
             <div class="source-flow">
               <h3>Humans</h3>
               <p>Direct product intent, bugs, design changes, or architecture needs.</p>
-              <div class="source-step"><strong>Human asks</strong><span>Goal, bug, feature, or cleanup.</span></div>
+              <div class="source-step">
+                <strong>Human asks</strong><span>Goal, bug, feature, or cleanup.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Ticket created</strong><span>Clear owner, scope, and priority.</span></div>
+              <div class="source-step">
+                <strong>Ticket created</strong><span>Clear owner, scope, and priority.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Agent picks it up</strong><span>Work enters the normal factory flow.</span></div>
+              <div class="source-step">
+                <strong>Agent picks it up</strong><span>Work enters the normal factory flow.</span>
+              </div>
             </div>
             <div class="source-flow">
               <h3>Agents</h3>
               <p>Completed work often reveals the next slice for another specialist.</p>
-              <div class="source-step"><strong>Agent finishes</strong><span>Build, review, docs, or investigation.</span></div>
+              <div class="source-step">
+                <strong>Agent finishes</strong><span>Build, review, docs, or investigation.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>New ticket filed</strong><span>The next slice gets its own owner.</span></div>
+              <div class="source-step">
+                <strong>New ticket filed</strong><span>The next slice gets its own owner.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Another agent continues</strong><span>Handoff becomes backlog state.</span></div>
+              <div class="source-step">
+                <strong>Another agent continues</strong><span>Handoff becomes backlog state.</span>
+              </div>
             </div>
             <div class="source-flow">
               <h3>Schedules</h3>
               <p>Recurring factory checks create work before humans have to notice.</p>
-              <div class="source-step"><strong>Morning sweeps</strong><span>Security scan, test coverage, docs health.</span></div>
+              <div class="source-step">
+                <strong>Morning sweeps</strong
+                ><span>Security scan, test coverage, docs health.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Findings become tickets</strong><span>Real work enters the backlog.</span></div>
+              <div class="source-step">
+                <strong>Findings become tickets</strong><span>Real work enters the backlog.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Factory picks them up</strong><span>Runnable tickets eventually get assigned.</span></div>
+              <div class="source-step">
+                <strong>Factory picks them up</strong
+                ><span>Runnable tickets eventually get assigned.</span>
+              </div>
             </div>
             <div class="source-flow">
               <h3>User Feedback</h3>
               <p>Support notes, beta feedback, and usage friction become factory input.</p>
-              <div class="source-step"><strong>User signal</strong><span>Complaint, confusion, request, or repeated friction.</span></div>
+              <div class="source-step">
+                <strong>User signal</strong
+                ><span>Complaint, confusion, request, or repeated friction.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Feedback triaged</strong><span>Turn the signal into a concrete slice.</span></div>
+              <div class="source-step">
+                <strong>Feedback triaged</strong><span>Turn the signal into a concrete slice.</span>
+              </div>
               <div class="source-arrow" aria-hidden="true"></div>
-              <div class="source-step"><strong>Ticket created</strong><span>Product work enters the backlog.</span></div>
+              <div class="source-step">
+                <strong>Ticket created</strong><span>Product work enters the backlog.</span>
+              </div>
             </div>
           </div>
         </article>
@@ -3114,9 +3303,8 @@
             <div class="kicker">Observability</div>
             <h2>Hyperspecific Observability</h2>
             <p class="lede">
-              Because each agent is hyperspecific, the trace can be hyperspecific
-              too: model, tools, outputs, ticket movement, and evidence are all
-              shaped around the role.
+              Because each agent is hyperspecific, the trace can be hyperspecific too: model, tools,
+              outputs, ticket movement, and evidence are all shaped around the role.
             </p>
           </div>
           <div class="run-log-demo">
@@ -3124,15 +3312,30 @@
               <h3>Backend Builder Run</h3>
               <div class="log-line"><b>Model</b><span>GPT-5 Codex, high reasoning</span></div>
               <div class="log-line"><b>Ticket</b><span>Webhook retry implementation</span></div>
-              <div class="log-line"><b>Tools</b><span>search code, edit files, run tests, open pull request</span></div>
-              <div class="log-line"><b>Output</b><span>Retry logic, regression tests, linked pull request</span></div>
-              <div class="log-line"><b>Follow-up</b><span>Filed docs ticket for operational retry behavior</span></div>
+              <div class="log-line">
+                <b>Tools</b><span>search code, edit files, run tests, open pull request</span>
+              </div>
+              <div class="log-line">
+                <b>Output</b><span>Retry logic, regression tests, linked pull request</span>
+              </div>
+              <div class="log-line">
+                <b>Follow-up</b><span>Filed docs ticket for operational retry behavior</span>
+              </div>
               <div class="log-line"><b>Status</b><span>Ready for code review</span></div>
             </div>
             <div class="log-side">
-              <div class="log-side-card"><strong>Role-shaped logs</strong><p>A builder log emphasizes files, tests, pull requests, and blockers.</p></div>
-              <div class="log-side-card"><strong>Role-shaped tools</strong><p>Each agent exposes the commands and artifacts that make sense for its job.</p></div>
-              <div class="log-side-card"><strong>Role-shaped evidence</strong><p>The reviewer sees the exact trail needed to evaluate that type of work.</p></div>
+              <div class="log-side-card">
+                <strong>Role-shaped logs</strong>
+                <p>A builder log emphasizes files, tests, pull requests, and blockers.</p>
+              </div>
+              <div class="log-side-card">
+                <strong>Role-shaped tools</strong>
+                <p>Each agent exposes the commands and artifacts that make sense for its job.</p>
+              </div>
+              <div class="log-side-card">
+                <strong>Role-shaped evidence</strong>
+                <p>The reviewer sees the exact trail needed to evaluate that type of work.</p>
+              </div>
             </div>
           </div>
         </article>
@@ -3141,9 +3344,7 @@
           <div>
             <div class="kicker">Codebase Knowledge</div>
             <h2>Do Not Reinvent The Wheel</h2>
-            <p class="lede">
-              Agents run inside the repository, so the repo is the memory layer.
-            </p>
+            <p class="lede">Agents run inside the repository, so the repo is the memory layer.</p>
           </div>
           <div class="knowledge-source-grid">
             <div class="knowledge-source-card">CLAUDE.md</div>
@@ -3166,9 +3367,9 @@
             <div class="kicker">HITL</div>
             <h2>HITL Is First-Class</h2>
             <p class="lede">
-              A blocked ticket that needs a human is a first-class citizen. The
-              factory records the blocker, sends the request, waits cleanly, and
-              resumes from the same ticket once the human decision is made.
+              A blocked ticket that needs a human is a first-class citizen. The factory records the
+              blocker, sends the request, waits cleanly, and resumes from the same ticket once the
+              human decision is made.
             </p>
           </div>
           <div class="hitl-diagram">
@@ -3184,7 +3385,9 @@
                   <span class="request-channel"><span class="request-icon">T</span> Telegram</span>
                   <span class="request-time">now</span>
                 </div>
-                <p>Production deploy needs approval. Review the linked run, diff, and test output.</p>
+                <p>
+                  Production deploy needs approval. Review the linked run, diff, and test output.
+                </p>
                 <div class="request-actions">
                   <span>Resolve</span>
                   <span>Tail run</span>
@@ -3200,7 +3403,9 @@
             </div>
             <div class="hitl-action">
               <strong>Human Decides</strong>
-              <p>Approve, reject, answer, or redirect. The factory resumes without losing the trail.</p>
+              <p>
+                Approve, reject, answer, or redirect. The factory resumes without losing the trail.
+              </p>
             </div>
           </div>
         </article>
@@ -3210,10 +3415,9 @@
             <div class="kicker">Greenfield</div>
             <h2>Spec To Tickets</h2>
             <p class="lede">
-              Greenfield planning is intentionally open-ended. Use manual
-              planning, a compound engineering stack, a design doc, or any other
-              planning phase. The factory boundary is where the spec becomes
-              owned tickets.
+              Greenfield planning is intentionally open-ended. Use manual planning, a compound
+              engineering stack, a design doc, or any other planning phase. The factory boundary is
+              where the spec becomes owned tickets.
             </p>
           </div>
           <div class="greenfield-flow" aria-label="Greenfield planning into ticket graph">
@@ -3247,7 +3451,6 @@
             </div>
           </div>
         </article>
-
       </section>
     </main>
 
@@ -3261,7 +3464,10 @@
       let current = 0;
 
       function slug(title) {
-        return title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        return title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, "-")
+          .replace(/^-|-$/g, "");
       }
 
       slides.forEach((slide, index) => {

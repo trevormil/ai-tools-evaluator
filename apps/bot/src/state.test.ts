@@ -4,7 +4,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { readLastPosted, writeLastPosted } from "./state";
 
-const path = join(tmpdir(), `aix-bot-state-${process.pid}-${Math.random().toString(36).slice(2)}.json`);
+const path = join(
+  tmpdir(),
+  `aix-bot-state-${process.pid}-${Math.random().toString(36).slice(2)}.json`,
+);
 
 afterEach(async () => {
   await rm(path, { force: true });

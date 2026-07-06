@@ -14,8 +14,15 @@ export async function POST(req: Request) {
   }
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
-    return NextResponse.json({ error: "Invalid body", details: parsed.error.flatten() }, { status: 400 });
+    return NextResponse.json(
+      { error: "Invalid body", details: parsed.error.flatten() },
+      { status: 400 },
+    );
   }
-  const run = getDb().insert(scanRuns).values({ source: parsed.data.source, status: "running" }).returning().get();
+  const run = getDb()
+    .insert(scanRuns)
+    .values({ source: parsed.data.source, status: "running" })
+    .returning()
+    .get();
   return NextResponse.json({ id: run.id }, { status: 201 });
 }
