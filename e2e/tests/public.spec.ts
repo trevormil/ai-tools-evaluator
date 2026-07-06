@@ -21,7 +21,7 @@ test("item detail renders verdict, sections, scorecard, audience", async ({ page
   await expect(page.getByText(/essential/i).first()).toBeVisible();
   await expect(page.getByText(/Devil's advocate/i)).toBeVisible();
   await expect(page.getByText(/Who it's for/i)).toBeVisible();
-  await expect(page.getByText(/Novelty/i)).toBeVisible(); // a scorecard metric label
+  await expect(page.getByText("Novelty", { exact: true })).toBeVisible(); // a scorecard metric label
 });
 
 test("leaderboard has a complexity-trap hall of shame", async ({ page }) => {
