@@ -79,21 +79,6 @@ export function listItems(f: ItemFilters = {}): Item[] {
     .all();
 }
 
-/**
- * Random mode (ticket 0038): a shuffled deck of published, scored tools to
- * scroll through and learn one at a time. Scored-only — pending submissions
- * have no write-up to learn from yet.
- */
-export function shuffledTools(limit = 20): Item[] {
-  return getDb()
-    .select()
-    .from(items)
-    .where(and(eq(items.published, true), eq(items.scoreStatus, "scored")))
-    .orderBy(sql`random()`)
-    .limit(limit)
-    .all();
-}
-
 export function getItemBySlug(slug: string): Item | undefined {
   return getDb().select().from(items).where(eq(items.slug, slug)).get();
 }
