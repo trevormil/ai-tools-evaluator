@@ -44,6 +44,46 @@ export function createAnthropicModel(opts: {
   };
 }
 
+/**
+ * OpenRouter-backed model client (OpenAI-compatible chat completions). Lets the
+ * scanner run cheap inference (e.g. `google/gemini-3.1-flash-lite`) instead of a
+ * frontier Anthropic model. `fetchImpl` is injectable so tests never hit the net.
+ */
+export function createOpenRouterModel(opts: {
+  apiKey: string;
+  model: string;
+  maxTokens?: number;
+  fetchImpl?: typeof fetch;
+}): ModelClient {
+  const doFetch = opts.fetchImpl ?? fetch;
+  return {
+    async complete(system, user) {
+      const res = await doFetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${opts.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: opts.model,
+          max_tokens: opts.maxTokens ?? 4096,
+          messages: [
+            { role: "system", content: system },
+            { role: "user", content: user },
+          ],
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`openrouter ${res.status}: ${await res.text()}`);
+      }
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string } }>;
+      };
+      return (data.choices?.[0]?.message?.content ?? "").trim();
+    },
+  };
+}
+
 export type EvaluateOptions = {
   model: ModelClient;
   /** Recorded as `Evaluation.model` (provenance). */
