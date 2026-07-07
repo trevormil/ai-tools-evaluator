@@ -1,15 +1,15 @@
 ---
 id: 010
 title: "Scanner: Claude evaluation pipeline + dedup + daily cap + .md export"
-status: in-progress
+status: closed
 priority: critical
 horizon: now
 hitl: false
 type: feature
 source: manual
 created: 2026-07-06
-updated: 2026-07-06
-prs: []
+updated: 2026-07-07
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/1"]
 refs: [ADR-0002, ARCH]
 depends_on: [0001,0006,0008]
 acceptance: []

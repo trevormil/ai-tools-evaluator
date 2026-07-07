@@ -1,15 +1,15 @@
 ---
 id: 23
 title: "Fix scan-run status mismatch, red CI quality job, unreadable score pill"
-status: in-progress
+status: closed
 priority: critical
 horizon: now
 hitl: false
 type: bug
 source: feedback
 created: 2026-07-06
-updated: 2026-07-06
-prs: []
+updated: 2026-07-07
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/1"]
 refs: [ADR-0002, ARCH]
 depends_on: []
 acceptance: []
