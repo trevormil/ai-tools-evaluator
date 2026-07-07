@@ -57,7 +57,11 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
       {/* The community feed — new tools, takes, posts. */}
       <div>
         <p className="eyebrow mb-2">The feed</p>
-        {user && <FeedTabs mode={mode} />}
+        {user && (
+          <div className="mb-4">
+            <FeedTabs mode={mode} />
+          </div>
+        )}
         <FeedList key={mode} initial={feed} mode={mode} signedIn={!!user} />
       </div>
     </div>
