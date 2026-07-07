@@ -37,6 +37,6 @@ describe("AIX_MODEL default", () => {
   test("defaults to a cheap non-Opus model", () => {
     const env = loadEnv({ ...base });
     expect(env.AIX_MODEL).not.toMatch(/opus/i);
-    expect(env.AIX_MODEL).toBe("google/gemini-3.1-flash-lite");
+    expect(env.AIX_MODEL).toBe("deepseek/deepseek-v4-flash");
   });
 });
