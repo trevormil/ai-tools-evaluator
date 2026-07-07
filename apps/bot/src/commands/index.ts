@@ -1,15 +1,17 @@
 import { REST, Routes } from "discord.js";
 import type { Env } from "../env";
 import { submitCommand } from "./submit";
+import { scoreCommand } from "./score";
 import { evalCommand } from "./eval";
 import { leaderboardCommand } from "./leaderboard";
 
 export * from "./submit";
+export * from "./score";
 export * from "./eval";
 export * from "./leaderboard";
 
 /** All slash commands the bot exposes. */
-export const commands = [submitCommand, evalCommand, leaderboardCommand];
+export const commands = [submitCommand, scoreCommand, evalCommand, leaderboardCommand];
 
 /**
  * Register commands with Discord. Guild-scoped (instant) when DISCORD_GUILD_ID
