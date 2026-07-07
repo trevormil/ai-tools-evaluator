@@ -18,10 +18,13 @@ COPY apps/scanner/package.json   apps/scanner/package.json
 COPY apps/bot/package.json       apps/bot/package.json
 RUN bun install --frozen-lockfile
 
-# ---- runtime: node_modules from deps + full source ----
+# ---- build: deps + full source (carries per-workspace node_modules) ----
+FROM deps AS build
+COPY . .
+
+# ---- runtime: whole /app tree so nested workspace node_modules resolve ----
 FROM base AS runtime
 ENV NODE_ENV=production
-COPY --from=deps /app/node_modules /app/node_modules
-COPY . .
+COPY --from=build /app /app
 # Run once and exit — the CronJob restarts it on schedule.
 CMD ["bun", "apps/scanner/src/index.ts"]

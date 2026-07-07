@@ -1,7 +1,7 @@
 ---
 id: 041
 title: "Fix red main CI: scope Tests to bun run test (exclude Playwright e2e)"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
