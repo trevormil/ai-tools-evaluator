@@ -26,10 +26,11 @@ type ClientCall = { op: string; arg?: unknown };
 
 /** A fake internal client that records calls and drives cap/queue behavior. */
 function fakeClient(opts: {
-  remaining: number;
+  remaining: number; // trending budget remaining
   queued: Submission[];
   duplicates?: Set<string>; // externalIds that should report duplicate on publish
   known?: Set<string>; // externalIds already graded (pre-eval dedup)
+  submissionRemaining?: number; // submission budget remaining (default: plenty)
 }): InternalClient & { calls: ClientCall[]; publishedOrder: string[] } {
   const calls: ClientCall[] = [];
   const publishedOrder: string[] = [];
@@ -40,7 +41,13 @@ function fakeClient(opts: {
     publishedOrder,
     async getCap() {
       calls.push({ op: "getCap" });
-      return { date: "2026-07-06", publishedToday: 0, remaining: opts.remaining, dailyCap: 10 };
+      return {
+        date: "2026-07-06",
+        publishedToday: 0,
+        remaining: opts.remaining,
+        dailyCap: 10,
+        submissions: { publishedToday: 0, remaining: opts.submissionRemaining ?? 999, cap: 50 },
+      };
     },
     async filterKnown(candidates) {
       calls.push({ op: "filterKnown", arg: candidates.map((c) => c.externalId) });
@@ -145,25 +152,63 @@ describe("run loop", () => {
     expect(firstQueuePublish).toBeLessThan(firstTrendPublish);
   });
 
-  test("respects the cap (min of server remaining and local cap)", async () => {
+  test("the trending pick respects the trending cap (server remaining)", async () => {
+    const client = fakeClient({ remaining: 1, queued: [] }); // only 1 trending slot left
+    const result = await run(
+      baseDeps({
+        client,
+        trendingPicks: 10,
+        discoverTrending: async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)),
+      }),
+    );
+    expect(result.published).toBe(1);
+    expect(client.publishedOrder).toEqual(["t/a"]);
+  });
+
+  test("the queue drains against the submission budget even when trending is exhausted", async () => {
+    // The TerMinal case: trending cap is 0, but human submissions still process.
     const client = fakeClient({
-      remaining: 2, // server says only 2 left today
-      queued: [{ id: "s1", url: "https://github.com/q/one", status: "queued" }],
+      remaining: 0, // trending exhausted
+      submissionRemaining: 3, // 3 submissions left today
+      queued: [
+        { id: "s1", url: "https://github.com/q/one", status: "queued" },
+        { id: "s2", url: "https://github.com/q/two", status: "queued" },
+        { id: "s3", url: "https://github.com/q/three", status: "queued" },
+        { id: "s4", url: "https://github.com/q/four", status: "queued" },
+      ],
     });
     const result = await run(
       baseDeps({
         client,
         cap: 10,
-        resolveSubmission: async () => trendingDiscovered("q/one"),
-        // plenty of trending, but the cap must stop us at 2 total
-        discoverTrending: async () =>
-          ["t/a", "t/b", "t/c", "t/d"].map((e) => trendingDiscovered(e)),
+        trendingPicks: 0,
+        resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
+      }),
+    );
+    // 3 processed (submission budget), not blocked by the 0 trending cap.
+    expect(result.published).toBe(3);
+    expect(client.publishedOrder).toEqual(["q/one", "q/two", "q/three"]);
+  });
+
+  test("the per-run circuit breaker (deps.cap) bounds the queue below the daily submission budget", async () => {
+    const client = fakeClient({
+      remaining: 0,
+      submissionRemaining: 50,
+      queued: [1, 2, 3, 4, 5].map((n) => ({
+        id: `s${n}`,
+        url: `https://github.com/q/${n}`,
+        status: "queued",
+      })),
+    });
+    const result = await run(
+      baseDeps({
+        client,
+        cap: 2, // circuit breaker: max 2 per run
+        trendingPicks: 0,
+        resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
       }),
     );
     expect(result.published).toBe(2);
-    expect(client.publishedOrder).toEqual(["q/one", "t/a"]);
-    const close = client.calls.find((c) => c.op === "closeRun")!.arg as { published: number };
-    expect(close.published).toBe(2);
   });
 
   test("treats server-side duplicates as skips, not publishes", async () => {
