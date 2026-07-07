@@ -4,6 +4,8 @@ import { readFile, writeFile } from "node:fs/promises";
 export type DigestState = {
   /** Watermark for the rolling daily digest. */
   lastPostedAt?: string;
+  /** Watermark for auto-posting scored Discord submissions. */
+  lastSubmissionPostedAt?: string;
 };
 
 /** Read the whole state object; empty object if absent/unreadable. */
@@ -29,4 +31,13 @@ export async function readLastPosted(path: string): Promise<string | null> {
 
 export async function writeLastPosted(path: string, iso: string): Promise<void> {
   await writeState(path, { lastPostedAt: iso });
+}
+
+/** Watermark for the "scored Discord submission" auto-poster. */
+export async function readLastSubmissionPosted(path: string): Promise<string | null> {
+  return (await readState(path)).lastSubmissionPostedAt ?? null;
+}
+
+export async function writeLastSubmissionPosted(path: string, iso: string): Promise<void> {
+  await writeState(path, { lastSubmissionPostedAt: iso });
 }
