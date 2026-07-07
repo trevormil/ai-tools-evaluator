@@ -5,18 +5,21 @@ export const dynamic = "force-dynamic";
 
 /** Kick off GitHub OAuth: redirect the user to GitHub's authorize screen. */
 export async function GET(req: Request) {
-  const origin = new URL(req.url).origin;
-  const clientId = getEnv().GITHUB_OAUTH_CLIENT_ID;
+  const env = getEnv();
+  // Behind the ingress, req.url's origin is the internal host — use the public
+  // URL so the OAuth redirect_uri matches the registered callback exactly.
+  const base = (env.AIX_PUBLIC_URL ?? new URL(req.url).origin).replace(/\/+$/, "");
+  const clientId = env.GITHUB_OAUTH_CLIENT_ID;
   if (!clientId) {
     // OAuth app not configured yet — degrade to a friendly redirect, not a 500.
     console.warn("[auth] GITHUB_OAUTH_CLIENT_ID unset — GitHub login unavailable");
-    return NextResponse.redirect(new URL("/?error=login_unavailable", origin));
+    return NextResponse.redirect(`${base}/?error=login_unavailable`);
   }
   const state = crypto.randomUUID();
 
   const authUrl = new URL("https://github.com/login/oauth/authorize");
   authUrl.searchParams.set("client_id", clientId);
-  authUrl.searchParams.set("redirect_uri", `${origin}/api/auth/callback`);
+  authUrl.searchParams.set("redirect_uri", `${base}/api/auth/callback`);
   authUrl.searchParams.set("scope", "read:user");
   authUrl.searchParams.set("state", state);
 

@@ -18,18 +18,21 @@ type GithubUser = {
 /** OAuth callback: verify state, exchange the code, upsert the user, open a session. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
+  // Public origin (behind the ingress req.url is the internal host) — used for
+  // the OAuth redirect_uri and all browser-facing redirects.
+  const base = (getEnv().AIX_PUBLIC_URL ?? url.origin).replace(/\/+$/, "");
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
 
   const store = await cookies();
   const savedState = store.get("aix_oauth_state")?.value;
   if (!code || !state || state !== savedState) {
-    return NextResponse.redirect(`${url.origin}/?auth=error`);
+    return NextResponse.redirect(`${base}/?auth=error`);
   }
 
   const { GITHUB_OAUTH_CLIENT_ID: clientId, GITHUB_OAUTH_CLIENT_SECRET: clientSecret } = getEnv();
   if (!clientId || !clientSecret) {
-    return NextResponse.redirect(`${url.origin}/?error=login_unavailable`);
+    return NextResponse.redirect(`${base}/?error=login_unavailable`);
   }
 
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
@@ -39,12 +42,12 @@ export async function GET(req: Request) {
       client_id: clientId,
       client_secret: clientSecret,
       code,
-      redirect_uri: `${url.origin}/api/auth/callback`,
+      redirect_uri: `${base}/api/auth/callback`,
     }),
   });
   const tokenData = (await tokenRes.json()) as { access_token?: string };
   if (!tokenData.access_token) {
-    return NextResponse.redirect(`${url.origin}/?auth=error`);
+    return NextResponse.redirect(`${base}/?auth=error`);
   }
 
   const ghRes = await fetch("https://api.github.com/user", {
@@ -55,14 +58,14 @@ export async function GET(req: Request) {
     },
   });
   if (!ghRes.ok) {
-    return NextResponse.redirect(`${url.origin}/?auth=error`);
+    return NextResponse.redirect(`${base}/?auth=error`);
   }
   const gh = (await ghRes.json()) as GithubUser;
 
   const user = upsertGithubUser(gh);
   const { token, expiresAt } = createSession(user.id);
 
-  const res = NextResponse.redirect(`${url.origin}/u/${user.username}`);
+  const res = NextResponse.redirect(`${base}/u/${user.username}`);
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
