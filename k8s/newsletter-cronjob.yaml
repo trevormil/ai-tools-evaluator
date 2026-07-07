@@ -1,0 +1,50 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aix-newsletter
+  namespace: aix
+  labels:
+    app: aix-newsletter
+spec:
+  # Daily at 15:00 UTC — one hour after the scanner, so the day's items exist.
+  schedule: "0 15 * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      activeDeadlineSeconds: 600
+      template:
+        metadata:
+          labels:
+            app: aix-newsletter
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: newsletter
+              image: curlimages/curl:8.11.1
+              # POST the internal send endpoint; web renders the digest of the
+              # last 24h and emails all active subscribers via Resend.
+              command: ["/bin/sh", "-c"]
+              args:
+                - >-
+                  curl -fsS -X POST
+                  -H "authorization: Bearer $AIX_INTERNAL_TOKEN"
+                  -H "content-type: application/json"
+                  -d '{}'
+                  http://aix-web.aix.svc.cluster.local/api/internal/newsletter/send
+              env:
+                - name: AIX_INTERNAL_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: aix-secrets
+                      key: AIX_INTERNAL_TOKEN
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 24Mi
+                limits:
+                  cpu: 100m
+                  memory: 64Mi

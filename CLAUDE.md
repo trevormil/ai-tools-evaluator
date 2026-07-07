@@ -1,12 +1,19 @@
-# CLAUDE.md — <PROJECT NAME>
+# CLAUDE.md — AIx
 
 <!-- Project-specific guidance, loaded on top of global ~/.claude/CLAUDE.md.
      Don't restate global rules — reference as "global §N". Keep lean. -->
 
-<One-line description.> See [`README.md`](./README.md) and
-[`docs/architecture.md`](./docs/architecture.md).
+AIx (`aix.trevormil.com`) — a dual **directory + social site** for trending
+GitHub tools/MCPs/libraries/skills and research papers. Each item gets a strict,
+harshly-honest AI evaluation (10-metric scorecard, forced verdict, "is this just
+complexity?" devil's-advocate). A daily bot scans multiple sources (cap 10/day,
+dedup) and a link-drop queue lets anyone suggest items. See [`README.md`](./README.md)
+and [`docs/architecture.md`](./docs/architecture.md).
 
-**Status:** <design / building / shipped — one line on where things stand.>
+**Status:** building (vibe mode). Foundation (`@aix/core` strict schema +
+`@aix/db` SQLite) tested green; web / scanner / bot / k8s under construction.
+Stack + storage decisions in [ADR-0002](./docs/decisions/0002-aix-stack.md);
+internal API contract in [`docs/internal-api.md`](./docs/internal-api.md).
 
 ## [1] Operating principles
 

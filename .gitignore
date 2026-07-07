@@ -33,3 +33,24 @@ build/
 .reviews/**/*.scoped.diff
 .reviews/**/*.digest-prompt.txt
 .reviews/**/*.digest.log
+
+# --- AIx ---
+node_modules/
+*.db
+*.db-wal
+*.db-shm
+.next/
+dist/
+apps/*/.env
+.env
+content/items/*.md
+!content/items/.gitkeep
+
+# Yarn PnP artifacts (Next.js can auto-trigger these; we use bun)
+.pnp.*
+.yarn/
+yarn.lock
+
+# TypeScript incremental build info
+*.tsbuildinfo
+.gstack/

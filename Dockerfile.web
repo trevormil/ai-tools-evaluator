@@ -1,0 +1,37 @@
+# syntax=docker/dockerfile:1
+#
+# apps/web — Next.js 15 (App Router). Built from the repo ROOT so the bun
+# workspace packages (@aix/core, @aix/db) resolve. bun:sqlite is built into the
+# oven/bun runtime, so no native addon compilation is needed.
+#
+# At boot the container applies DB migrations against the PVC-backed SQLite file
+# (single-writer rule) and then starts Next on :3000.
+
+FROM oven/bun:1.3.13 AS base
+WORKDIR /app
+
+# ---- deps: install the whole workspace (dev deps are needed to build Next) ----
+# Copy only manifests first so this layer caches across source-only changes.
+FROM base AS deps
+COPY package.json bun.lock tsconfig.base.json ./
+COPY packages/core/package.json packages/core/package.json
+COPY packages/db/package.json   packages/db/package.json
+COPY apps/web/package.json       apps/web/package.json
+COPY apps/scanner/package.json   apps/scanner/package.json
+COPY apps/bot/package.json       apps/bot/package.json
+RUN bun install --frozen-lockfile
+
+# ---- build: compile the Next.js app ----
+FROM deps AS build
+COPY . .
+RUN cd apps/web && bun run build
+
+# ---- runtime ----
+FROM base AS runtime
+ENV NODE_ENV=production
+# SQLite lives on the mounted PVC (see k8s/pvc.yaml + web-deployment.yaml).
+ENV AIX_DB_PATH=/data/aix.db
+COPY --from=build /app /app
+EXPOSE 3000
+# Apply migrations (idempotent) against the PVC, then start Next.
+CMD ["sh", "-c", "bun packages/db/src/migrate.ts && cd apps/web && bun run start"]

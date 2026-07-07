@@ -1,44 +1,91 @@
-# Architecture
-
-> Evergreen system overview — **edit in place** (unlike append-only ADRs). Keep
-> it matching the shipped code; `/session-end`'s consistency check and
-> `/document-audit` flag drift. Headings carry `[N]` / `[N.M]` anchors so any
-> part is greppable (`grep -n "\[2\]" docs/architecture.md`) and referenceable
-> as `ARCH#2`. Replace the placeholder content below with this project's reality.
-
+---
 anchor: ARCH
+---
 
-## [1] Overview
+# AIx — Architecture
 
-<2–4 sentences: what this system is, who uses it, the core value it delivers.>
+**AIx** (`aix.trevormil.com`) is a dual product:
 
-## [2] Components
+1. **A directory** of trending GitHub repos, tools, MCPs, libraries, skills, and
+   research papers — each distilled into a strict, harshly-honest evaluation
+   artifact that leads with _"is this actually worth it, or complexity for its
+   own sake?"_
+2. **The takes around them** — per-tool practitioner blurbs (`@user's take`,
+   status, ★rating), a one-tap "I use this" count, comments, votes, follows,
+   DMs. Directory-first: the home page IS the directory; the timeline is a
+   secondary surface at `/activity`. There is no generic post composer
+   (legacy posts still render).
 
-<The top-level pieces and what each owns. For a monorepo, give each app its own
-subsection so context stays oriented when jumping between them.>
+A scanner auto-scans multiple sources daily (capped at 10 new items/day,
+dedup-aware) and publishes evaluations. Anyone can submit a URL: the tool
+appears in the directory INSTANTLY as a pending item (`scoreStatus="pending"`,
+"Awaiting score…", socially live) and the scanner upgrades the same row in
+place when the evaluation lands — comments/takes/votes survive.
 
-### [2.1] <component / app>
-<responsibility, key entry points, the folder it lives in>
+## [1] Topology
 
-### [2.2] <component / app>
-<...>
+- Ingress (nginx + cert-manager) terminates TLS for `aix.trevormil.com`.
+- `web` Deployment (Next.js, **replicas: 1**) owns the SQLite file on a PVC.
+- `scanner` CronJob (daily) and `bot` Deployment never touch the DB file — they
+  call `web`'s authenticated internal API (`/api/internal/*`, shared secret).
 
-## [3] Data flow
+**Single-writer rule.** SQLite lives on a `ReadWriteOnce` PVC mounted only by the
+`web` pod. This sidesteps multi-writer SQLite corruption while keeping the "just
+SQLite" simplicity.
 
-<How a request / job moves through the system end to end. A short numbered
-walkthrough beats a diagram for greppability.>
+## [2] Packages & apps (bun workspaces)
 
-## [4] Key decisions
+| Path | Role |
+| --- | --- |
+| `packages/core` | Strict `Evaluation` schema, 10-metric scorecard, verdict enum, categories, markdown (de)serializer, evaluator prompt. **The shared contract.** |
+| `packages/db` | Drizzle + `bun:sqlite` schema + migrator. |
+| `apps/web` | Next.js 15 (App Router) — directory-first home (search + filters incl. audience), item pages (scorecard + **takes** + "I use this" + comments + repo README), `/activity` timeline, **profiles** (Takes · My Stack · My Workflow · Articles · Activity), long-form markdown articles, GitHub OAuth (+ gated dev login), instant submissions, newsletter, public API v1 + internal API. |
+| `apps/scanner` | Multi-source discovery (GitHub, arXiv) + queue drain -> Claude evaluation -> publish. k8s CronJob. |
+| `apps/bot` | Discord bot — daily + weekly digests, `/submit`, `/eval`, `/leaderboard`. |
+| `ios` | Native SwiftUI iOS client reading the public API v1 (directory, item detail, leaderboard). |
+| `k8s` | Namespace, web Deployment/Service/Ingress, PVC, scanner + newsletter + rank CronJobs, bot Deployment, secrets. |
 
-<Pointers to the load-bearing ADRs (by anchor, e.g. ADR-0002) rather than
-restating them. This section is the index into docs/decisions/.>
+Social/content tables (`packages/db`): `posts`, `comments`, `votes` (likes),
+`reposts`, `messages` (DMs), `activities` (feed events), `notifications`,
+`follows`, `stack_items` (My Stack), `articles` (long-form + My Workflow),
+`subscribers` (newsletter).
 
-## [5] External dependencies & services
+## [3] Data model
 
-<Datastores, third-party APIs, infra. What each is for and where its config /
-runbook lives.>
+SQLite is the **source of truth**. Each published evaluation is _also_ exported
+as a strict `.md` artifact (`@aix/core` `toMarkdown`) into `content/items/` for a
+git-native archive — human-readable with an embedded canonical JSON block so it
+round-trips. Tables in `packages/db/src/schema.ts`.
 
-## [6] Conventions
+The evaluation (`packages/core/src/schema.ts`) is the strict document: closed-enum
+category + integration, forced `verdict`, 10-metric scorecard with per-metric
+rationale + weighted `overallScore`, `noiseScore`, and five required plaintext
+sections — `whatItIs`, `vsVanilla`, `surfaceArea`, `devilsAdvocate`, optional
+`steelman`.
 
-<Project-specific conventions beyond global + project CLAUDE.md that a newcomer
-needs: naming, module boundaries, error model, etc.>
+## [4] The scan pipeline (daily cap = 10)
+
+1. **Drain the suggestion queue first** — `submissions` with `status=queued`,
+   oldest first, up to the daily budget.
+2. **Trending discovery** fills the remainder — GitHub search (recently-created +
+   fast-rising stars), arXiv recent listings.
+3. **Dedup** — skip anything already in `items` (`kind`+`externalId` unique).
+4. **Evaluate** — fetch README/abstract, call Claude with the skeptic prompt,
+   validate against `EvaluationDraft`, recompute `overallScore`.
+5. **Attach media** — repo social-preview / screenshots / README images; fall
+   back to a generated cover.
+6. **Publish** — insert `items`, write `.md` artifact, post to the bot channel,
+   mark the originating `submission` as `published`.
+
+Every run is recorded in `scan_runs` for cap accounting and observability.
+
+## [5] Rate-limit resilience
+
+GitHub is the tight constraint. The scanner uses an authenticated Octokit token,
+conditional requests + ETags, exponential backoff on secondary limits, and caps
+per-run API calls. Discovery is windowed (rotating search facets). arXiv is
+polled politely (<=1 req/3s).
+
+## [6] Related decisions
+
+- [ADR-0002](./decisions/0002-aix-stack.md) — stack, storage, and topology.

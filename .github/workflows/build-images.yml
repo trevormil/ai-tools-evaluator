@@ -1,0 +1,47 @@
+# Build and push the three AIx container images to GHCR.
+#
+# Fires on push to main and on manual dispatch. Tags each image `latest` and the
+# commit SHA. Build-only: deployment to the cluster is human-gated (see
+# k8s/README.md) — there are deliberately no deploy steps here.
+name: build-images
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [web, scanner, bot]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push aix-${{ matrix.app }}
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile.${{ matrix.app }}
+          push: true
+          tags: |
+            ghcr.io/trevormil/aix-${{ matrix.app }}:latest
+            ghcr.io/trevormil/aix-${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha,scope=aix-${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=aix-${{ matrix.app }}

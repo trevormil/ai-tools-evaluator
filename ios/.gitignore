@@ -1,0 +1,20 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+*.xcuserdatad/
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# XcodeGen-generated project — regenerate with `xcodegen generate`
+AIx.xcodeproj/
+
+# macOS
+.DS_Store
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.resolved

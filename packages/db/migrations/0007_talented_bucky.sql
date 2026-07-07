@@ -1,0 +1,1 @@
+ALTER TABLE `items` ADD `score_status` text DEFAULT 'scored' NOT NULL;

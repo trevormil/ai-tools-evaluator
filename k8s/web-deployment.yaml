@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aix-web
+  namespace: aix
+  labels:
+    app: aix-web
+spec:
+  # Single writer: exactly one pod owns the SQLite file on the RWO PVC.
+  replicas: 1
+  # RWO volume can't be attached to two pods at once — recreate, don't roll.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: aix-web
+  template:
+    metadata:
+      labels:
+        app: aix-web
+    spec:
+      containers:
+        - name: web
+          image: ghcr.io/trevormil/aix-web:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            # SQLite path on the mounted PVC (see volumeMounts below).
+            - name: AIX_DB_PATH
+              value: /data/aix.db
+          envFrom:
+            - secretRef:
+                name: aix-secrets
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: db
+              mountPath: /data
+      volumes:
+        - name: db
+          persistentVolumeClaim:
+            claimName: aix-db
+      imagePullSecrets:
+        - name: ghcr-pull

@@ -1,0 +1,47 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: aix-scanner
+  namespace: aix
+  labels:
+    app: aix-scanner
+spec:
+  # Daily at 14:00 UTC. Runs the discovery + evaluation pipeline once.
+  schedule: "0 14 * * *"
+  # Never overlap a previous run (rate-limit + daily-cap accounting rely on it).
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      # Give up a stuck run after 30 min rather than blocking the next day.
+      activeDeadlineSeconds: 1800
+      template:
+        metadata:
+          labels:
+            app: aix-scanner
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: scanner
+              image: ghcr.io/trevormil/aix-scanner:latest
+              imagePullPolicy: Always
+              env:
+                # Reach web's internal API over the cluster DNS name.
+                - name: AIX_WEB_URL
+                  value: http://aix-web.aix.svc.cluster.local
+              envFrom:
+                # Supplies AIX_INTERNAL_TOKEN, ANTHROPIC_API_KEY, GITHUB_TOKEN, …
+                - secretRef:
+                    name: aix-secrets
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 256Mi
+                limits:
+                  cpu: "1"
+                  memory: 512Mi
+          imagePullSecrets:
+            - name: ghcr-pull
