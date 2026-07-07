@@ -27,7 +27,8 @@ export function placeholderCoverUrl(title: string): string {
 }
 
 // Image srcs in markdown `![](url "title")` and inline `<img src>` — relative OR absolute.
-const MD_IMG = /!\[[^\]]*\]\(\s*(<)?([^)\s>"']+?\.(?:png|jpe?g|gif|webp|svg))(?:>)?(?:\s+[^)]*)?\)/gi;
+const MD_IMG =
+  /!\[[^\]]*\]\(\s*(<)?([^)\s>"']+?\.(?:png|jpe?g|gif|webp|svg))(?:>)?(?:\s+[^)]*)?\)/gi;
 const HTML_IMG = /<img[^>]+src=["']([^"']+?\.(?:png|jpe?g|gif|webp|svg))["']/gi;
 
 // Shields / CI / coverage badges — noise, never a logo.

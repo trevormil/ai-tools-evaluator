@@ -4,8 +4,8 @@ import { getDb, activities } from "@aix/db";
 
 export type EmitActivityInput = {
   actorId: string;
-  verb: string; // posted | reposted | commented | stack_added | followed | article_published
-  objectType: string; // post | item | comment | user | stack | article
+  verb: string; // posted | reposted | commented | stack_added | followed
+  objectType: string; // post | item | comment | user | stack
   objectId: string;
 };
 

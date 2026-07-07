@@ -1,6 +1,5 @@
 import { latestRecapDate, getRecap, recentRecapDates } from "@/lib/recap";
 import { RecapView } from "@/components/recap-view";
-import { NewsletterForm } from "@/components/newsletter-form";
 
 export const dynamic = "force-dynamic";
 
@@ -18,12 +17,8 @@ export default async function LatestRecapPage() {
             No verdicts yet tonight.
           </h1>
           <p className="mt-1 text-sm text-muted">
-            The scanner judges new tools daily. Subscribe and you&apos;ll get the first recap the
-            moment it lands.
+            The scanner judges new tools daily. Check back soon for the first recap.
           </p>
-        </div>
-        <div className="card p-5">
-          <NewsletterForm />
         </div>
       </div>
     );

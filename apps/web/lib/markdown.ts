@@ -1,8 +1,8 @@
 import MarkdownIt from "markdown-it";
 
 /**
- * The ONE renderer for all user-authored long-form content (articles + workflow
- * bodies). Configured SAFE: `html: false` drops any raw HTML the user typed (so
+ * The ONE renderer for user-authored long-form content (READMEs, posts).
+ * Configured SAFE: `html: false` drops any raw HTML the user typed (so
  * `<script>` / `<img onerror=…>` become inert text, never live nodes), and
  * markdown-it's own link validator rejects `javascript:` / `vbscript:` / most
  * `data:` URLs by default. Output is therefore safe to hand to
