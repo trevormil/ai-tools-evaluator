@@ -35,6 +35,12 @@ export async function handleSubmit(
     );
   } catch (err) {
     console.error("[/submit] failed:", err);
-    await interaction.editReply("Couldn't reach the queue right now. Try again in a bit.");
+    const reason = err instanceof Error ? err.message : "";
+    // Show a real rejection reason (non-GitHub link, etc.); else a generic retry.
+    await interaction.editReply(
+      reason && !reason.includes("failed:")
+        ? `🚫 ${reason}`
+        : "Couldn't reach the queue right now. Try again in a bit.",
+    );
   }
 }

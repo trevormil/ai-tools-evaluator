@@ -1,4 +1,5 @@
 import { SlashCommandBuilder, type ChatInputCommandInteraction } from "discord.js";
+import { validateGithubRepoUrl } from "@aix/core";
 import type { InternalClient } from "../client";
 
 export const scoreCommand = new SlashCommandBuilder()
@@ -11,8 +12,6 @@ export const scoreCommand = new SlashCommandBuilder()
       .setRequired(true),
   );
 
-const GITHUB_RE = /^https?:\/\/(www\.)?github\.com\/[^/\s]+\/[^/\s]+/i;
-
 /** No sign-in needed — anyone in the server can score a repo. */
 export async function handleScore(
   interaction: ChatInputCommandInteraction,
@@ -22,10 +21,9 @@ export async function handleScore(
   const url = interaction.options.getString("url", true).trim();
   await interaction.deferReply();
 
-  if (!GITHUB_RE.test(url)) {
-    await interaction.editReply(
-      "That doesn't look like a GitHub repo URL — try `https://github.com/owner/repo`.",
-    );
+  const check = validateGithubRepoUrl(url);
+  if (!check.ok) {
+    await interaction.editReply(`🚫 ${check.reason}`);
     return;
   }
 
@@ -41,6 +39,11 @@ export async function handleScore(
     );
   } catch (err) {
     console.error("[/score] failed:", err);
-    await interaction.editReply("Couldn't reach the queue right now — try again in a bit.");
+    const reason = err instanceof Error ? err.message : "";
+    await interaction.editReply(
+      reason && !reason.includes("failed:")
+        ? `🚫 ${reason}`
+        : "Couldn't reach the queue right now — try again in a bit.",
+    );
   }
 }
