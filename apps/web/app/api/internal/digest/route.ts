@@ -21,9 +21,13 @@ export async function GET(req: Request) {
       url: items.url,
       verdict: items.verdict,
       overallScore: items.overallScore,
+      noiseScore: items.noiseScore,
       tagline: items.tagline,
       category: items.category,
+      primaryAudience: items.primaryAudience,
+      aiEngineerFit: items.aiEngineerFit,
       coverImageUrl: items.coverImageUrl,
+      evaluationJson: items.evaluationJson,
     })
     .from(items)
     .where(
@@ -35,5 +39,25 @@ export async function GET(req: Request) {
     )
     .all();
 
-  return NextResponse.json({ items: rows });
+  // Surface the decision layer (install one-liner + adopt-if/skip-if) that lives
+  // inside the stored Evaluation, so the digest can post a genuinely useful card.
+  const enriched = rows.map(({ evaluationJson, ...rest }) => {
+    let install: string | undefined;
+    let adoptIf: string[] = [];
+    let skipIf: string[] = [];
+    try {
+      const ev = JSON.parse(evaluationJson) as {
+        quickstart?: { install?: string };
+        decision?: { adoptIf?: string[]; skipIf?: string[] };
+      };
+      install = ev.quickstart?.install;
+      if (Array.isArray(ev.decision?.adoptIf)) adoptIf = ev.decision!.adoptIf;
+      if (Array.isArray(ev.decision?.skipIf)) skipIf = ev.decision!.skipIf;
+    } catch {
+      // Older items may predate the decision layer — degrade gracefully.
+    }
+    return { ...rest, install, adoptIf, skipIf };
+  });
+
+  return NextResponse.json({ items: enriched });
 }

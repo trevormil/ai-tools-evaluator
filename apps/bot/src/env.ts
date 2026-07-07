@@ -10,6 +10,10 @@ export const EnvSchema = z.object({
   AIX_INTERNAL_TOKEN: z.string().min(1),
   /** Base URL of the `web` service that hosts /api/internal/*. */
   AIX_WEB_URL: z.string().url(),
+  /** Public site URL — embeds link to `${AIX_PUBLIC_URL}/item/<slug>`. */
+  AIX_PUBLIC_URL: z.string().url().default("https://aix.trevormil.com"),
+  /** Directory for durable digest state (PVC-backed in prod). Defaults to cwd. */
+  AIX_BOT_STATE_DIR: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

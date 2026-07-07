@@ -29,16 +29,22 @@ function fakeClient(opts: {
   remaining: number;
   queued: Submission[];
   duplicates?: Set<string>; // externalIds that should report duplicate on publish
+  known?: Set<string>; // externalIds already graded (pre-eval dedup)
 }): InternalClient & { calls: ClientCall[]; publishedOrder: string[] } {
   const calls: ClientCall[] = [];
   const publishedOrder: string[] = [];
   const dups = opts.duplicates ?? new Set<string>();
+  const known = opts.known ?? new Set<string>();
   return {
     calls,
     publishedOrder,
     async getCap() {
       calls.push({ op: "getCap" });
       return { date: "2026-07-06", publishedToday: 0, remaining: opts.remaining, dailyCap: 10 };
+    },
+    async filterKnown(candidates) {
+      calls.push({ op: "filterKnown", arg: candidates.map((c) => c.externalId) });
+      return new Set(candidates.map((c) => c.externalId).filter((id) => known.has(id)));
     },
     async listQueuedSubmissions(limit) {
       calls.push({ op: "listQueued", arg: limit });
@@ -80,14 +86,21 @@ function baseDeps(overrides: Partial<RunDeps>): RunDeps {
     evaluate: async (d: Discovered) => evalFor(d.source.externalId),
     writeArtifact: async (e) => writes.push(e.slug),
     cap: 10,
+    // Existing loop-mechanics tests assume trending can publish multiple; the
+    // top-1 behavior is covered by its own tests below with trendingPicks: 1.
+    trendingPicks: 10,
     dryRun: false,
+    now: () => new Date("2026-07-07T00:00:00.000Z"),
     log: nullLogger,
     ...overrides,
   };
 }
 
-const trendingDiscovered = (ext: string): Discovered => ({
-  source: makeGithubSource({ externalId: ext, url: `https://github.com/${ext}` }),
+const trendingDiscovered = (
+  ext: string,
+  source: Partial<Discovered["source"]> = {},
+): Discovered => ({
+  source: makeGithubSource({ externalId: ext, url: `https://github.com/${ext}`, ...source }),
   readme: "readme",
 });
 
@@ -143,7 +156,8 @@ describe("run loop", () => {
         cap: 10,
         resolveSubmission: async () => trendingDiscovered("q/one"),
         // plenty of trending, but the cap must stop us at 2 total
-        discoverTrending: async () => ["t/a", "t/b", "t/c", "t/d"].map(trendingDiscovered),
+        discoverTrending: async () =>
+          ["t/a", "t/b", "t/c", "t/d"].map((e) => trendingDiscovered(e)),
       }),
     );
     expect(result.published).toBe(2);
@@ -199,7 +213,8 @@ describe("run loop", () => {
     const result = await run(
       baseDeps({
         client,
-        discoverTrending: async () => ["t/good1", "t/bad", "t/good2"].map(trendingDiscovered),
+        discoverTrending: async () =>
+          ["t/good1", "t/bad", "t/good2"].map((e) => trendingDiscovered(e)),
         evaluate: async (d: Discovered) => {
           if (d.source.externalId === "t/bad") throw new Error("schema never repaired");
           return evalFor(d.source.externalId);
@@ -211,6 +226,55 @@ describe("run loop", () => {
     expect(result.published).toBe(2);
     const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
     expect(close.status).toBe("success");
+  });
+
+  const NOW = new Date("2026-07-07T00:00:00.000Z");
+  const veloRepo = (ext: string, stars: number, daysOld: number): Discovered =>
+    trendingDiscovered(ext, {
+      stars,
+      createdAt: new Date(NOW.getTime() - daysOld * 86_400_000).toISOString(),
+    });
+
+  test("trendingPicks=1 publishes only the single highest-velocity pick", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    const result = await run(
+      baseDeps({
+        client,
+        trendingPicks: 1,
+        // fast = 500 stars/day, mid = 50/day, slow = 1/day
+        discoverTrending: async () => [
+          veloRepo("t/slow", 1000, 1000),
+          veloRepo("t/fast", 5000, 10),
+          veloRepo("t/mid", 2000, 40),
+        ],
+      }),
+    );
+    expect(client.publishedOrder).toEqual(["t/fast"]);
+    expect(result.published).toBe(1);
+  });
+
+  test("pre-eval dedup: already-graded candidates are dropped before grading", async () => {
+    const evaluated: string[] = [];
+    const client = fakeClient({
+      remaining: 10,
+      queued: [],
+      known: new Set(["t/fast"]), // the top pick is already in the catalog
+    });
+    const result = await run(
+      baseDeps({
+        client,
+        trendingPicks: 1,
+        evaluate: async (d: Discovered) => {
+          evaluated.push(d.source.externalId);
+          return evalFor(d.source.externalId);
+        },
+        discoverTrending: async () => [veloRepo("t/fast", 5000, 10), veloRepo("t/fresh", 3000, 30)],
+      }),
+    );
+    // The known top pick is never graded; the next-best fresh one is chosen.
+    expect(evaluated).toEqual(["t/fresh"]);
+    expect(client.publishedOrder).toEqual(["t/fresh"]);
+    expect(result.published).toBe(1);
   });
 
   test("dry-run evaluates but never publishes or opens a scan-run", async () => {

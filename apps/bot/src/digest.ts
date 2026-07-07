@@ -21,6 +21,10 @@ export type DigestDeps = {
   now?: () => Date;
   /** How far back to look when there's no prior state. Default 24h. */
   lookbackMs?: number;
+  /** Public site base URL, so embeds link to the AIx item page. */
+  siteBaseUrl?: string;
+  /** Max items to post per run — the daily pick. Default 1. */
+  maxPerRun?: number;
 };
 
 /**
@@ -34,14 +38,24 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
   const since = last ?? new Date(now.getTime() - (deps.lookbackMs ?? DAY_MS)).toISOString();
 
   const items = await deps.client.fetchDigest(since);
-  if (items.length === 0) return [];
+  if (items.length === 0) {
+    // Advance the watermark even on an empty run so a restart never re-posts
+    // the whole lookback window.
+    await writeLastPosted(deps.statePath, now.toISOString());
+    return [];
+  }
+
+  // Post at most `maxPerRun` (default 1) — the highest-scored item in the window
+  // is the "pick of the day". The rest stay on the site.
+  const max = deps.maxPerRun ?? 1;
+  const picks = [...items].sort((a, b) => b.overallScore - a.overallScore).slice(0, max);
 
   const channel = await deps.getChannel();
-  for (const item of items) {
-    await channel.send({ embeds: [buildItemEmbed(item)] });
+  for (const item of picks) {
+    await channel.send({ embeds: [buildItemEmbed(item, { siteBaseUrl: deps.siteBaseUrl })] });
   }
   await writeLastPosted(deps.statePath, now.toISOString());
-  return items;
+  return picks;
 }
 
 /** Kick off an immediate run, then repeat on an interval. Returns the timer. */

@@ -165,6 +165,7 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
       language: repo.language ?? undefined,
       license: repo.license?.spdx_id ?? repo.license?.key ?? undefined,
       pushedAt: repo.pushed_at ? new Date(repo.pushed_at).toISOString() : undefined,
+      createdAt: repo.created_at ? new Date(repo.created_at).toISOString() : undefined,
     });
   }
 

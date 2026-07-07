@@ -40,8 +40,11 @@ function fakeClient(items: DigestItem[]): { client: InternalClient; sinceSeen: s
 }
 
 describe("runDigest", () => {
-  it("posts an embed per item and advances the watermark", async () => {
-    const { client } = fakeClient([item({ slug: "a" }), item({ slug: "b" })]);
+  it("posts only the highest-scored pick per run (default 1/day) and advances the watermark", async () => {
+    const { client } = fakeClient([
+      item({ slug: "mid", overallScore: 60 }),
+      item({ slug: "top", overallScore: 90 }),
+    ]);
     const sent: unknown[] = [];
     const now = new Date("2026-07-06T00:00:00.000Z");
 
@@ -57,9 +60,32 @@ describe("runDigest", () => {
       }),
     });
 
-    expect(posted).toHaveLength(2);
-    expect(sent).toHaveLength(2);
+    // Default cap is 1 — the single highest-scored item is the pick of the day.
+    expect(posted.map((p) => p.slug)).toEqual(["top"]);
+    expect(sent).toHaveLength(1);
     expect(await readLastPosted(statePath)).toBe(now.toISOString());
+  });
+
+  it("respects maxPerRun when more than one may post", async () => {
+    const { client } = fakeClient([
+      item({ slug: "a", overallScore: 60 }),
+      item({ slug: "b", overallScore: 90 }),
+    ]);
+    let sends = 0;
+    const posted = await runDigest({
+      client,
+      statePath,
+      maxPerRun: 5,
+      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      getChannel: async () => ({
+        send: async () => {
+          sends++;
+          return null;
+        },
+      }),
+    });
+    expect(posted).toHaveLength(2);
+    expect(sends).toBe(2);
   });
 
   it("uses the stored watermark as `since` on the next run", async () => {
@@ -82,13 +108,14 @@ describe("runDigest", () => {
     expect(second.sinceSeen[0]).toBe(t1.toISOString());
   });
 
-  it("does not touch the channel or state when there are no items", async () => {
+  it("posts nothing but advances the watermark when there are no items", async () => {
     const { client } = fakeClient([]);
     let sends = 0;
+    const now = new Date("2026-07-06T00:00:00.000Z");
     await runDigest({
       client,
       statePath,
-      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      now: () => now,
       getChannel: async () => ({
         send: async () => {
           sends++;
@@ -96,8 +123,10 @@ describe("runDigest", () => {
         },
       }),
     });
+    // No channel post, but the watermark advances so a restart never re-posts
+    // the whole lookback window.
     expect(sends).toBe(0);
-    expect(await readLastPosted(statePath)).toBeNull();
+    expect(await readLastPosted(statePath)).toBe(now.toISOString());
   });
 });
 
