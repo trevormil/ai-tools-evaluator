@@ -6,7 +6,6 @@ import { parseEvaluation } from "@/lib/queries";
 import { VerdictBadge } from "./verdict-badge";
 import { SegMeter } from "./seg-meter";
 import { ItemRow } from "./item-row";
-import { NewsletterForm } from "./newsletter-form";
 
 /** First sentence of the devil's-advocate section — the recap's hook. */
 function trapHook(item: { evaluationJson: string }): string | null {
@@ -164,19 +163,6 @@ export function RecapView({ recap, prev, next }: { recap: Recap; prev?: string; 
           </div>
         </section>
       )}
-
-      {/* Subscribe — the recap is a push product. */}
-      <section className="card flex flex-col gap-2 p-5">
-        <p className="font-display text-lg font-bold tracking-tight">
-          Get the verdict in your inbox, nightly.
-        </p>
-        <p className="text-sm text-muted">
-          One email a night — the tools judged, the traps named. No fluff.
-        </p>
-        <div className="mt-1">
-          <NewsletterForm variant="inline" />
-        </div>
-      </section>
 
       <div className="flex items-center justify-between text-xs">
         <Link href="/recap/archive" className="data text-muted hover:text-brand">

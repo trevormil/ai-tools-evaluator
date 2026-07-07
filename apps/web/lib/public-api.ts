@@ -7,7 +7,7 @@ import type { Item } from "@aix/db";
  * place and can never leak a raw DB column.
  */
 
-/** Absolute site base URL, no trailing slash. Mirrors `newsletter.publicUrl`. */
+/** Absolute site base URL, no trailing slash. */
 export function baseUrl(): string {
   const base = process.env.AIX_PUBLIC_URL ?? "https://aix.trevormil.com";
   return base.replace(/\/$/, "");

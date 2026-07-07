@@ -10,20 +10,19 @@ import { usePathname } from "next/navigation";
 export function MobileNav({ username }: { username: string | null }) {
   const pathname = usePathname();
 
-  // Recap-first (ticket 0040): Directory · Recap · Submit · Random · Profile.
-  // Feed-social (activity, notifications) is off the bar; routes still exist.
+  // Feed · Directory · Submit · Random · Profile.
   const tabs: { href: string; label: string; icon: string; active: boolean }[] = [
     {
       href: "/",
-      label: "Directory",
-      icon: "▤",
+      label: "Feed",
+      icon: "≋",
       active: pathname === "/" || pathname.startsWith("/item"),
     },
     {
-      href: "/recap",
-      label: "Recap",
-      icon: "◲",
-      active: pathname.startsWith("/recap"),
+      href: "/directory",
+      label: "Directory",
+      icon: "▤",
+      active: pathname.startsWith("/directory"),
     },
     { href: "/submit", label: "Submit", icon: "＋", active: pathname.startsWith("/submit") },
     { href: "/random", label: "Random", icon: "⚄", active: pathname.startsWith("/random") },

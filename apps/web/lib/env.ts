@@ -10,13 +10,10 @@ const EnvSchema = z.object({
   AIX_INTERNAL_TOKEN: z.string().optional(),
   GITHUB_OAUTH_CLIENT_ID: z.string().optional(),
   GITHUB_OAUTH_CLIENT_SECRET: z.string().optional(),
-  // Public base URL for building email links (confirm/unsubscribe).
+  // Public base URL (OAuth redirect origin, absolute links).
   AIX_PUBLIC_URL: z.string().optional(),
   // Opt-in dev-only login (/api/auth/dev). NEVER set in production.
   AIX_DEV_LOGIN: z.string().optional(),
-  // Newsletter sending (free tier: Resend). If unset, emails are logged only.
-  RESEND_API_KEY: z.string().optional(),
-  NEWSLETTER_FROM: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

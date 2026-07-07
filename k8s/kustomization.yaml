@@ -14,5 +14,4 @@ resources:
   - queue-cronjob.yaml
   - bot-state-pvc.yaml
   - bot-deployment.yaml
-  - newsletter-cronjob.yaml
   - rank-cronjob.yaml

@@ -13,15 +13,12 @@ import { SubmissionRow } from "@/components/submission-row";
 import { ItemRow } from "@/components/item-row";
 import { FollowButton } from "@/components/follow-button";
 import { StackSection } from "@/components/stack-section";
-import { WorkflowSection } from "@/components/workflow-section";
-import { ArticleList } from "@/components/article-list";
 import { ProfileTabs, type ProfileTab } from "@/components/content-tabs";
 import { ProfileLinks } from "@/components/profile-links";
 import { ProfileLinksEditor } from "@/components/profile-links-editor";
 import { EditProfile } from "@/components/edit-profile";
 import { ActivityCard } from "@/components/activity-card";
 import { getUserStack } from "@/lib/stack";
-import { listArticlesByAuthor } from "@/lib/articles";
 import { getProfileLinks } from "@/lib/profile-links";
 import { getUserActivity } from "@/lib/home-feed";
 import { timeAgo } from "@/lib/format";
@@ -48,7 +45,6 @@ export default async function ProfilePage({
   const isSelf = viewer?.id === profile.id;
   const takes = getUserTakes(profile.id);
   const stack = getUserStack(profile.id);
-  const articles = listArticlesByAuthor(profile.id);
   const submittedItems = listItemsByPoster(profile.id);
   const submissions = isSelf ? listSubmissionsByUser(profile.id) : [];
   const counts = followCounts(profile.id);
@@ -136,16 +132,6 @@ export default async function ProfilePage({
           messageHref={viewer && !isSelf ? `/messages/${profile.id}` : undefined}
         />
       ),
-    },
-    {
-      key: "workflow",
-      label: "My Workflow",
-      content: <WorkflowSection profile={profile} isSelf={isSelf} articles={articles} />,
-    },
-    {
-      key: "articles",
-      label: "Articles",
-      content: <ArticleList articles={articles} isSelf={isSelf} />,
     },
     {
       key: "activity",

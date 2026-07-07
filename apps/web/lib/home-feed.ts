@@ -3,7 +3,6 @@ import type { AnySQLiteColumn } from "drizzle-orm/sqlite-core";
 import {
   getDb,
   activities,
-  articles,
   comments,
   follows,
   items,
@@ -408,16 +407,6 @@ function resolveActivity(activity: Activity, actor: User): FeedEntry | null {
         .get();
       if (!u) return null;
       return { ...base, label: `followed @${u.username}`, href: `/u/${u.username}` };
-    }
-
-    case "article_published": {
-      const art = db
-        .select({ slug: articles.slug, title: articles.title })
-        .from(articles)
-        .where(eq(articles.id, activity.objectId))
-        .get();
-      if (!art) return null;
-      return { ...base, label: `published “${art.title}”`, href: `/a/${art.slug}` };
     }
 
     default:

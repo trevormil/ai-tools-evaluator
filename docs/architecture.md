@@ -39,11 +39,11 @@ SQLite" simplicity.
 | --- | --- |
 | `packages/core` | Strict `Evaluation` schema, 10-metric scorecard, verdict enum, categories, markdown (de)serializer, evaluator prompt. **The shared contract.** |
 | `packages/db` | Drizzle + `bun:sqlite` schema + migrator. |
-| `apps/web` | Next.js 15 (App Router) — directory-first home (search + filters incl. audience), item pages (scorecard + **takes** + "I use this" + comments + repo README), `/activity` timeline, **profiles** (Takes · My Stack · My Workflow · Articles · Activity), long-form markdown articles, GitHub OAuth (+ gated dev login), instant submissions, newsletter, public API v1 + internal API. |
+| `apps/web` | Next.js 15 (App Router) — directory-first home (search + filters incl. audience), item pages (scorecard + **takes** + "I use this" + comments + repo README), `/activity` timeline, `/recap` nightly recap, **profiles** (Takes · My Stack · Activity), GitHub OAuth (+ gated dev login), instant submissions, public API v1 + internal API. |
 | `apps/scanner` | Multi-source discovery (GitHub, arXiv) + queue drain -> Claude evaluation -> publish. k8s CronJob. |
 | `apps/bot` | Discord bot — daily + weekly digests, `/submit`, `/eval`, `/leaderboard`. |
 | `ios` | Native SwiftUI iOS client reading the public API v1 (directory, item detail, leaderboard). |
-| `k8s` | Namespace, web Deployment/Service/Ingress, PVC, scanner + newsletter + rank CronJobs, bot Deployment, secrets. |
+| `k8s` | Namespace, web Deployment/Service/Ingress, PVC, scanner + rank CronJobs, bot Deployment, secrets. |
 
 Social/content tables (`packages/db`): `posts`, `comments`, `votes` (likes),
 `reposts`, `messages` (DMs), `activities` (feed events), `notifications`,
