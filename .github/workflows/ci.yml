@@ -26,7 +26,10 @@ jobs:
       - name: Type check
         run: bun run typecheck
       - name: Tests
-        run: bun test
+        # `bun run test` scopes to `packages apps` (the project's test script).
+        # Bare `bun test` also discovers the Playwright e2e/ specs, which need
+        # Playwright's runner + a live server and error under bun's runner.
+        run: bun run test
 
   # Deterministic eval / spec-compliance gate (optional — uncomment + adapt).
   # Separate from `quality` so a soft lint failure and a hard correctness
