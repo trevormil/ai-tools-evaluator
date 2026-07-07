@@ -1,15 +1,15 @@
 ---
 id: 36
 title: "Takes are the social primitive — @user's take per tool, not generic posts"
-status: in-progress
+status: closed
 priority: critical
 horizon: now
 hitl: false
 type: feature
 source: feedback
 created: 2026-07-06
-updated: 2026-07-06
-prs: []
+updated: 2026-07-07
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/1"]
 refs: [ADR-0002, ARCH]
 depends_on: [0018, 0032]
 acceptance: []
