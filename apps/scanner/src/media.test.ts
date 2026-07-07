@@ -27,15 +27,36 @@ describe("media", () => {
     expect(urls.every((u) => !u.includes("/page"))).toBe(true);
   });
 
-  test("buildMedia for a repo: cover first, all assets valid, capped at 6", () => {
+  test("extractReadmeImages resolves relative paths and drops badges", () => {
+    const readme = `
+      ![logo](docs/logo.png)
+      ![build](https://img.shields.io/github/actions/workflow/status/a/b/ci.svg)
+      <img src="./assets/banner.svg">
+    `;
+    const urls = extractReadmeImages(readme, "acme/tool");
+    expect(urls).toEqual([
+      "https://raw.githubusercontent.com/acme/tool/HEAD/docs/logo.png",
+      "https://raw.githubusercontent.com/acme/tool/HEAD/assets/banner.svg",
+    ]);
+  });
+
+  test("buildMedia cover cascades: a README logo becomes the cover, card second", () => {
     const media = buildMedia(
       makeGithubSource(),
       "![a](https://e.com/a.png) ![b](https://e.com/b.png)",
     );
-    expect(media[0]!.source).toBe("repo-social-preview");
+    expect(media[0]!.source).toBe("repo-readme");
+    expect(media[0]!.url).toBe("https://e.com/a.png");
+    expect(media[1]!.source).toBe("repo-social-preview");
     expect(media.length).toBeLessThanOrEqual(6);
     for (const m of media) expect(() => MediaAsset.parse(m)).not.toThrow();
     expect(coverImageUrl(media)).toBe(media[0]!.url);
+  });
+
+  test("buildMedia falls back to the social-preview card when the README has no image", () => {
+    const media = buildMedia(makeGithubSource(), "# Tool\n\nNo images here, just prose.");
+    expect(media).toHaveLength(1);
+    expect(media[0]!.source).toBe("repo-social-preview");
   });
 
   test("buildMedia for a paper: a single placeholder cover", () => {
