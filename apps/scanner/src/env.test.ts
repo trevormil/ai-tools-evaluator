@@ -20,6 +20,19 @@ describe("requireLiveSecrets — model provider", () => {
   });
 });
 
+describe("empty env strings are treated as absent (k8s envFrom placeholders)", () => {
+  test("empty ANTHROPIC_API_KEY parses to undefined and does not block an OpenRouter run", () => {
+    const env = loadEnv({ ...base, OPENROUTER_API_KEY: "o", ANTHROPIC_API_KEY: "" });
+    expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    expect(() => requireLiveSecrets(env)).not.toThrow();
+  });
+
+  test("an empty provider-only env still fails (both keys empty ≈ absent)", () => {
+    const env = loadEnv({ ...base, OPENROUTER_API_KEY: "", ANTHROPIC_API_KEY: "" });
+    expect(() => requireLiveSecrets(env)).toThrow(/OPENROUTER_API_KEY.*ANTHROPIC_API_KEY/);
+  });
+});
+
 describe("AIX_MODEL default", () => {
   test("defaults to a cheap non-Opus model", () => {
     const env = loadEnv({ ...base });
