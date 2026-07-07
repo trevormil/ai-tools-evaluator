@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server";
-import { required } from "@/lib/env";
+import { getEnv } from "@/lib/env";
 
 export const dynamic = "force-dynamic";
 
 /** Kick off GitHub OAuth: redirect the user to GitHub's authorize screen. */
 export async function GET(req: Request) {
-  const clientId = required("GITHUB_OAUTH_CLIENT_ID");
   const origin = new URL(req.url).origin;
+  const clientId = getEnv().GITHUB_OAUTH_CLIENT_ID;
+  if (!clientId) {
+    // OAuth app not configured yet — degrade to a friendly redirect, not a 500.
+    console.warn("[auth] GITHUB_OAUTH_CLIENT_ID unset — GitHub login unavailable");
+    return NextResponse.redirect(new URL("/?error=login_unavailable", origin));
+  }
   const state = crypto.randomUUID();
 
   const authUrl = new URL("https://github.com/login/oauth/authorize");

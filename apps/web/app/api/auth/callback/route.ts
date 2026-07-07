@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { getDb, users, type User } from "@aix/db";
-import { required } from "@/lib/env";
+import { getEnv } from "@/lib/env";
 import { createSession, SESSION_COOKIE } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -27,8 +27,10 @@ export async function GET(req: Request) {
     return NextResponse.redirect(`${url.origin}/?auth=error`);
   }
 
-  const clientId = required("GITHUB_OAUTH_CLIENT_ID");
-  const clientSecret = required("GITHUB_OAUTH_CLIENT_SECRET");
+  const { GITHUB_OAUTH_CLIENT_ID: clientId, GITHUB_OAUTH_CLIENT_SECRET: clientSecret } = getEnv();
+  if (!clientId || !clientSecret) {
+    return NextResponse.redirect(`${url.origin}/?error=login_unavailable`);
+  }
 
   const tokenRes = await fetch("https://github.com/login/oauth/access_token", {
     method: "POST",

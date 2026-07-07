@@ -46,7 +46,13 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
 
   const channel = await deps.getChannel();
   for (const item of picks) {
-    await channel.send({ embeds: [buildItemEmbed(item, { siteBaseUrl: deps.siteBaseUrl })] });
+    // Plainspoken summary as the message text above the rich embed (Discord
+    // caps content at 2000 chars; whatItIs is ≤1200 but slice defensively).
+    const content = item.summary ? `📌 ${item.summary}`.slice(0, 1900) : undefined;
+    await channel.send({
+      content,
+      embeds: [buildItemEmbed(item, { siteBaseUrl: deps.siteBaseUrl })],
+    });
   }
   await writeLastPosted(deps.statePath, now.toISOString());
   return picks;
