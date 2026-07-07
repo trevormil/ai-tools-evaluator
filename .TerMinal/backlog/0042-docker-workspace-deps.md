@@ -1,7 +1,7 @@
 ---
 id: 042
 title: "Fix scanner/bot Docker images: bundle per-workspace node_modules"
-status: in-progress
+status: closed
 priority: critical
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-07
 updated: 2026-07-07
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/5"]
+prs: []
 refs: [ARCH]
 depends_on: []
 acceptance: []
