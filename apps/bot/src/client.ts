@@ -23,6 +23,8 @@ export const DigestItem = z.object({
   install: z.string().nullish(),
   adoptIf: z.array(z.string()).optional(),
   skipIf: z.array(z.string()).optional(),
+  /** Plainspoken "what it is" — posted as the message text above the embed. */
+  summary: z.string().nullish(),
 });
 export type DigestItem = z.infer<typeof DigestItem>;
 

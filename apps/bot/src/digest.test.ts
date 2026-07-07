@@ -66,6 +66,47 @@ describe("runDigest", () => {
     expect(await readLastPosted(statePath)).toBe(now.toISOString());
   });
 
+  it("posts the plainspoken summary as message text above the embed", async () => {
+    const { client } = fakeClient([
+      item({
+        slug: "top",
+        overallScore: 90,
+        summary: "A CLI that wraps ripgrep with a nicer TUI.",
+      }),
+    ]);
+    let payload: { content?: string; embeds?: unknown[] } | undefined;
+    await runDigest({
+      client,
+      statePath,
+      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      getChannel: async () => ({
+        send: async (p) => {
+          payload = p as typeof payload;
+          return null;
+        },
+      }),
+    });
+    expect(payload?.content).toContain("A CLI that wraps ripgrep");
+    expect(payload?.embeds).toHaveLength(1);
+  });
+
+  it("omits message content when there is no summary", async () => {
+    const { client } = fakeClient([item({ slug: "top", overallScore: 90 })]);
+    let payload: { content?: string } | undefined;
+    await runDigest({
+      client,
+      statePath,
+      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      getChannel: async () => ({
+        send: async (p) => {
+          payload = p as typeof payload;
+          return null;
+        },
+      }),
+    });
+    expect(payload?.content).toBeUndefined();
+  });
+
   it("respects maxPerRun when more than one may post", async () => {
     const { client } = fakeClient([
       item({ slug: "a", overallScore: 60 }),

@@ -45,18 +45,22 @@ export async function GET(req: Request) {
     let install: string | undefined;
     let adoptIf: string[] = [];
     let skipIf: string[] = [];
+    let summary: string | undefined;
     try {
       const ev = JSON.parse(evaluationJson) as {
         quickstart?: { install?: string };
         decision?: { adoptIf?: string[]; skipIf?: string[] };
+        body?: { whatItIs?: string };
       };
       install = ev.quickstart?.install;
       if (Array.isArray(ev.decision?.adoptIf)) adoptIf = ev.decision!.adoptIf;
       if (Array.isArray(ev.decision?.skipIf)) skipIf = ev.decision!.skipIf;
+      // Plainspoken "what it is" — posted as the Discord message text.
+      summary = ev.body?.whatItIs;
     } catch {
       // Older items may predate the decision layer — degrade gracefully.
     }
-    return { ...rest, install, adoptIf, skipIf };
+    return { ...rest, install, adoptIf, skipIf, summary };
   });
 
   return NextResponse.json({ items: enriched });
