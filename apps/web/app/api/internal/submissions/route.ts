@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { getDb, submissions } from "@aix/db";
+import { validateGithubRepoUrl } from "@aix/core";
 import { isInternalAuthorized } from "@/lib/internal-auth";
 import { createPendingItem } from "@/lib/pending-items";
 
@@ -57,6 +58,11 @@ export async function POST(req: Request) {
     );
   }
   const { url, note, source, discordUserId } = parsed.data;
+
+  // Safeguard: GitHub repos only, no reserved/non-repo pages.
+  const check = validateGithubRepoUrl(url);
+  if (!check.ok) return NextResponse.json({ error: check.reason }, { status: 422 });
+
   const db = getDb();
 
   // A visible, linkable pending item appears immediately (no web account needed

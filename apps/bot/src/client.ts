@@ -80,7 +80,9 @@ export function createInternalClient(opts: InternalClientOptions): InternalClien
         }),
       });
       if (!res.ok) {
-        throw new Error(`POST /api/internal/submissions failed: ${res.status}`);
+        // Surface the server's rejection reason (e.g. non-GitHub link) verbatim.
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        throw new Error(body.error ?? `POST /api/internal/submissions failed: ${res.status}`);
       }
       const json = (await res.json()) as {
         duplicate?: boolean;

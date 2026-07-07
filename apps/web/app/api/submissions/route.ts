@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, submissions } from "@aix/db";
+import { validateGithubRepoUrl } from "@aix/core";
 import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
 import { createPendingItem } from "@/lib/pending-items";
@@ -23,6 +24,11 @@ export async function POST(req: Request) {
   try {
     const user = await requireUser();
     const { url, note } = Body.parse(await req.json());
+
+    // Safeguard: GitHub repos only, no reserved/non-repo pages.
+    const check = validateGithubRepoUrl(url);
+    if (!check.ok) return NextResponse.json({ error: check.reason }, { status: 422 });
+
     const db = getDb();
 
     const { item, existed } = createPendingItem(url, user.id);
