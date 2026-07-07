@@ -6,7 +6,7 @@ import { registerCommands } from "./commands";
 import { handleSubmit } from "./commands/submit";
 import { handleEval } from "./commands/eval";
 import { handleLeaderboard } from "./commands/leaderboard";
-import { startDigestScheduler, startWeeklyDigestScheduler, type SendableChannel } from "./digest";
+import { startDigestScheduler, type SendableChannel } from "./digest";
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -34,7 +34,6 @@ async function main(): Promise<void> {
       siteBaseUrl: env.AIX_PUBLIC_URL,
       maxPerRun: 1,
     });
-    startWeeklyDigestScheduler({ client: api, statePath, getChannel });
   });
 
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {
