@@ -8,11 +8,12 @@ import { handleEval } from "./commands/eval";
 import { handleLeaderboard } from "./commands/leaderboard";
 import { startDigestScheduler, startWeeklyDigestScheduler, type SendableChannel } from "./digest";
 
-const STATE_PATH = join(import.meta.dir, "..", ".state.json");
-
 async function main(): Promise<void> {
   const env = loadEnv();
   const api = createInternalClient({ baseUrl: env.AIX_WEB_URL, token: env.AIX_INTERNAL_TOKEN });
+  // Durable digest watermark: PVC-backed dir in prod (AIX_BOT_STATE_DIR), else
+  // alongside the app. Survives restarts so the daily post never repeats.
+  const statePath = join(env.AIX_BOT_STATE_DIR ?? join(import.meta.dir, ".."), ".state.json");
 
   const client = new Client({ intents: [GatewayIntentBits.Guilds] });
 
@@ -26,8 +27,14 @@ async function main(): Promise<void> {
       }
       return channel as TextChannel as unknown as SendableChannel;
     };
-    startDigestScheduler({ client: api, statePath: STATE_PATH, getChannel });
-    startWeeklyDigestScheduler({ client: api, statePath: STATE_PATH, getChannel });
+    startDigestScheduler({
+      client: api,
+      statePath,
+      getChannel,
+      siteBaseUrl: env.AIX_PUBLIC_URL,
+      maxPerRun: 1,
+    });
+    startWeeklyDigestScheduler({ client: api, statePath, getChannel });
   });
 
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {

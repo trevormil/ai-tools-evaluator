@@ -92,6 +92,8 @@ export const ItemSource = z.object({
   language: z.string().max(60).optional(),
   license: z.string().max(60).optional(),
   pushedAt: z.string().datetime().optional(),
+  /** Repo creation time (ISO) — used to rank discovery by star velocity. */
+  createdAt: z.string().datetime().optional(),
   // Paper-ish signals
   publishedAt: z.string().datetime().optional(),
   authors: z.array(z.string().max(120)).max(50).optional(),

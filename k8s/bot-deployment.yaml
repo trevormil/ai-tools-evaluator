@@ -7,6 +7,10 @@ metadata:
     app: aix-bot
 spec:
   replicas: 1
+  # Recreate (not RollingUpdate): never run two bot pods at once — a second
+  # Discord gateway connection would double-post the daily digest.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: aix-bot
@@ -23,10 +27,16 @@ spec:
             # Reach web's internal API over the cluster DNS name.
             - name: AIX_WEB_URL
               value: http://aix-web.aix.svc.cluster.local
+            # Durable digest watermark lives on the PVC below.
+            - name: AIX_BOT_STATE_DIR
+              value: /state
           envFrom:
             # Supplies DISCORD_TOKEN, DISCORD_APP_ID, AIX_INTERNAL_TOKEN, …
             - secretRef:
                 name: aix-secrets
+          volumeMounts:
+            - name: bot-state
+              mountPath: /state
           resources:
             requests:
               cpu: 25m
@@ -34,5 +44,9 @@ spec:
             limits:
               cpu: 250m
               memory: 256Mi
+      volumes:
+        - name: bot-state
+          persistentVolumeClaim:
+            claimName: aix-bot-state
       imagePullSecrets:
         - name: ghcr-pull

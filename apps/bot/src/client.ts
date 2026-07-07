@@ -13,9 +13,16 @@ export const DigestItem = z.object({
   url: z.string(),
   verdict: z.string(),
   overallScore: z.number(),
+  noiseScore: z.number().nullish(),
   tagline: z.string(),
   category: z.string(),
+  primaryAudience: z.string().nullish(),
+  aiEngineerFit: z.number().nullish(),
   coverImageUrl: z.string().nullish(),
+  // Decision layer (optional — older items predate it).
+  install: z.string().nullish(),
+  adoptIf: z.array(z.string()).optional(),
+  skipIf: z.array(z.string()).optional(),
 });
 export type DigestItem = z.infer<typeof DigestItem>;
 

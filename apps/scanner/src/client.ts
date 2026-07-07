@@ -37,6 +37,11 @@ export type PublishResult = z.infer<typeof PublishSchema>;
 
 const ScanRunSchema = z.object({ id: z.union([z.string(), z.number()]) });
 
+const KnownSchema = z.object({ known: z.array(z.string()) });
+
+/** A discovery candidate reduced to its identity, for pre-eval dedup. */
+export type CandidateId = { kind: string; externalId: string };
+
 export type SubmissionStatus = "processing" | "published" | "duplicate" | "rejected" | "failed";
 
 export type ScanRunClose = {
@@ -49,6 +54,8 @@ export type ScanRunClose = {
 
 export type InternalClient = {
   getCap(): Promise<CapInfo>;
+  /** Pre-eval dedup: returns the subset of candidate externalIds already graded. */
+  filterKnown(candidates: CandidateId[]): Promise<Set<string>>;
   listQueuedSubmissions(limit: number): Promise<Submission[]>;
   publishItem(
     evaluation: Evaluation,
@@ -93,6 +100,15 @@ export function createInternalClient(opts: {
   return {
     async getCap() {
       return CapSchema.parse(await req("/api/internal/cap"));
+    },
+
+    async filterKnown(candidates) {
+      if (candidates.length === 0) return new Set<string>();
+      const data = await req("/api/internal/items/known", {
+        method: "POST",
+        body: JSON.stringify({ candidates }),
+      });
+      return new Set(KnownSchema.parse(data).known);
     },
 
     async listQueuedSubmissions(limit) {

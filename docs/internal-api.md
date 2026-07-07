@@ -16,6 +16,11 @@ given, mark that submission `published` and link `itemId`. Idempotent on
 of inserting.
 Response: `201 { item }` | `200 { duplicate:true, item }`.
 
+### `POST /api/internal/items/known`
+Pre-eval dedup. Body `{ candidates: [{ kind, externalId }] }` → `{ known: [externalId] }`
+— the subset already in the catalog with a real score. The scanner calls this
+before ranking so it never spends an eval on (or re-picks) an already-graded item.
+
 ### `GET /api/internal/cap`
 Daily-cap accounting. Response: `{ date, publishedToday, remaining, dailyCap:10 }`.
 Scanner uses `remaining` to bound a run.

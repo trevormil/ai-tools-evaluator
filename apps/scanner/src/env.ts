@@ -31,6 +31,12 @@ const EnvSchema = z.object({
   AIX_MODEL: z.string().min(1).default("deepseek/deepseek-v4-flash"),
   AIX_DAILY_CAP: z.coerce.number().int().positive().max(100).default(10),
   /**
+   * How many trending discovery items to publish per scan (the "pick of the day"
+   * that anchors Discord). Default 1 — fetch a pool, drop already-graded, rank by
+   * star velocity, grade only the top pick. The human queue is separate.
+   */
+  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(10).default(1),
+  /**
    * Quality gate on GitHub *discovery* (queue submissions bypass it — a human
    * asked for those). Repos below the star floor are dropped unless they are
    * fast-rising; archived repos and forks are always dropped.

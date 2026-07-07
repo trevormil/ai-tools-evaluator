@@ -3,6 +3,7 @@ import { loadEnv, requireLiveSecrets, type ScannerEnv } from "./env";
 import { createLogger, type Logger } from "./logger";
 import { createGitHubSource, createArxivSource } from "./sources";
 import { createAnthropicModel, createOpenRouterModel, evaluateItem } from "./evaluate";
+import { rankCandidates } from "./rank";
 import { buildMedia, coverImageUrl } from "./media";
 import { createInternalClient, type InternalClient } from "./client";
 import { writeArtifact } from "./artifact";
@@ -20,7 +21,10 @@ export type RunDeps = {
   writeArtifact: (e: Evaluation) => Promise<unknown>;
   /** Local daily cap (AIX_DAILY_CAP); the real bound is min(this, server remaining). */
   cap: number;
+  /** Trending items to publish per scan (the daily pick). Default 1. */
+  trendingPicks: number;
   dryRun: boolean;
+  now: () => Date;
   log: Logger;
 };
 
@@ -97,20 +101,30 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       }
     }
 
-    // 2) TRENDING DISCOVERY fills the remainder.
-    if (published < budget) {
-      const need = budget - published;
-      // Over-fetch: server-side dedup will drop some already-known repos.
-      const trending = await discoverTrending(need * 2);
-      log.info(`trending candidates: ${trending.length}, need ${need} more`);
-      for (const d of trending) {
-        if (published >= budget) break;
+    // 2) TRENDING PICK(S): fetch a pool of ~20, drop already-graded candidates,
+    //    rank by trending (recent star velocity, heavily weighted), and grade
+    //    only the top `trendingPicks` (default 1 — the daily Discord pick). If
+    //    the top pick fails to grade/publish, we fall through to the next best.
+    const want = Math.min(deps.trendingPicks, budget - published);
+    if (want > 0) {
+      const pool = await discoverTrending(20);
+      const known = await client.filterKnown(
+        pool.map((d) => ({ kind: d.source.kind, externalId: d.source.externalId })),
+      );
+      const fresh = pool.filter((d) => !known.has(d.source.externalId));
+      const ranked = rankCandidates(fresh, deps.now());
+      log.info(
+        `trending: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) picking top ${want}`,
+      );
+      let picked = 0;
+      for (const d of ranked) {
+        if (picked >= want) break;
         discovered++;
         let evaluation: Evaluation;
         try {
           evaluation = await evaluate(d);
         } catch (err) {
-          // One malformed evaluation must not abort the whole scan — skip it.
+          // One malformed evaluation must not abort the scan — try the next best.
           log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
           continue;
         }
@@ -120,9 +134,10 @@ export async function run(deps: RunDeps): Promise<RunResult> {
           continue;
         }
         published++;
+        picked++;
         await deps.writeArtifact(evaluation);
         log.info(
-          `published (trending) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
+          `published (pick) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
         );
       }
     }
@@ -150,8 +165,9 @@ export async function run(deps: RunDeps): Promise<RunResult> {
 
 async function runDry(deps: RunDeps): Promise<RunResult> {
   const { discoverTrending, evaluate, cap, log } = deps;
-  log.info("DRY RUN — discovering + evaluating, nothing will be published");
-  const candidates = await discoverTrending(cap);
+  log.info("DRY RUN — discovering + ranking + evaluating, nothing will be published");
+  // Mirror the real path: rank the pool by trending, preview the top `cap`.
+  const candidates = rankCandidates(await discoverTrending(20), deps.now());
   let evaluated = 0;
   for (const d of candidates.slice(0, cap)) {
     const evaluation = await evaluate(d);
@@ -234,7 +250,9 @@ async function main(): Promise<void> {
     evaluate,
     writeArtifact: env.AIX_DRY_RUN ? async () => {} : (e: Evaluation) => writeArtifact(e),
     cap: env.AIX_DAILY_CAP,
+    trendingPicks: env.AIX_TRENDING_PICKS,
     dryRun: env.AIX_DRY_RUN,
+    now: () => new Date(),
     log,
   });
 
