@@ -1,11 +1,9 @@
 import { readFile, writeFile } from "node:fs/promises";
 
-/** Tiny local state so restarts don't re-post digests. */
+/** Tiny local state so restarts don't re-post the daily digest. */
 export type DigestState = {
   /** Watermark for the rolling daily digest. */
   lastPostedAt?: string;
-  /** Watermark for the weekly "best of the week" post. */
-  lastWeeklyPostedAt?: string;
 };
 
 /** Read the whole state object; empty object if absent/unreadable. */
@@ -31,13 +29,4 @@ export async function readLastPosted(path: string): Promise<string | null> {
 
 export async function writeLastPosted(path: string, iso: string): Promise<void> {
   await writeState(path, { lastPostedAt: iso });
-}
-
-/** Returns the last weekly-posted ISO timestamp, or null if absent/unreadable. */
-export async function readLastWeeklyPosted(path: string): Promise<string | null> {
-  return (await readState(path)).lastWeeklyPostedAt ?? null;
-}
-
-export async function writeLastWeeklyPosted(path: string, iso: string): Promise<void> {
-  await writeState(path, { lastWeeklyPostedAt: iso });
 }
