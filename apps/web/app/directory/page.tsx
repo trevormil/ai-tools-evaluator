@@ -59,28 +59,6 @@ export default async function DirectoryPage({ searchParams }: { searchParams: Se
       </div>
 
       <section className="flex flex-col gap-3">
-        <div className="flex items-end justify-end">
-          <a href="/random" className="btn-ghost shrink-0 !py-1.5" title="Open a random tool">
-            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden>
-              <rect
-                x="0.75"
-                y="0.75"
-                width="12.5"
-                height="12.5"
-                rx="3"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              />
-              <circle cx="4.6" cy="4.6" r="1.15" fill="currentColor" />
-              <circle cx="9.4" cy="4.6" r="1.15" fill="currentColor" />
-              <circle cx="7" cy="7" r="1.15" fill="currentColor" />
-              <circle cx="4.6" cy="9.4" r="1.15" fill="currentColor" />
-              <circle cx="9.4" cy="9.4" r="1.15" fill="currentColor" />
-            </svg>
-            Shuffle
-          </a>
-        </div>
         <Filters />
         {items.length === 0 ? (
           <div className="card p-8 text-center text-sm text-muted">

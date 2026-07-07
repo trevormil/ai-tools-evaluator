@@ -10,7 +10,7 @@ import { usePathname } from "next/navigation";
 export function MobileNav({ username }: { username: string | null }) {
   const pathname = usePathname();
 
-  // Feed · Directory · Submit · Random · Profile.
+  // Feed · Directory · Submit · Profile.
   const tabs: { href: string; label: string; icon: string; active: boolean }[] = [
     {
       href: "/",
@@ -25,7 +25,6 @@ export function MobileNav({ username }: { username: string | null }) {
       active: pathname.startsWith("/directory"),
     },
     { href: "/submit", label: "Submit", icon: "＋", active: pathname.startsWith("/submit") },
-    { href: "/random", label: "Random", icon: "⚄", active: pathname.startsWith("/random") },
     {
       href: username ? `/u/${username}` : "/api/auth/github",
       label: username ? "Profile" : "Sign in",

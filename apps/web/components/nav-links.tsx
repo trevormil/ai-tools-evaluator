@@ -14,7 +14,6 @@ export function NavLinks({ signedIn }: { signedIn: boolean }) {
     { href: "/", label: "Feed", active: pathname === "/" || pathname.startsWith("/item") },
     { href: "/directory", label: "Directory", active: pathname.startsWith("/directory") },
     { href: "/submit", label: "Submit", active: pathname.startsWith("/submit") },
-    { href: "/random", label: "Random", active: false },
   ];
 
   return (
