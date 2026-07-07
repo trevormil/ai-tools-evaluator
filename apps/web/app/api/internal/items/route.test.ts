@@ -123,3 +123,30 @@ test("a second publish for the same source is a plain duplicate (no second upgra
   expect(data.duplicate).toBe(true);
   expect(data.item.id).toBe(pendingId);
 });
+
+/** A fresh source with a distinct slug/externalId — forces the INSERT path. */
+function freshEvaluation(key: string) {
+  const ev = validEvaluation();
+  ev.slug = `${key}-tool`;
+  ev.source = {
+    kind: "github_repo",
+    externalId: `${key}/tool`,
+    url: `https://github.com/${key}/tool`,
+    title: `${key} tool`,
+  };
+  return ev;
+}
+
+test("a trending publish (no submissionId) is stamped as the daily pick (ticket 0043)", async () => {
+  const res = await post({ evaluation: freshEvaluation("pick") });
+  expect(res.status).toBe(201);
+  const data = (await res.json()) as { item: { dailyPickAt: number | null } };
+  expect(data.item.dailyPickAt).toBeGreaterThan(0);
+});
+
+test("a submission publish (submissionId set) is NOT a daily pick — leaves dailyPickAt null", async () => {
+  const res = await post({ evaluation: freshEvaluation("sub"), submissionId: "sub_none" });
+  expect(res.status).toBe(201);
+  const data = (await res.json()) as { item: { dailyPickAt: number | null } };
+  expect(data.item.dailyPickAt).toBeNull();
+});

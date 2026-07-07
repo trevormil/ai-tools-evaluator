@@ -71,6 +71,12 @@ export const items = sqliteTable(
     // (ticket 0040). Set on scored insert + pending→scored upgrade; null until
     // scored. Distinct from createdAt (submission time for pending items).
     scoredAt: integer("scored_at"),
+    // When this item was featured as the daily trending pick (ticket 0043).
+    // Set only on the scanner's trending publish (no submission) — null for
+    // seed rows, community submissions, and runners-up. Gates the daily-pick
+    // budget (count of picks today) and marks "already featured" so a repo is
+    // never re-featured, while a prior runner-up can still win later.
+    dailyPickAt: integer("daily_pick_at"),
     score: real("score").notNull().default(0), // hot-ranking score, recomputed
     upvotes: integer("upvotes").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),

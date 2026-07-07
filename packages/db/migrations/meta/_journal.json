@@ -71,6 +71,13 @@
       "when": 1783380524636,
       "tag": "0009_purple_earthquake",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1783454087553,
+      "tag": "0010_daily_pick_at",
+      "breakpoints": true
     }
   ]
 }
