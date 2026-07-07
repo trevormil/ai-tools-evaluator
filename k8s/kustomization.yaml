@@ -11,6 +11,7 @@ resources:
   - web-service.yaml
   - web-ingress.yaml
   - scanner-cronjob.yaml
+  - queue-cronjob.yaml
   - bot-state-pvc.yaml
   - bot-deployment.yaml
   - newsletter-cronjob.yaml
