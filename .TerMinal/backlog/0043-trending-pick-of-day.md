@@ -1,7 +1,7 @@
 ---
 id: 043
 title: "Pick of the Day: rank 20 by trending, dedup, grade top 1, rich Discord post"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-07
 updated: 2026-07-07
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/8"]
+prs: []
 refs: [ARCH]
 depends_on: []
 acceptance: []
