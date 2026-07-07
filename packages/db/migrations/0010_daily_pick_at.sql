@@ -1,0 +1,1 @@
+ALTER TABLE `items` ADD `daily_pick_at` integer;

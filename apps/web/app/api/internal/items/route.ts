@@ -55,6 +55,10 @@ export async function POST(req: Request) {
   const stored = { ...evaluation, overallScore };
   const cover = evaluation.media.find((m) => m.type === "image");
   const nowSec = Math.floor(Date.now() / 1000);
+  // A trending publish (no submissionId) IS the daily pick — stamp it so the
+  // daily-pick budget counts real picks (not seed rows / submissions) and the
+  // repo is never re-featured (ticket 0043). Submissions are never picks.
+  const dailyPickAt = submissionId ? undefined : nowSec;
 
   if (existing) {
     const upgraded = db
@@ -81,6 +85,9 @@ export async function POST(req: Request) {
         model: evaluation.model ?? null,
         scoreStatus: "scored",
         scoredAt: nowSec, // judged now — the pending→scored transition (ticket 0040)
+        // Preserve any prior pick stamp; a trending re-publish of a pending row
+        // features it now. Submissions leave it untouched.
+        dailyPickAt: dailyPickAt ?? existing.dailyPickAt,
         score: hotScore(existing.upvotes, existing.createdAt),
       })
       .where(eq(items.id, existing.id))
@@ -116,6 +123,7 @@ export async function POST(req: Request) {
       model: evaluation.model ?? null,
       published: true,
       scoredAt: nowSec, // scanner-discovered items are born judged (ticket 0040)
+      dailyPickAt, // set for a trending pick, undefined (→ null) for submissions
       score: hotScore(0, nowSec),
       createdAt: nowSec,
     })
