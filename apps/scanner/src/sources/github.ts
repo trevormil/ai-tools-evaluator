@@ -7,32 +7,100 @@ import { evaluateQualityGate, type QualityThresholds } from "./quality-gate";
 /**
  * GitHub discovery. Surfaces recently-created AND fast-rising repos across a
  * ROTATING set of search facets (topics + time windows) so we spread load
- * instead of hammering one query. Scope is ANY notable repo — tools, MCPs,
- * libraries, skills, dev tools — not only AI.
+ * instead of hammering one query. Scope is AI/LLM tooling — the stuff an AI
+ * engineer actually reaches for (agents, MCP servers, RAG, LLM frameworks,
+ * inference/eval tooling). Every facet is topic-scoped to an AI topic, and a
+ * relevance filter (isAiRelevant) drops anything that slips through before it
+ * costs a README fetch or an evaluation.
  *
  * Resilience (architecture.md §5): authenticated Octokit, in-memory conditional
  * requests (ETag), exponential backoff on 403 secondary-rate-limit, and a hard
  * per-run API-call budget after which discovery stops gracefully.
  */
 
-// Rotating facets. Broad on purpose — not AI-only.
+// Rotating facets — all AI/LLM topics (ticket 0043: AI-engineer scope only).
 const TOPICS = [
-  "mcp",
-  "cli",
-  "developer-tools",
-  "typescript",
-  "rust",
-  "python",
-  "agent",
   "llm",
-  "devtools",
-  "automation",
-  "database",
-  "framework",
-  "kubernetes",
-  "observability",
-  "security",
+  "large-language-models",
+  "ai-agents",
+  "agents",
+  "agentic-ai",
+  "mcp",
+  "model-context-protocol",
+  "rag",
+  "langchain",
+  "llmops",
+  "generative-ai",
+  "prompt-engineering",
+  "ai-tools",
+  "vector-database",
+  "chatbot",
+  "openai",
 ] as const;
+
+/**
+ * AI-relevance signal terms — matched against a repo's name, description, and
+ * topics. Broad enough to keep AI-adjacent infra (vector stores, eval harnesses,
+ * inference servers) but tight enough to drop a non-AI repo that a loose topic
+ * happened to surface (ticket 0043).
+ */
+const AI_SIGNALS = [
+  "llm",
+  "gpt",
+  " ai ",
+  "ai-",
+  "a.i.",
+  "artificial intelligence",
+  "machine learning",
+  " ml ", // whole word only — avoid html/xml/yaml/toml
+  "agent",
+  "agentic",
+  " rag ", // whole word only — avoid storage/fragment/drag
+  "retrieval-augmented",
+  "embedding",
+  "prompt",
+  "chatbot",
+  "langchain",
+  "llamaindex",
+  "transformer",
+  "diffusion",
+  "neural",
+  "openai",
+  "anthropic",
+  "claude",
+  "gemini",
+  "mistral",
+  "llama",
+  "mcp",
+  "model context protocol",
+  "generative",
+  "inference",
+  "fine-tun",
+  "fine tun",
+  "vector",
+  "semantic search",
+  "copilot",
+  "assistant",
+  "chatgpt",
+  "text-to-",
+  "speech-to-text",
+  "multimodal",
+] as const;
+
+/**
+ * True when the repo looks AI/LLM-relevant. Checks name + description + topics
+ * against AI_SIGNALS. Padded with spaces so " ai "/" ml " match as whole words.
+ */
+export function isAiRelevant(input: {
+  name?: string;
+  description?: string | null;
+  topics?: string[];
+}): boolean {
+  const hay = ` ${[input.name ?? "", input.description ?? "", ...(input.topics ?? [])]
+    .join(" ")
+    .toLowerCase()} `;
+  return AI_SIGNALS.some((s) => hay.includes(s));
+}
 
 class BudgetExceeded extends Error {
   constructor() {
@@ -52,22 +120,23 @@ export function rotationSeed(now: Date): number {
 }
 
 /**
- * Rotating query facets. The three topic facets sweep a NON-overlapping window
- * of the topic list per run (`seed*3 + {0,1,2}`), so consecutive runs explore
- * genuinely different slices and the window walks the whole list over time.
- * `seed` is injectable (defaults to the day index) to keep rotation testable.
+ * Rotating query facets — every one topic-scoped to an AI topic (ticket 0043).
+ * The four topic facets sweep a NON-overlapping window of the topic list per run
+ * (`seed*4 + {0,1,2,3}`), so consecutive runs explore genuinely different slices
+ * and the window walks the whole list over time. `seed` is injectable (defaults
+ * to the day index) to keep rotation testable.
  */
 export function buildQueries(now: Date, seed: number = rotationSeed(now)): string[] {
-  const base = seed * 3;
+  const base = seed * 4;
   const pick = (offset: number) =>
     TOPICS[(((base + offset) % TOPICS.length) + TOPICS.length) % TOPICS.length]!;
   const week = day(now, 7);
   const month = day(now, 30);
   return [
-    `created:>${week} stars:>15`, // freshly created, already noticed
-    `pushed:>${week} stars:>200 topic:${pick(0)}`, // fast-rising in a rotating topic
-    `created:>${month} stars:>75 topic:${pick(1)}`,
-    `created:>${week} stars:>10 topic:${pick(2)}`,
+    `created:>${week} stars:>15 topic:${pick(0)}`, // freshly created, already noticed
+    `pushed:>${week} stars:>200 topic:${pick(1)}`, // fast-rising in a rotating topic
+    `created:>${month} stars:>75 topic:${pick(2)}`,
+    `created:>${week} stars:>10 topic:${pick(3)}`,
   ];
 }
 
@@ -145,6 +214,7 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
     name: string;
     html_url: string;
     description?: string | null;
+    topics?: string[];
     owner?: { login?: string } | null;
     stargazers_count?: number;
     language?: string | null;
@@ -243,6 +313,18 @@ export function createGitHubSource(opts: GitHubSourceOptions): DiscoverySource {
               log.debug(`gate drop ${item.full_name}: ${decision.reason}`);
               continue;
             }
+          }
+          // AI/LLM scope: drop non-AI repos a loose topic surfaced, before they
+          // cost a README fetch or an evaluation (ticket 0043).
+          if (
+            !isAiRelevant({
+              name: item.full_name,
+              description: item.description,
+              topics: item.topics,
+            })
+          ) {
+            log.debug(`ai-scope drop ${item.full_name}`);
+            continue;
           }
           const owner = item.owner?.login ?? item.full_name.split("/")[0]!;
           try {
