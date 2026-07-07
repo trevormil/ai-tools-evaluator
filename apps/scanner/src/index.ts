@@ -55,15 +55,23 @@ export async function run(deps: RunDeps): Promise<RunResult> {
 
   try {
     const capInfo = await client.getCap();
-    const budget = Math.max(0, Math.min(capInfo.remaining, deps.cap));
-    log.info(`cap: remaining=${capInfo.remaining} localCap=${deps.cap} budget=${budget}`);
+    // Two INDEPENDENT budgets so trending never starves submissions (and vice
+    // versa): the queue drains against the submission cap (bounded per-run by
+    // deps.cap, the circuit breaker); the trending pick draws from DAILY_CAP.
+    const subRemaining = capInfo.submissions?.remaining ?? capInfo.remaining;
+    const queueBudget = Math.max(0, Math.min(deps.cap, subRemaining));
+    const trendBudget = Math.max(0, Math.min(deps.trendingPicks, capInfo.remaining));
+    log.info(
+      `cap: trending=${capInfo.remaining} submissions=${subRemaining} queueBudget=${queueBudget} trendBudget=${trendBudget}`,
+    );
 
-    // 1) DRAIN THE QUEUE FIRST.
-    if (budget > 0) {
-      const subs = await client.listQueuedSubmissions(budget);
+    // 1) DRAIN THE QUEUE (bounded by the submission budget).
+    let queuePublished = 0;
+    if (queueBudget > 0) {
+      const subs = await client.listQueuedSubmissions(queueBudget);
       log.info(`draining ${subs.length} queued submission(s)`);
       for (const sub of subs) {
-        if (published >= budget) break;
+        if (queuePublished >= queueBudget) break;
         discovered++;
         await client.patchSubmission(sub.id, { status: "processing" });
         const d = await resolveSubmission(sub.url);
@@ -94,6 +102,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
           continue;
         }
         published++;
+        queuePublished++;
         await deps.writeArtifact(evaluation);
         log.info(
           `published (queue) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
@@ -105,7 +114,7 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     //    rank by trending (recent star velocity, heavily weighted), and grade
     //    only the top `trendingPicks` (default 1 — the daily Discord pick). If
     //    the top pick fails to grade/publish, we fall through to the next best.
-    const want = Math.min(deps.trendingPicks, budget - published);
+    const want = trendBudget;
     if (want > 0) {
       const pool = await discoverTrending(20);
       const known = await client.filterKnown(

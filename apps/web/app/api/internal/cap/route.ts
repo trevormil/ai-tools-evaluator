@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
-import { gte, sql } from "drizzle-orm";
-import { getDb, items } from "@aix/db";
-import { DAILY_CAP } from "@aix/core";
+import { and, eq, gte, sql } from "drizzle-orm";
+import { getDb, items, submissions } from "@aix/db";
+import { DAILY_CAP, SUBMISSION_DAILY_CAP } from "@aix/core";
 import { isInternalAuthorized } from "@/lib/internal-auth";
 
 export const dynamic = "force-dynamic";
 
-/** Daily-cap accounting. `publishedToday` counts items created since UTC midnight. */
+/**
+ * Daily-cap accounting — two INDEPENDENT budgets so submissions and trending
+ * never starve each other:
+ *   - trending: scanner-discovered items today (no matching submission row) vs DAILY_CAP
+ *   - submissions: link-drops published today (web + Discord) vs SUBMISSION_DAILY_CAP
+ * An item "is a submission" iff its url has a submission row — the only signal
+ * that works for both web (postedById set) and Discord (postedById null) drops.
+ */
 export async function GET(req: Request) {
   if (!isInternalAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -16,18 +23,34 @@ export async function GET(req: Request) {
   const midnight = Math.floor(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()) / 1000,
   );
+  const db = getDb();
 
-  const row = getDb()
-    .select({ n: sql<number>`count(*)` })
-    .from(items)
-    .where(gte(items.createdAt, midnight))
-    .get();
-  const publishedToday = row?.n ?? 0;
+  const trending =
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(items)
+      .where(
+        and(gte(items.createdAt, midnight), sql`${items.url} NOT IN (SELECT url FROM submissions)`),
+      )
+      .get()?.n ?? 0;
+
+  const submissionsToday =
+    db
+      .select({ n: sql<number>`count(*)` })
+      .from(submissions)
+      .where(and(gte(submissions.createdAt, midnight), eq(submissions.status, "published")))
+      .get()?.n ?? 0;
 
   return NextResponse.json({
     date: now.toISOString().slice(0, 10),
-    publishedToday,
-    remaining: Math.max(0, DAILY_CAP - publishedToday),
+    // Flat fields describe the trending budget (kept for backward compatibility).
+    publishedToday: trending,
+    remaining: Math.max(0, DAILY_CAP - trending),
     dailyCap: DAILY_CAP,
+    submissions: {
+      publishedToday: submissionsToday,
+      remaining: Math.max(0, SUBMISSION_DAILY_CAP - submissionsToday),
+      cap: SUBMISSION_DAILY_CAP,
+    },
   });
 }

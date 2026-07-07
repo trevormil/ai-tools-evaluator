@@ -1,43 +1,66 @@
 import { NextResponse } from "next/server";
-import { and, eq, gte } from "drizzle-orm";
+import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb, items } from "@aix/db";
 import { isInternalAuthorized } from "@/lib/internal-auth";
 
 export const dynamic = "force-dynamic";
 
-/** Items published since `?since=<iso>` — data for the bot's daily digest. */
+/**
+ * Digest data for the bot. Two modes:
+ *   - default: items created since `?since=` (the daily digest / top pick)
+ *   - `?source=discord`: items that are Discord-requested submissions, SCORED
+ *     since `?since=` — so the bot can echo each result back automatically.
+ */
 export async function GET(req: Request) {
   if (!isInternalAuthorized(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const sinceParam = new URL(req.url).searchParams.get("since");
+  const url = new URL(req.url);
+  const sinceParam = url.searchParams.get("since");
+  const source = url.searchParams.get("source");
   const sinceMs = sinceParam ? Date.parse(sinceParam) : NaN;
   const sinceSec = Number.isNaN(sinceMs) ? 0 : Math.floor(sinceMs / 1000);
 
-  const rows = getDb()
-    .select({
-      slug: items.slug,
-      title: items.title,
-      url: items.url,
-      verdict: items.verdict,
-      overallScore: items.overallScore,
-      noiseScore: items.noiseScore,
-      tagline: items.tagline,
-      category: items.category,
-      primaryAudience: items.primaryAudience,
-      aiEngineerFit: items.aiEngineerFit,
-      coverImageUrl: items.coverImageUrl,
-      evaluationJson: items.evaluationJson,
-    })
-    .from(items)
-    .where(
-      and(
-        eq(items.published, true),
-        eq(items.scoreStatus, "scored"),
-        gte(items.createdAt, sinceSec),
-      ),
-    )
-    .all();
+  const cols = {
+    slug: items.slug,
+    title: items.title,
+    url: items.url,
+    verdict: items.verdict,
+    overallScore: items.overallScore,
+    noiseScore: items.noiseScore,
+    tagline: items.tagline,
+    category: items.category,
+    primaryAudience: items.primaryAudience,
+    aiEngineerFit: items.aiEngineerFit,
+    coverImageUrl: items.coverImageUrl,
+    evaluationJson: items.evaluationJson,
+  };
+
+  const rows =
+    source === "discord"
+      ? getDb()
+          .select(cols)
+          .from(items)
+          .where(
+            and(
+              eq(items.published, true),
+              eq(items.scoreStatus, "scored"),
+              gte(items.scoredAt, sinceSec),
+              sql`${items.url} IN (SELECT url FROM submissions WHERE source = 'discord' AND status = 'published')`,
+            ),
+          )
+          .all()
+      : getDb()
+          .select(cols)
+          .from(items)
+          .where(
+            and(
+              eq(items.published, true),
+              eq(items.scoreStatus, "scored"),
+              gte(items.createdAt, sinceSec),
+            ),
+          )
+          .all();
 
   // Surface the decision layer (install one-liner + adopt-if/skip-if) that lives
   // inside the stored Evaluation, so the digest can post a genuinely useful card.

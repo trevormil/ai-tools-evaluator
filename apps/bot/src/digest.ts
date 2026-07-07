@@ -1,8 +1,14 @@
 import type { DigestItem, InternalClient } from "./client";
 import { buildItemEmbed } from "./embeds";
-import { readLastPosted, writeLastPosted } from "./state";
+import {
+  readLastPosted,
+  writeLastPosted,
+  readLastSubmissionPosted,
+  writeLastSubmissionPosted,
+} from "./state";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+const HOUR_MS = 60 * 60 * 1000;
 
 /** Minimal channel surface we need — kept narrow so digest logic stays testable. */
 export type SendableChannel = { send: (payload: unknown) => Promise<unknown> };
@@ -65,6 +71,55 @@ export function startDigestScheduler(
 ): ReturnType<typeof setInterval> {
   const tick = () => {
     runDigest(deps).catch((err) => console.error("[digest] run failed:", err));
+  };
+  tick();
+  return setInterval(tick, intervalMs);
+}
+
+export type SubmissionDigestDeps = {
+  client: InternalClient;
+  statePath: string;
+  getChannel: () => Promise<SendableChannel>;
+  now?: () => Date;
+  siteBaseUrl?: string;
+  /** First-run lookback when there's no watermark. Default 1h. */
+  lookbackMs?: number;
+};
+
+/**
+ * Auto-post each Discord-requested submission the moment the queue scores it.
+ * Watermarked on scoredAt so a restart never double-posts. DISCORD submissions
+ * only — web submissions are never echoed here.
+ */
+export async function runSubmissionDigest(deps: SubmissionDigestDeps): Promise<DigestItem[]> {
+  const now = (deps.now ?? (() => new Date()))();
+  const last = await readLastSubmissionPosted(deps.statePath);
+  const since = last ?? new Date(now.getTime() - (deps.lookbackMs ?? HOUR_MS)).toISOString();
+
+  const items = await deps.client.fetchDigest(since, "discord");
+  if (items.length === 0) {
+    await writeLastSubmissionPosted(deps.statePath, now.toISOString());
+    return [];
+  }
+
+  const channel = await deps.getChannel();
+  for (const item of items) {
+    await channel.send({
+      content: "✅ **Scored** — a repo someone dropped with `/score`:",
+      embeds: [buildItemEmbed(item, { siteBaseUrl: deps.siteBaseUrl })],
+    });
+  }
+  await writeLastSubmissionPosted(deps.statePath, now.toISOString());
+  return items;
+}
+
+/** Poll for scored Discord submissions (aligned with the 5-min queue). */
+export function startSubmissionDigestScheduler(
+  deps: SubmissionDigestDeps,
+  intervalMs = 5 * 60 * 1000,
+): ReturnType<typeof setInterval> {
+  const tick = () => {
+    runSubmissionDigest(deps).catch((err) => console.error("[submission-digest] run failed:", err));
   };
   tick();
   return setInterval(tick, intervalMs);

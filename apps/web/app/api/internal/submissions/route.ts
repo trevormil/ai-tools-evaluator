@@ -3,6 +3,7 @@ import { z } from "zod";
 import { and, asc, eq, inArray } from "drizzle-orm";
 import { getDb, submissions } from "@aix/db";
 import { isInternalAuthorized } from "@/lib/internal-auth";
+import { createPendingItem } from "@/lib/pending-items";
 
 export const dynamic = "force-dynamic";
 
@@ -58,12 +59,17 @@ export async function POST(req: Request) {
   const { url, note, source, discordUserId } = parsed.data;
   const db = getDb();
 
+  // A visible, linkable pending item appears immediately (no web account needed
+  // for Discord/API drops — postedById is null).
+  const { item } = createPendingItem(url, null);
+  const itemInfo = { slug: item.slug, title: item.title };
+
   const existing = db
     .select({ id: submissions.id })
     .from(submissions)
     .where(and(eq(submissions.url, url), inArray(submissions.status, ["queued", "processing"])))
     .get();
-  if (existing) return NextResponse.json({ duplicate: true }, { status: 200 });
+  if (existing) return NextResponse.json({ duplicate: true, item: itemInfo }, { status: 200 });
 
   const submission = db
     .insert(submissions)
@@ -77,5 +83,5 @@ export async function POST(req: Request) {
     .returning()
     .get();
 
-  return NextResponse.json({ submission }, { status: 201 });
+  return NextResponse.json({ submission, item: itemInfo }, { status: 201 });
 }

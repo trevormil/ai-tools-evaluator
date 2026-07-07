@@ -4,9 +4,14 @@ import { loadEnv } from "./env";
 import { createInternalClient } from "./client";
 import { registerCommands } from "./commands";
 import { handleSubmit } from "./commands/submit";
+import { handleScore } from "./commands/score";
 import { handleEval } from "./commands/eval";
 import { handleLeaderboard } from "./commands/leaderboard";
-import { startDigestScheduler, type SendableChannel } from "./digest";
+import {
+  startDigestScheduler,
+  startSubmissionDigestScheduler,
+  type SendableChannel,
+} from "./digest";
 
 async function main(): Promise<void> {
   const env = loadEnv();
@@ -34,11 +39,20 @@ async function main(): Promise<void> {
       siteBaseUrl: env.AIX_PUBLIC_URL,
       maxPerRun: 1,
     });
+    // Echo each scored Discord submission back to the channel (every 5 min).
+    startSubmissionDigestScheduler({
+      client: api,
+      statePath,
+      getChannel,
+      siteBaseUrl: env.AIX_PUBLIC_URL,
+    });
   });
 
   client.on(Events.InteractionCreate, async (interaction: Interaction) => {
     if (!interaction.isChatInputCommand()) return;
     if (interaction.commandName === "submit") await handleSubmit(interaction, api);
+    else if (interaction.commandName === "score")
+      await handleScore(interaction, api, env.AIX_PUBLIC_URL);
     else if (interaction.commandName === "eval") await handleEval(interaction, api);
     else if (interaction.commandName === "leaderboard") await handleLeaderboard(interaction, api);
   });

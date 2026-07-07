@@ -40,6 +40,8 @@ export type SubmitResult = {
   /** True when the API reported the link was already queued/known. */
   duplicate: boolean;
   submission?: unknown;
+  /** The (instantly created) directory item, so the bot can link to it. */
+  item?: { slug: string; title: string };
 };
 
 export type FetchLike = typeof fetch;
@@ -53,7 +55,8 @@ export type InternalClientOptions = {
 
 export type InternalClient = {
   enqueueSubmission(input: SubmitInput): Promise<SubmitResult>;
-  fetchDigest(since: Date | string): Promise<DigestItem[]>;
+  /** `source: "discord"` → items that are Discord submissions scored since `since`. */
+  fetchDigest(since: Date | string, source?: "discord"): Promise<DigestItem[]>;
 };
 
 export function createInternalClient(opts: InternalClientOptions): InternalClient {
@@ -79,13 +82,22 @@ export function createInternalClient(opts: InternalClientOptions): InternalClien
       if (!res.ok) {
         throw new Error(`POST /api/internal/submissions failed: ${res.status}`);
       }
-      const json = (await res.json()) as { duplicate?: boolean; submission?: unknown };
-      return { duplicate: json?.duplicate === true, submission: json?.submission };
+      const json = (await res.json()) as {
+        duplicate?: boolean;
+        submission?: unknown;
+        item?: { slug: string; title: string };
+      };
+      return {
+        duplicate: json?.duplicate === true,
+        submission: json?.submission,
+        item: json?.item,
+      };
     },
 
-    async fetchDigest(since) {
+    async fetchDigest(since, source) {
       const iso = typeof since === "string" ? since : since.toISOString();
-      const res = await doFetch(`${base}/api/internal/digest?since=${encodeURIComponent(iso)}`, {
+      const q = `since=${encodeURIComponent(iso)}${source ? `&source=${source}` : ""}`;
+      const res = await doFetch(`${base}/api/internal/digest?${q}`, {
         method: "GET",
         headers,
       });

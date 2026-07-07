@@ -75,7 +75,7 @@ function slugify(s: string): string {
  */
 export function createPendingItem(
   url: string,
-  submittedById: string,
+  submittedById: string | null,
 ): { item: Item; existed: boolean } {
   const db = getDb();
   const src = deriveSource(url);

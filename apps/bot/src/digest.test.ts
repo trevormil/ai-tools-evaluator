@@ -2,8 +2,8 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runDigest } from "./digest";
-import { readLastPosted } from "./state";
+import { runDigest, runSubmissionDigest } from "./digest";
+import { readLastPosted, readLastSubmissionPosted } from "./state";
 import type { DigestItem, InternalClient } from "./client";
 import { matchItem } from "./commands/eval";
 
@@ -168,6 +168,49 @@ describe("runDigest", () => {
     // the whole lookback window.
     expect(sends).toBe(0);
     expect(await readLastPosted(statePath)).toBe(now.toISOString());
+  });
+});
+
+describe("runSubmissionDigest", () => {
+  it("auto-posts each scored Discord submission and advances the submission watermark", async () => {
+    const { client, sinceSeen } = fakeClient([item({ slug: "dropped", overallScore: 70 })]);
+    const sent: Array<{ content?: string; embeds?: unknown[] }> = [];
+    const now = new Date("2026-07-06T00:00:00.000Z");
+    const posted = await runSubmissionDigest({
+      client,
+      statePath,
+      now: () => now,
+      getChannel: async () => ({
+        send: async (p) => {
+          sent.push(p as (typeof sent)[number]);
+          return null;
+        },
+      }),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["dropped"]);
+    expect(sent).toHaveLength(1);
+    expect(sent[0]?.content).toContain("Scored");
+    expect(sinceSeen).toHaveLength(1);
+    expect(await readLastSubmissionPosted(statePath)).toBe(now.toISOString());
+  });
+
+  it("posts nothing but advances the watermark when there are no new scored submissions", async () => {
+    const { client } = fakeClient([]);
+    let sends = 0;
+    const now = new Date("2026-07-06T00:00:00.000Z");
+    await runSubmissionDigest({
+      client,
+      statePath,
+      now: () => now,
+      getChannel: async () => ({
+        send: async () => {
+          sends++;
+          return null;
+        },
+      }),
+    });
+    expect(sends).toBe(0);
+    expect(await readLastSubmissionPosted(statePath)).toBe(now.toISOString());
   });
 });
 

@@ -13,6 +13,14 @@ const CapSchema = z.object({
   publishedToday: z.number(),
   remaining: z.number(),
   dailyCap: z.number(),
+  // Independent submission budget (optional: absent on an older server).
+  submissions: z
+    .object({
+      publishedToday: z.number(),
+      remaining: z.number(),
+      cap: z.number(),
+    })
+    .optional(),
 });
 export type CapInfo = z.infer<typeof CapSchema>;
 
