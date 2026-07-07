@@ -5,12 +5,21 @@ import { z } from "zod";
  * are optional in the schema so tests never need them; presence is enforced at
  * the point of real use via `requireLiveSecrets`.
  */
+/**
+ * Optional secret: k8s `envFrom` injects unset/placeholder secret keys as `""`,
+ * so treat an empty string as absent rather than failing `.min(1)`.
+ */
+const optionalSecret = z.preprocess(
+  (v) => (v === "" ? undefined : v),
+  z.string().min(1).optional(),
+);
+
 const EnvSchema = z.object({
-  GITHUB_TOKEN: z.string().min(1).optional(),
-  ANTHROPIC_API_KEY: z.string().min(1).optional(),
+  GITHUB_TOKEN: optionalSecret,
+  ANTHROPIC_API_KEY: optionalSecret,
   /** OpenRouter (OpenAI-compatible) key — preferred when set, for cheap inference. */
-  OPENROUTER_API_KEY: z.string().min(1).optional(),
-  AIX_INTERNAL_TOKEN: z.string().min(1).optional(),
+  OPENROUTER_API_KEY: optionalSecret,
+  AIX_INTERNAL_TOKEN: optionalSecret,
   AIX_WEB_URL: z.string().url().default("http://localhost:3000"),
   /**
    * Evaluator model. Defaults to a cheap OpenRouter model; override to trade
