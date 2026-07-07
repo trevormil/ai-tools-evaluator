@@ -14,8 +14,8 @@ export default async function SubmitPage() {
       <div>
         <h1 className="text-xl font-bold">Submit a tool</h1>
         <p className="text-sm text-neutral-500">
-          Drop a GitHub repo, paper, or link. The scanner drains the queue first on its next run —
-          subject to the daily cap and dedup.
+          Drop a GitHub repo, paper, or link. It appears instantly, and the evaluator runs every ~5
+          minutes to score it — subject to the daily cap and dedup.
         </p>
       </div>
 

@@ -14,7 +14,7 @@ export async function Nav() {
         background: "color-mix(in srgb, var(--bg) 82%, transparent)",
       }}
     >
-      <nav className="mx-auto flex max-w-5xl items-center gap-1 px-4 py-3 sm:gap-3">
+      <nav className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-3 sm:gap-3">
         <Link href="/" className="mr-1 flex items-center gap-2" aria-label="AIx home">
           <Logo />
           <span className="text-lg font-black tracking-tight">
@@ -47,19 +47,30 @@ export async function Nav() {
   );
 }
 
-/** Ember mark: a three-bar verdict gauge — the grading-rig identity in miniature. */
+/** Signal funnel: noise filters down through three bands to a single signal dot. */
 function Logo() {
   return (
-    <span
-      className="flex h-7 w-7 items-center justify-center rounded-md"
-      style={{ background: "var(--brand)" }}
-      aria-hidden
-    >
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-        <rect x="2" y="9" width="3" height="5" rx="1" fill="var(--brand-contrast)" />
-        <rect x="6.5" y="5" width="3" height="9" rx="1" fill="var(--brand-contrast)" />
-        <rect x="11" y="2" width="3" height="12" rx="1" fill="var(--brand-contrast)" />
-      </svg>
-    </span>
+    <svg width="28" height="28" viewBox="0 0 64 64" fill="none" aria-hidden className="shrink-0">
+      <defs>
+        <linearGradient
+          id="navFunnel"
+          x1="16"
+          y1="12"
+          x2="42"
+          y2="50"
+          gradientUnits="userSpaceOnUse"
+        >
+          <stop offset="0" stopColor="#2ad9d0" />
+          <stop offset="0.5" stopColor="#2e7ff4" />
+          <stop offset="1" stopColor="#2a3fe8" />
+        </linearGradient>
+      </defs>
+      <g fill="url(#navFunnel)" stroke="url(#navFunnel)" strokeWidth="2" strokeLinejoin="round">
+        <path d="M10 12 H54 L47.1 22 H16.9 Z" />
+        <path d="M18.9 25 H45.1 L39.6 33 H24.4 Z" />
+        <path d="M26.5 36 H37.5 L32 44 Z" />
+      </g>
+      <circle cx="32" cy="49" r="2.9" fill="url(#navFunnel)" />
+    </svg>
   );
 }
