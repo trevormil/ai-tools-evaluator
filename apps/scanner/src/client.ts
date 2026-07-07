@@ -28,9 +28,11 @@ const SubmissionSchema = z
   .object({
     id: z.union([z.string(), z.number()]),
     url: z.string().url(),
-    note: z.string().optional(),
+    // nullish: the DB stores these as null (e.g. /score drops have no note),
+    // and a single null row must not poison the whole batch parse.
+    note: z.string().nullish(),
     status: z.string(),
-    source: z.string().optional(),
+    source: z.string().nullish(),
   })
   .passthrough();
 export type Submission = z.infer<typeof SubmissionSchema>;
