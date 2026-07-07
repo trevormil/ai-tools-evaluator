@@ -39,7 +39,7 @@ export function SubmitForm() {
           ok: true,
           text: data.duplicate
             ? (data.submission?.reason ?? "Already known — thanks!")
-            : "Queued! The scanner will evaluate it on its next run.",
+            : "Queued! The evaluator runs every ~5 minutes — it'll be scored shortly.",
         });
         router.refresh();
       } else {
