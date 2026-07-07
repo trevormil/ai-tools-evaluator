@@ -70,7 +70,15 @@ export async function run(deps: RunDeps): Promise<RunResult> {
           });
           continue;
         }
-        const evaluation = await evaluate(d);
+        let evaluation: Evaluation;
+        try {
+          evaluation = await evaluate(d);
+        } catch (err) {
+          // A single failed evaluation must not abort the whole scan.
+          log.warn(`eval failed for submission ${sub.id}, skipping: ${String(err)}`);
+          await client.patchSubmission(sub.id, { status: "failed", reason: "evaluation failed" });
+          continue;
+        }
         const res = await client.publishItem(evaluation, String(sub.id), d.readme);
         if (res.duplicate) {
           skippedDuplicate++;
@@ -98,7 +106,14 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       for (const d of trending) {
         if (published >= budget) break;
         discovered++;
-        const evaluation = await evaluate(d);
+        let evaluation: Evaluation;
+        try {
+          evaluation = await evaluate(d);
+        } catch (err) {
+          // One malformed evaluation must not abort the whole scan — skip it.
+          log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
+          continue;
+        }
         const res = await client.publishItem(evaluation, undefined, d.readme);
         if (res.duplicate) {
           skippedDuplicate++;

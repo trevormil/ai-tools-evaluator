@@ -22,11 +22,13 @@ const EnvSchema = z.object({
   AIX_INTERNAL_TOKEN: optionalSecret,
   AIX_WEB_URL: z.string().url().default("http://localhost:3000"),
   /**
-   * Evaluator model. Defaults to a cheap OpenRouter model; override to trade
-   * cost for quality (e.g. `deepseek/deepseek-v4-flash` is cheaper, an Anthropic
-   * id like `claude-haiku-4-5-20251001` routes via ANTHROPIC_API_KEY).
+   * Evaluator model. Defaults to the cheapest OpenRouter model that reliably
+   * produces the strict nested scorecard (each metric = {score, rationale}).
+   * `gemini-*-flash-lite` is cheaper but fails the schema; `openai/gpt-4o-mini`
+   * or `google/gemini-3.5-flash` are pricier but more reliable. An Anthropic id
+   * (e.g. `claude-haiku-4-5-20251001`) routes via ANTHROPIC_API_KEY instead.
    */
-  AIX_MODEL: z.string().min(1).default("google/gemini-3.1-flash-lite"),
+  AIX_MODEL: z.string().min(1).default("deepseek/deepseek-v4-flash"),
   AIX_DAILY_CAP: z.coerce.number().int().positive().max(100).default(10),
   /**
    * Quality gate on GitHub *discovery* (queue submissions bypass it — a human

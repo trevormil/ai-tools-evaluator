@@ -194,6 +194,25 @@ describe("run loop", () => {
     expect(close.status).toBe("error");
   });
 
+  test("a single failed evaluation is skipped, not fatal — the rest still publish", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    const result = await run(
+      baseDeps({
+        client,
+        discoverTrending: async () => ["t/good1", "t/bad", "t/good2"].map(trendingDiscovered),
+        evaluate: async (d: Discovered) => {
+          if (d.source.externalId === "t/bad") throw new Error("schema never repaired");
+          return evalFor(d.source.externalId);
+        },
+      }),
+    );
+    // The bad item is skipped; the two good ones publish and the run succeeds.
+    expect(client.publishedOrder).toEqual(["t/good1", "t/good2"]);
+    expect(result.published).toBe(2);
+    const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
+    expect(close.status).toBe("success");
+  });
+
   test("dry-run evaluates but never publishes or opens a scan-run", async () => {
     const client = fakeClient({ remaining: 10, queued: [] });
     const result = await run(
