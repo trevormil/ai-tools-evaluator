@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { and, eq, or } from "drizzle-orm";
 import { getDb, items, type Item } from "@aix/db";
 
@@ -23,12 +24,17 @@ export function deriveSource(url: string): DerivedSource {
     const [owner, repo] = u.pathname.replace(/^\/+/, "").split("/");
     if (owner && repo) {
       const cleanRepo = repo.replace(/\.git$/, "");
+      const externalId = `${owner}/${cleanRepo}`;
+      // The repo's own social-preview card — NOT the owner's avatar (which for a
+      // personal repo is just a profile pic). Matches the cover the scanner sets
+      // on scoring (see scanner media.ts githubSocialPreviewUrl), so the cover
+      // doesn't change when the pending item is upgraded.
+      const hash = createHash("sha256").update(externalId).digest("hex").slice(0, 32);
       return {
         kind: "github_repo",
-        externalId: `${owner}/${cleanRepo}`,
+        externalId,
         title: cleanRepo,
-        // Owner avatar: an instant logo with zero API calls (ticket 0034).
-        coverImageUrl: `https://github.com/${owner}.png`,
+        coverImageUrl: `https://opengraph.githubassets.com/${hash}/${externalId}`,
       };
     }
   }
@@ -103,7 +109,7 @@ export function createPendingItem(
       verdict: "niche",
       overallScore: 0,
       noiseScore: 0,
-      tagline: "Community submission — evaluation queued.",
+      tagline: "Community submission — evaluated within ~5 min.",
       evaluationJson: "{}",
       coverImageUrl: src.coverImageUrl,
       evaluatedBy: "pending",

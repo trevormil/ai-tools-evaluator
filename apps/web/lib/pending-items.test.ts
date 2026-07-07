@@ -23,12 +23,13 @@ beforeAll(async () => {
 
 test("deriveSource classifies github / arxiv / external urls", () => {
   const gh = deriveSource("https://github.com/BurntSushi/ripgrep");
-  expect(gh).toEqual({
-    kind: "github_repo",
-    externalId: "BurntSushi/ripgrep",
-    title: "ripgrep",
-    coverImageUrl: "https://github.com/BurntSushi.png",
-  });
+  expect(gh.kind).toBe("github_repo");
+  expect(gh.externalId).toBe("BurntSushi/ripgrep");
+  expect(gh.title).toBe("ripgrep");
+  // The repo's social-preview card, not the owner's avatar.
+  expect(gh.coverImageUrl).toMatch(
+    /^https:\/\/opengraph\.githubassets\.com\/[a-f0-9]{32}\/BurntSushi\/ripgrep$/,
+  );
 
   const ax = deriveSource("https://arxiv.org/abs/2210.03629");
   expect(ax.kind).toBe("arxiv_paper");
@@ -45,7 +46,8 @@ test("createPendingItem inserts a visible 'pending' item with an instant logo", 
   expect(item.scoreStatus).toBe("pending");
   expect(item.published).toBe(true);
   expect(item.slug).toBe("supertool");
-  expect(item.coverImageUrl).toBe("https://github.com/acme.png");
+  expect(item.coverImageUrl).toContain("opengraph.githubassets.com/");
+  expect(item.coverImageUrl).toContain("acme/supertool");
   expect(item.postedById).toBe("pend_u");
 });
 
