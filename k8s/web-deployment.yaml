@@ -30,6 +30,10 @@ spec:
             # SQLite path on the mounted PVC (see volumeMounts below).
             - name: AIX_DB_PATH
               value: /data/aix.db
+            # Public URL — OAuth redirect_uri + email links (behind the ingress,
+            # the request's own origin is the internal service host).
+            - name: AIX_PUBLIC_URL
+              value: https://aix.trevormil.com
           envFrom:
             - secretRef:
                 name: aix-secrets
