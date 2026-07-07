@@ -26,43 +26,80 @@ export function placeholderCoverUrl(title: string): string {
   return `https://placehold.co/1200x630/0b1020/e2e8f0.png?text=${text}`;
 }
 
-const MD_IMG = /!\[[^\]]*\]\((https?:\/\/[^)\s]+?\.(?:png|jpe?g|gif|webp|svg))(?:\s+[^)]*)?\)/gi;
-const HTML_IMG = /<img[^>]+src=["'](https?:\/\/[^"']+?\.(?:png|jpe?g|gif|webp|svg))["']/gi;
+// Image srcs in markdown `![](url "title")` and inline `<img src>` — relative OR absolute.
+const MD_IMG = /!\[[^\]]*\]\(\s*(<)?([^)\s>"']+?\.(?:png|jpe?g|gif|webp|svg))(?:>)?(?:\s+[^)]*)?\)/gi;
+const HTML_IMG = /<img[^>]+src=["']([^"']+?\.(?:png|jpe?g|gif|webp|svg))["']/gi;
 
-/** Pull absolute image/gif URLs out of README markdown + inline <img> tags. */
-export function extractReadmeImages(readme: string, max = 4): string[] {
-  const found = new Set<string>();
+// Shields / CI / coverage badges — noise, never a logo.
+const BADGE_RE =
+  /shields\.io|badgen\.net|img\.shields|badge\.fury|coveralls|codecov|circleci\.com\/.+\.svg|travis-ci|\/workflows\/.+badge|\/badge\.svg|[?&](?:style|label|logo)=|david-dm|snyk\.io|deepsource|bettercodehub/i;
+
+/** Absolute-ize a README image src; a relative path → raw.githubusercontent for the repo. */
+function resolveImageUrl(raw: string, externalId?: string): string | null {
+  if (/^https?:\/\//i.test(raw)) return raw;
+  if (raw.startsWith("//")) return `https:${raw}`;
+  if (raw.startsWith("data:") || !externalId) return null;
+  const path = raw.replace(/^\.?\/+/, "");
+  return path ? `https://raw.githubusercontent.com/${externalId}/HEAD/${path}` : null;
+}
+
+/**
+ * README image urls in document order (top first). Relative paths resolve to
+ * raw.githubusercontent; shields/CI badges are dropped (never a logo).
+ */
+export function extractReadmeImages(readme: string, externalId?: string, max = 4): string[] {
+  const out: string[] = [];
+  const seen = new Set<string>();
   for (const re of [MD_IMG, HTML_IMG]) {
     re.lastIndex = 0;
     let m: RegExpExecArray | null;
     while ((m = re.exec(readme)) !== null) {
-      const url = m[1]!;
-      if (url.length <= MAX_URL) found.add(url);
-      if (found.size >= max) break;
+      const raw = (re === MD_IMG ? m[2] : m[1])!;
+      if (BADGE_RE.test(raw)) continue;
+      const url = resolveImageUrl(raw, externalId);
+      if (!url || url.length > MAX_URL || seen.has(url)) continue;
+      seen.add(url);
+      out.push(url);
+      if (out.length >= max) return out;
     }
-    if (found.size >= max) break;
   }
-  return [...found].slice(0, max);
+  return out;
 }
 
-/** Derive the media set for an item. `media[0]` is always the cover. */
+/**
+ * Derive the media set for an item. `media[0]` is the cover. For a repo the
+ * cover cascades: the project's own README logo/banner first, else GitHub's
+ * social-preview card. The owner avatar is never used (it's a profile pic).
+ */
 export function buildMedia(source: ItemSource, readme: string): MediaAsset[] {
   const media: MediaAsset[] = [];
 
   if (source.kind === "github_repo") {
-    media.push({
+    const readmeImgs = extractReadmeImages(readme, source.externalId);
+    const socialPreview: MediaAsset = {
       type: "image",
       url: githubSocialPreviewUrl(source.externalId),
       source: "repo-social-preview",
       alt: `${source.title} social preview`,
-    });
-    for (const url of extractReadmeImages(readme)) {
+    };
+    if (readmeImgs.length > 0) {
       media.push({
         type: "image",
-        url,
+        url: readmeImgs[0]!,
         source: "repo-readme",
-        alt: `${source.title} README image`,
+        alt: `${source.title} logo`,
       });
+      media.push(socialPreview);
+      for (const url of readmeImgs.slice(1)) {
+        media.push({
+          type: "image",
+          url,
+          source: "repo-readme",
+          alt: `${source.title} README image`,
+        });
+      }
+    } else {
+      media.push(socialPreview);
     }
   } else {
     // arXiv papers and other kinds have no imagery of their own.

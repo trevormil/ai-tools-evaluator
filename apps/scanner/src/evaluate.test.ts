@@ -39,9 +39,10 @@ describe("evaluateItem", () => {
     expect(evaluation.evaluatedAt).toBe("2026-07-06T00:00:00.000Z");
     expect(evaluation.slug).toBe("acme-some-tool");
     expect(evaluation.source.externalId).toBe("acme/some-tool");
-    // Media derived: social preview cover first, then README gif.
-    expect(evaluation.media[0]?.source).toBe("repo-social-preview");
-    expect(evaluation.media.some((m) => m.url.includes("demo.gif"))).toBe(true);
+    // Media cover cascades to the README image (demo.gif), card second.
+    expect(evaluation.media[0]?.source).toBe("repo-readme");
+    expect(evaluation.media[0]?.url).toContain("demo.gif");
+    expect(evaluation.media.some((m) => m.source === "repo-social-preview")).toBe(true);
     expect(model.calls).toBe(1);
   });
 
