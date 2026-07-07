@@ -195,17 +195,6 @@ async function runDry(deps: RunDeps): Promise<RunResult> {
   return { discovered: candidates.length, published: 0, skippedDuplicate: 0 };
 }
 
-/** Interleave two lists so both sources are represented near the top. */
-function interleave<T>(a: T[], b: T[]): T[] {
-  const out: T[] = [];
-  const max = Math.max(a.length, b.length);
-  for (let i = 0; i < max; i++) {
-    if (i < a.length) out.push(a[i]!);
-    if (i < b.length) out.push(b[i]!);
-  }
-  return out;
-}
-
 /** Wire the real dependencies from env and run one pass. */
 async function main(): Promise<void> {
   const env: ScannerEnv = loadEnv();
@@ -227,13 +216,10 @@ async function main(): Promise<void> {
   const evaluate = (d: Discovered) =>
     evaluateItem(d, { model, modelName: env.AIX_MODEL, deriveMedia: buildMedia });
 
-  const discoverTrending = async (limit: number): Promise<Discovered[]> => {
-    const [g, a] = await Promise.all([
-      github.discoverTrending!(Math.ceil(limit * 0.7)),
-      arxiv.discoverTrending!(Math.ceil(limit * 0.5)),
-    ]);
-    return interleave(g, a).slice(0, limit);
-  };
+  // Candidates are GitHub repos only (papers excluded for now). arXiv is kept
+  // solely to resolve an explicit human-submitted paper URL.
+  const discoverTrending = async (limit: number): Promise<Discovered[]> =>
+    github.discoverTrending!(limit);
 
   const resolveSubmission = async (url: string): Promise<Discovered | null> =>
     (await github.resolveUrl(url)) ?? (await arxiv.resolveUrl(url));
