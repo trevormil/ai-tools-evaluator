@@ -2,7 +2,7 @@ import type { Evaluation } from "@aix/core";
 import { loadEnv, requireLiveSecrets, type ScannerEnv } from "./env";
 import { createLogger, type Logger } from "./logger";
 import { createGitHubSource, createArxivSource } from "./sources";
-import { createAnthropicModel, evaluateItem } from "./evaluate";
+import { createAnthropicModel, createOpenRouterModel, evaluateItem } from "./evaluate";
 import { buildMedia, coverImageUrl } from "./media";
 import { createInternalClient, type InternalClient } from "./client";
 import { writeArtifact } from "./artifact";
@@ -187,7 +187,11 @@ async function main(): Promise<void> {
     quality: { minStars: env.AIX_MIN_STARS, minStarVelocity: env.AIX_MIN_STAR_VELOCITY },
   });
   const arxiv = createArxivSource({ log });
-  const model = createAnthropicModel({ apiKey: env.ANTHROPIC_API_KEY!, model: env.AIX_MODEL });
+  // Prefer OpenRouter (cheap) when its key is present; else fall back to Anthropic.
+  const model = env.OPENROUTER_API_KEY
+    ? createOpenRouterModel({ apiKey: env.OPENROUTER_API_KEY, model: env.AIX_MODEL })
+    : createAnthropicModel({ apiKey: env.ANTHROPIC_API_KEY!, model: env.AIX_MODEL });
+  log.info(`model: ${env.AIX_MODEL} via ${env.OPENROUTER_API_KEY ? "openrouter" : "anthropic"}`);
 
   const evaluate = (d: Discovered) =>
     evaluateItem(d, { model, modelName: env.AIX_MODEL, deriveMedia: buildMedia });
