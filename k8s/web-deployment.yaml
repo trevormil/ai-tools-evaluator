@@ -52,10 +52,14 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              # bun + Next.js 15 steady-state RSS sits above 256Mi; give the
+              # single writer real headroom so the scheduler reserves for it.
+              memory: 512Mi
             limits:
               cpu: "1"
-              memory: 512Mi
+              # 512Mi OOMKilled the pod on a ~47-min cycle (503s at the ingress
+              # during each Recreate). 1Gi clears steady state with room to spare.
+              memory: 1Gi
           volumeMounts:
             - name: db
               mountPath: /data
