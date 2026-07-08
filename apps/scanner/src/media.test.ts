@@ -27,6 +27,20 @@ describe("media", () => {
     expect(urls.every((u) => !u.includes("/page"))).toBe(true);
   });
 
+  test("extractReadmeImages rewrites github blob/raw page urls to raw.githubusercontent", () => {
+    // A `github.com/.../blob/...` url serves an HTML page, not the image bytes —
+    // used as an <img src> it renders broken. Must be rewritten to raw host.
+    const readme = `
+      ![demo](https://github.com/pathwaycom/llm-app/blob/main/templates/x/demo.gif)
+      <img src="https://github.com/acme/tool/raw/HEAD/assets/banner.png">
+    `;
+    const urls = extractReadmeImages(readme);
+    expect(urls).toEqual([
+      "https://raw.githubusercontent.com/pathwaycom/llm-app/main/templates/x/demo.gif",
+      "https://raw.githubusercontent.com/acme/tool/HEAD/assets/banner.png",
+    ]);
+  });
+
   test("extractReadmeImages resolves relative paths and drops badges", () => {
     const readme = `
       ![logo](docs/logo.png)

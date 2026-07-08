@@ -35,10 +35,20 @@ const HTML_IMG = /<img[^>]+src=["']([^"']+?\.(?:png|jpe?g|gif|webp|svg))["']/gi;
 const BADGE_RE =
   /shields\.io|badgen\.net|img\.shields|badge\.fury|coveralls|codecov|circleci\.com\/.+\.svg|travis-ci|\/workflows\/.+badge|\/badge\.svg|[?&](?:style|label|logo)=|david-dm|snyk\.io|deepsource|bettercodehub/i;
 
+/**
+ * A `github.com/{owner}/{repo}/blob|raw/{ref}/{path}` url serves an HTML file
+ * viewer, not the image bytes — as an <img src> it renders broken. Rewrite it to
+ * the raw.githubusercontent.com host that serves the actual image.
+ */
+function rawifyGithubBlob(url: string): string {
+  const m = /^https?:\/\/github\.com\/([^/]+\/[^/]+)\/(?:blob|raw)\/(.+)$/i.exec(url);
+  return m ? `https://raw.githubusercontent.com/${m[1]}/${m[2]}` : url;
+}
+
 /** Absolute-ize a README image src; a relative path → raw.githubusercontent for the repo. */
 function resolveImageUrl(raw: string, externalId?: string): string | null {
-  if (/^https?:\/\//i.test(raw)) return raw;
-  if (raw.startsWith("//")) return `https:${raw}`;
+  if (/^https?:\/\//i.test(raw)) return rawifyGithubBlob(raw);
+  if (raw.startsWith("//")) return rawifyGithubBlob(`https:${raw}`);
   if (raw.startsWith("data:") || !externalId) return null;
   const path = raw.replace(/^\.?\/+/, "");
   return path ? `https://raw.githubusercontent.com/${externalId}/HEAD/${path}` : null;
