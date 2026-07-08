@@ -43,7 +43,10 @@ spec:
               memory: 128Mi
             limits:
               cpu: 250m
-              memory: 256Mi
+              # discord.js + bun sits ~100-150Mi; 256Mi left no GC headroom and
+              # an OOMKill mid-post was the digest duplicate's trigger. 512Mi
+              # gives 3-5x headroom so a post spike never trips the limit.
+              memory: 512Mi
       volumes:
         - name: bot-state
           persistentVolumeClaim:

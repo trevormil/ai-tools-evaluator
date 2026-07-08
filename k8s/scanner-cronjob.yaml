@@ -42,6 +42,8 @@ spec:
                   memory: 256Mi
                 limits:
                   cpu: "1"
-                  memory: 512Mi
+                  # Discovery + LLM eval + README/avatar image processing spikes
+                  # past 512Mi; 1Gi so a heavy run never OOMs and drops picks.
+                  memory: 1Gi
           imagePullSecrets:
             - name: ghcr-pull
