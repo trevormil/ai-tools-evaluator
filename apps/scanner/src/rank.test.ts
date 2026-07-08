@@ -1,20 +1,27 @@
 import { describe, expect, test } from "bun:test";
-import { trendingScore, rankCandidates } from "./rank";
+import { trendingScore, applicationAffinity, rankCandidates } from "./rank";
 import type { Discovered } from "./types";
 import { makeGithubSource } from "./test-fixtures";
 
 const NOW = new Date("2026-07-07T00:00:00.000Z");
 
-function repo(ext: string, stars: number, createdDaysAgo: number): Discovered {
+function repo(
+  ext: string,
+  stars: number,
+  createdDaysAgo: number,
+  text: { title?: string; description?: string; readme?: string } = {},
+): Discovered {
   const createdAt = new Date(NOW.getTime() - createdDaysAgo * 86_400_000).toISOString();
   return {
     source: makeGithubSource({
       externalId: ext,
       url: `https://github.com/${ext}`,
+      title: text.title ?? ext.split("/")[1],
+      description: text.description ?? "A tool.",
       stars,
       createdAt,
     }),
-    readme: "readme",
+    readme: text.readme ?? "readme",
   };
 }
 
@@ -48,6 +55,50 @@ describe("trendingScore", () => {
     const repoScore = trendingScore(repo("a/small", 60, 60).source, NOW); // 1/day
     const paperScore = trendingScore(paper("2607.05393").source, NOW);
     expect(paperScore).toBeLessThan(repoScore);
+  });
+});
+
+describe("applicationAffinity", () => {
+  const appDev = repo("a/agent-cli", 100, 10, {
+    description: "A coding agent CLI that drives Claude Code and Codex to build apps.",
+    readme: "An MCP server + agent framework for using Claude and Codex to ship features.",
+  });
+  const modelInternals = repo("a/trainer", 100, 10, {
+    description: "Fine-tuning and quantization for LLMs.",
+    readme: "Pretraining pipeline with CUDA kernels, LoRA, vLLM inference and GGUF export.",
+  });
+  const neutral = repo("a/plain", 100, 10);
+
+  test("boosts application-dev / coding-agent repos above 1", () => {
+    expect(applicationAffinity(appDev)).toBeGreaterThan(1);
+  });
+
+  test("dampens model-internals repos below 1", () => {
+    expect(applicationAffinity(modelInternals)).toBeLessThan(1);
+  });
+
+  test("leaves a neutral repo at 1", () => {
+    expect(applicationAffinity(neutral)).toBe(1);
+  });
+
+  test("a coding-agent repo outranks a model-internals repo of equal velocity", () => {
+    const ranked = rankCandidates([modelInternals, appDev], NOW);
+    expect(ranked[0]!.source.externalId).toBe("a/agent-cli");
+  });
+
+  test("weighting can lift an app-dev repo over a modestly faster model-internals repo", () => {
+    // model-internals rises a bit faster on raw velocity, but the affinity weight
+    // still floats the coding-agent repo to the top (a preference, not a hard filter).
+    const app = repo("a/coding-agent", 1000, 20, {
+      description: "Use Claude and Codex as autonomous coding agents.",
+      readme: "agentic coding assistant, MCP tools, slash commands.",
+    });
+    const model = repo("a/kernels", 1300, 20, {
+      description: "Fast LLM inference engine.",
+      readme: "quantization, cuda kernels, flash attention, vllm.",
+    });
+    const ranked = rankCandidates([model, app], NOW);
+    expect(ranked[0]!.source.externalId).toBe("a/coding-agent");
   });
 });
 
