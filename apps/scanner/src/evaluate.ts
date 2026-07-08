@@ -88,8 +88,9 @@ export type EvaluateOptions = {
   model: ModelClient;
   /** Recorded as `Evaluation.model` (provenance). */
   modelName: string;
-  /** Optional media derivation; if omitted, `media` is empty. */
-  deriveMedia?: (source: ItemSource, readme: string) => MediaAsset[];
+  /** Optional media derivation; if omitted, `media` is empty. `preferredCover`
+   *  is the evaluator's square-cover pick, validated inside the deriver. */
+  deriveMedia?: (source: ItemSource, readme: string, preferredCover?: string) => MediaAsset[];
   /** Injectable clock for deterministic `evaluatedAt` in tests. */
   now?: () => Date;
   /** Max repair retries after the first attempt (default 2 → 3 attempts total). */
@@ -170,7 +171,9 @@ function assembleEvaluation(
     overallScore: computeOverall(draft.scores),
     tagline: draft.tagline,
     body: draft.body,
-    media: opts.deriveMedia ? opts.deriveMedia(d.source, d.readme) : [],
+    media: opts.deriveMedia
+      ? opts.deriveMedia(d.source, d.readme, draft.coverImageUrl ?? undefined)
+      : [],
     evaluatedBy: "ai" as const,
     model: opts.modelName,
     evaluatedAt: (opts.now?.() ?? new Date()).toISOString(),

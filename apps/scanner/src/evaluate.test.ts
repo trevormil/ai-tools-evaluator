@@ -18,7 +18,8 @@ function scriptedModel(responses: string[]): ModelClient & { calls: number } {
 
 describe("evaluateItem", () => {
   test("valid model JSON produces a schema-valid Evaluation with recomputed overallScore", async () => {
-    const draft = makeDraft();
+    // The evaluator's coverImageUrl pick (a README image) drives the cover.
+    const draft = makeDraft({ coverImageUrl: "https://example.com/demo.gif" });
     const model = scriptedModel([JSON.stringify(draft)]);
     const now = () => new Date("2026-07-06T00:00:00.000Z");
 
@@ -39,11 +40,22 @@ describe("evaluateItem", () => {
     expect(evaluation.evaluatedAt).toBe("2026-07-06T00:00:00.000Z");
     expect(evaluation.slug).toBe("acme-some-tool");
     expect(evaluation.source.externalId).toBe("acme/some-tool");
-    // Media cover cascades to the README image (demo.gif), card second.
+    // The picked README image (demo.gif) is the cover; social card present too.
     expect(evaluation.media[0]?.source).toBe("repo-readme");
     expect(evaluation.media[0]?.url).toContain("demo.gif");
     expect(evaluation.media.some((m) => m.source === "repo-social-preview")).toBe(true);
     expect(model.calls).toBe(1);
+  });
+
+  test("without a cover pick, the cover defaults to the square owner avatar", async () => {
+    const model = scriptedModel([JSON.stringify(makeDraft())]); // no coverImageUrl
+    const evaluation = await evaluateItem(makeDiscovered(), {
+      model,
+      modelName: "m",
+      deriveMedia: buildMedia,
+    });
+    expect(evaluation.media[0]?.source).toBe("repo-avatar");
+    expect(evaluation.media[0]?.url).toBe("https://github.com/acme.png?size=200");
   });
 
   test("tolerates code fences and surrounding prose", async () => {

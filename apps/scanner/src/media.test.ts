@@ -1,6 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { MediaAsset } from "@aix/core";
-import { buildMedia, extractReadmeImages, githubSocialPreviewUrl, coverImageUrl } from "./media";
+import {
+  buildMedia,
+  extractReadmeImages,
+  githubSocialPreviewUrl,
+  ownerAvatarUrl,
+  coverImageUrl,
+} from "./media";
 import { slugify } from "./slug";
 import { makeGithubSource } from "./test-fixtures";
 
@@ -54,23 +60,61 @@ describe("media", () => {
     ]);
   });
 
-  test("buildMedia cover cascades: a README logo becomes the cover, card second", () => {
+  test("buildMedia defaults the cover to the square owner avatar; readme images + card follow", () => {
+    // No evaluator pick → the square avatar leads (a wide README banner would
+    // crop badly), with the README images kept in the gallery and the card last.
     const media = buildMedia(
       makeGithubSource(),
       "![a](https://e.com/a.png) ![b](https://e.com/b.png)",
     );
-    expect(media[0]!.source).toBe("repo-readme");
-    expect(media[0]!.url).toBe("https://e.com/a.png");
-    expect(media[1]!.source).toBe("repo-social-preview");
+    expect(media[0]!.source).toBe("repo-avatar");
+    expect(media[0]!.url).toBe(ownerAvatarUrl("acme/some-tool"));
+    expect(media.some((m) => m.source === "repo-readme" && m.url === "https://e.com/a.png")).toBe(
+      true,
+    );
+    expect(media.some((m) => m.source === "repo-social-preview")).toBe(true);
     expect(media.length).toBeLessThanOrEqual(6);
     for (const m of media) expect(() => MediaAsset.parse(m)).not.toThrow();
     expect(coverImageUrl(media)).toBe(media[0]!.url);
   });
 
-  test("buildMedia falls back to the social-preview card when the README has no image", () => {
+  test("buildMedia uses the evaluator's square pick as the cover when it matches a README image", () => {
+    const media = buildMedia(
+      makeGithubSource(),
+      "![a](https://e.com/a.png) ![b](https://e.com/b.png)",
+      "https://e.com/b.png",
+    );
+    expect(media[0]!.source).toBe("repo-readme");
+    expect(media[0]!.url).toBe("https://e.com/b.png");
+    expect(coverImageUrl(media)).toBe("https://e.com/b.png");
+  });
+
+  test("buildMedia ignores a hallucinated cover pick not in the README (falls back to avatar)", () => {
+    const media = buildMedia(
+      makeGithubSource(),
+      "![a](https://e.com/a.png)",
+      "https://evil.example/not-in-readme.png",
+    );
+    expect(media[0]!.source).toBe("repo-avatar");
+    expect(media[0]!.url).toBe(ownerAvatarUrl("acme/some-tool"));
+  });
+
+  test("buildMedia matches a blob-url pick against the rawified README image", () => {
+    const readme = "![demo](https://github.com/acme/some-tool/blob/main/logo.png)";
+    const media = buildMedia(
+      makeGithubSource(),
+      readme,
+      "https://github.com/acme/some-tool/blob/main/logo.png",
+    );
+    expect(media[0]!.source).toBe("repo-readme");
+    expect(media[0]!.url).toBe("https://raw.githubusercontent.com/acme/some-tool/main/logo.png");
+  });
+
+  test("buildMedia with no README image: square avatar cover, social card second", () => {
     const media = buildMedia(makeGithubSource(), "# Tool\n\nNo images here, just prose.");
-    expect(media).toHaveLength(1);
-    expect(media[0]!.source).toBe("repo-social-preview");
+    expect(media).toHaveLength(2);
+    expect(media[0]!.source).toBe("repo-avatar");
+    expect(media[1]!.source).toBe("repo-social-preview");
   });
 
   test("buildMedia for a paper: a single placeholder cover", () => {

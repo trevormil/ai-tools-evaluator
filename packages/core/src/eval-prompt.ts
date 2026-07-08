@@ -61,6 +61,11 @@ ${readme.slice(0, 12000)}
     skipIf: 1-4 concrete situations where it is noise for the reader, insteadOf?: the incumbent
     it replaces ("grep", "joi", "raw SDK + a loop") }. Write these for a reader deciding in ten
     seconds — situational and specific, never marketing.
+- coverImageUrl (optional): from the images embedded in the README above, the single best
+    SQUARE-friendly cover for a small thumbnail — a clean logo, icon, or mark that crops well to a
+    square. AVOID wide banners, screenshots, diagrams, and animated GIFs. Copy the image URL EXACTLY
+    as it appears in the README. Use null if the README has no suitable square logo (a GitHub avatar
+    is used instead).
 
 Return raw JSON only, no code fences, no commentary.`;
 }

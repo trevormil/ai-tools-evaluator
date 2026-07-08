@@ -73,7 +73,14 @@ export const MediaAsset = z.object({
   /** Locally cached / self-hosted copy (object storage or /public), if mirrored. */
   cachedUrl: url.optional(),
   alt: z.string().max(300).optional(),
-  source: z.enum(["repo-readme", "repo-social-preview", "screenshot", "ai-generated", "submitted"]),
+  source: z.enum([
+    "repo-readme",
+    "repo-avatar",
+    "repo-social-preview",
+    "screenshot",
+    "ai-generated",
+    "submitted",
+  ]),
 });
 export type MediaAsset = z.infer<typeof MediaAsset>;
 
@@ -187,5 +194,14 @@ export const EvaluationDraft = Evaluation.omit({
   evaluatedAt: true,
   slug: true,
   overallScore: true,
+}).extend({
+  /**
+   * The LLM's pick of the best SQUARE-friendly cover image URL from the README
+   * (a clean logo/icon, not a banner/screenshot/GIF), or null. Best-effort and
+   * never part of the final Evaluation — the scanner validates it against the
+   * README's actual images and derives `media` from it. Bad values coerce to
+   * undefined so a cosmetic pick never fails the whole evaluation.
+   */
+  coverImageUrl: url.nullish().catch(undefined),
 });
 export type EvaluationDraft = z.infer<typeof EvaluationDraft>;

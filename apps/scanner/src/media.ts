@@ -20,6 +20,15 @@ export function githubSocialPreviewUrl(externalId: string): string {
   return `https://opengraph.githubassets.com/${hash}/${externalId}`;
 }
 
+/**
+ * GitHub owner avatar — square by nature, and the org logo for org-owned repos.
+ * The square-safe default cover when the README has no clean square logo.
+ */
+export function ownerAvatarUrl(externalId: string): string {
+  const owner = externalId.split("/")[0] ?? externalId;
+  return `https://github.com/${owner}.png?size=200`;
+}
+
 /** A deterministic placeholder cover for items with no real imagery (papers). */
 export function placeholderCoverUrl(title: string): string {
   const text = encodeURIComponent(title.slice(0, 60));
@@ -78,11 +87,18 @@ export function extractReadmeImages(readme: string, externalId?: string, max = 4
 }
 
 /**
- * Derive the media set for an item. `media[0]` is the cover. For a repo the
- * cover cascades: the project's own README logo/banner first, else GitHub's
- * social-preview card. The owner avatar is never used (it's a profile pic).
+ * Derive the media set for an item. `media[0]` is the cover, chosen to look good
+ * cropped to a square thumbnail. For a repo the cover cascades: the LLM's
+ * validated square pick from the README → the (always-square) owner avatar →
+ * GitHub's social-preview card. `preferredCover` is the evaluator's pick; it is
+ * only trusted when it matches an image we actually extracted from the README,
+ * guarding against a hallucinated URL.
  */
-export function buildMedia(source: ItemSource, readme: string): MediaAsset[] {
+export function buildMedia(
+  source: ItemSource,
+  readme: string,
+  preferredCover?: string,
+): MediaAsset[] {
   const media: MediaAsset[] = [];
 
   if (source.kind === "github_repo") {
@@ -93,25 +109,30 @@ export function buildMedia(source: ItemSource, readme: string): MediaAsset[] {
       source: "repo-social-preview",
       alt: `${source.title} social preview`,
     };
-    if (readmeImgs.length > 0) {
+
+    const pick = preferredCover ? rawifyGithubBlob(preferredCover) : undefined;
+    const cover: MediaAsset =
+      pick && readmeImgs.includes(pick)
+        ? { type: "image", url: pick, source: "repo-readme", alt: `${source.title} logo` }
+        : {
+            type: "image",
+            url: ownerAvatarUrl(source.externalId),
+            source: "repo-avatar",
+            alt: `${source.title} icon`,
+          };
+    media.push(cover);
+
+    // Gallery: the remaining README images (top first), then the social card.
+    for (const url of readmeImgs) {
+      if (url === cover.url) continue;
       media.push({
         type: "image",
-        url: readmeImgs[0]!,
+        url,
         source: "repo-readme",
-        alt: `${source.title} logo`,
+        alt: `${source.title} README image`,
       });
-      media.push(socialPreview);
-      for (const url of readmeImgs.slice(1)) {
-        media.push({
-          type: "image",
-          url,
-          source: "repo-readme",
-          alt: `${source.title} README image`,
-        });
-      }
-    } else {
-      media.push(socialPreview);
     }
+    media.push(socialPreview);
   } else {
     // arXiv papers and other kinds have no imagery of their own.
     media.push({
