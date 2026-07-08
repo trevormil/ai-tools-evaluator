@@ -9,6 +9,13 @@ import {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HOUR_MS = 60 * 60 * 1000;
+/**
+ * How often the daily-pick poller checks for a newly published item. Kept short
+ * (aligned with the 5-min queue + submission poster) so the day's pick posts
+ * within minutes of the scan, decoupled from bot restart time. The watermark in
+ * .state.json makes each item post exactly once regardless of poll frequency.
+ */
+const DIGEST_POLL_MS = 5 * 60 * 1000;
 
 /** Minimal channel surface we need — kept narrow so digest logic stays testable. */
 export type SendableChannel = { send: (payload: unknown) => Promise<unknown> };
@@ -67,7 +74,7 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
 /** Kick off an immediate run, then repeat on an interval. Returns the timer. */
 export function startDigestScheduler(
   deps: DigestDeps,
-  intervalMs = DAY_MS,
+  intervalMs = DIGEST_POLL_MS,
 ): ReturnType<typeof setInterval> {
   const tick = () => {
     runDigest(deps).catch((err) => console.error("[digest] run failed:", err));
