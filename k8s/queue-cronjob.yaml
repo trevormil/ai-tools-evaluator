@@ -6,9 +6,10 @@ metadata:
   labels:
     app: aix-queue
 spec:
-  # Every 5 minutes: drain the human link-drop submission queue promptly.
-  schedule: "*/5 * * * *"
+  # Every 2 minutes: drain the human link-drop submission queue promptly.
+  schedule: "*/2 * * * *"
   # Circuit breaker #1: never overlap a run (no double-processing a submission).
+  # A long run (5 submissions ≈ 50s each) simply skips ticks until it finishes.
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 120
   successfulJobsHistoryLimit: 2
