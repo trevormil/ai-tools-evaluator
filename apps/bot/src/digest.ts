@@ -3,6 +3,8 @@ import { buildItemEmbed } from "./embeds";
 import {
   readLastPosted,
   writeLastPosted,
+  readLastPickDate,
+  writeLastPickDate,
   readLastSubmissionPosted,
   writeLastSubmissionPosted,
 } from "./state";
@@ -66,6 +68,15 @@ export type DigestDeps = {
  */
 export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
   const now = (deps.now ?? (() => new Date()))();
+
+  // Once-per-day guard: a pick posts at most once per UTC calendar day. The
+  // marker is set only after a real post (below), so an earlier *empty* poll —
+  // or any restart/re-rollout — never consumes the day and blocks the real
+  // pick. Keyed on UTC day so the post lands each day just after the 13:00 UTC
+  // scan, not repeatedly as new items trickle in.
+  const today = now.toISOString().slice(0, 10);
+  if ((await readLastPickDate(deps.statePath)) === today) return [];
+
   const last = await readLastPosted(deps.statePath);
   const since = last ?? new Date(now.getTime() - (deps.lookbackMs ?? DAY_MS)).toISOString();
 
@@ -93,6 +104,8 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
     });
   }
   await writeLastPosted(deps.statePath, now.toISOString());
+  // Mark the day consumed only after a real post, so empty polls don't block it.
+  await writeLastPickDate(deps.statePath, today);
   return picks;
 }
 
