@@ -4,6 +4,8 @@ import { readFile, writeFile } from "node:fs/promises";
 export type DigestState = {
   /** Watermark for the rolling daily digest. */
   lastPostedAt?: string;
+  /** UTC calendar day (YYYY-MM-DD) a daily pick was last posted — the once/day guard. */
+  lastPickDate?: string;
   /** Watermark for auto-posting scored Discord submissions. */
   lastSubmissionPostedAt?: string;
 };
@@ -31,6 +33,15 @@ export async function readLastPosted(path: string): Promise<string | null> {
 
 export async function writeLastPosted(path: string, iso: string): Promise<void> {
   await writeState(path, { lastPostedAt: iso });
+}
+
+/** UTC day (YYYY-MM-DD) a daily pick last posted, or null — the once/day guard. */
+export async function readLastPickDate(path: string): Promise<string | null> {
+  return (await readState(path)).lastPickDate ?? null;
+}
+
+export async function writeLastPickDate(path: string, day: string): Promise<void> {
+  await writeState(path, { lastPickDate: day });
 }
 
 /** Watermark for the "scored Discord submission" auto-poster. */

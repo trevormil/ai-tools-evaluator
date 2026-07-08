@@ -171,6 +171,75 @@ describe("runDigest", () => {
   });
 });
 
+describe("runDigest once-per-day guard", () => {
+  const sink = (sent: unknown[]) => async () => ({
+    send: async (p: unknown) => {
+      sent.push(p);
+      return null;
+    },
+  });
+
+  it("posts at most once per UTC day even when later ticks bring higher-scored items", async () => {
+    const sent: unknown[] = [];
+    const getChannel = sink(sent);
+    await runDigest({
+      client: fakeClient([item({ slug: "am", overallScore: 80 })]).client,
+      statePath,
+      getChannel,
+      now: () => new Date("2026-07-08T13:05:00.000Z"),
+    });
+    // Same UTC day, a higher item appears — must NOT post a second pick.
+    const posted = await runDigest({
+      client: fakeClient([item({ slug: "pm", overallScore: 95 })]).client,
+      statePath,
+      getChannel,
+      now: () => new Date("2026-07-08T18:00:00.000Z"),
+    });
+    expect(posted).toEqual([]);
+    expect(sent).toHaveLength(1);
+  });
+
+  it("posts again on the next UTC day", async () => {
+    const sent: unknown[] = [];
+    const getChannel = sink(sent);
+    await runDigest({
+      client: fakeClient([item({ slug: "day1", overallScore: 80 })]).client,
+      statePath,
+      getChannel,
+      now: () => new Date("2026-07-08T13:05:00.000Z"),
+    });
+    const posted = await runDigest({
+      client: fakeClient([item({ slug: "day2", overallScore: 70 })]).client,
+      statePath,
+      getChannel,
+      now: () => new Date("2026-07-09T13:05:00.000Z"),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["day2"]);
+    expect(sent).toHaveLength(2);
+  });
+
+  it("an empty earlier tick does not consume the day — the real pick still posts later", async () => {
+    const sent: unknown[] = [];
+    const getChannel = sink(sent);
+    // Early poll before the daily scan has produced anything.
+    await runDigest({
+      client: fakeClient([]).client,
+      statePath,
+      getChannel,
+      now: () => new Date("2026-07-08T12:00:00.000Z"),
+    });
+    // Later same-day poll once the scan item exists — the pick must still post.
+    const posted = await runDigest({
+      client: fakeClient([item({ slug: "pick", overallScore: 84 })]).client,
+      statePath,
+      getChannel,
+      now: () => new Date("2026-07-08T13:05:00.000Z"),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["pick"]);
+    expect(sent).toHaveLength(1);
+  });
+});
+
 describe("runSubmissionDigest", () => {
   it("auto-posts each scored Discord submission and advances the submission watermark", async () => {
     const { client, sinceSeen } = fakeClient([item({ slug: "dropped", overallScore: 70 })]);
