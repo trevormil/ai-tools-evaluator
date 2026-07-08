@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Item } from "@aix/db";
 import { VerdictBadge } from "./verdict-badge";
+import { CoverImage } from "./cover-image";
 import { VoteButtons } from "./vote-buttons";
 import { RepostButton } from "./repost-button";
 import { InlineReply } from "./inline-reply";
@@ -58,17 +59,9 @@ export function ItemFeedCard({
               <span className="mt-1 line-clamp-2 block text-sm text-muted">{item.tagline}</span>
             </Link>
           </div>
-          {item.coverImageUrl && (
-            <Link href={`/item/${item.slug}`} className="shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.coverImageUrl}
-                alt=""
-                className="h-14 w-14 rounded-lg object-cover"
-                style={{ background: "var(--surface-2)" }}
-              />
-            </Link>
-          )}
+          <Link href={`/item/${item.slug}`} className="shrink-0">
+            <CoverImage item={item} className="h-14 w-14 rounded-lg object-cover" />
+          </Link>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-4 text-xs text-neutral-500">
           <Link href={`/item/${item.slug}`} className="hover:underline">

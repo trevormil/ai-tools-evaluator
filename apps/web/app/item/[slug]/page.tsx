@@ -11,6 +11,7 @@ import { VerdictBadge } from "@/components/verdict-badge";
 import { Scorecard } from "@/components/scorecard";
 import { AudienceFit } from "@/components/audience-fit";
 import { MediaGallery } from "@/components/media-gallery";
+import { CoverImage } from "@/components/cover-image";
 import { VoteButtons } from "@/components/vote-buttons";
 import { RepostButton } from "@/components/repost-button";
 import { UseThisButton } from "@/components/use-this-button";
@@ -214,15 +215,7 @@ export default async function ItemPage({
         />
         <div className="min-w-0 flex-1">
           <div className="flex items-start gap-4">
-            {item.coverImageUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={item.coverImageUrl}
-                alt=""
-                className="h-16 w-16 rounded-xl object-cover"
-                style={{ background: "var(--surface-2)" }}
-              />
-            )}
+            <CoverImage item={item} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2.5">
                 <h1 className="font-display text-2xl font-black tracking-tight sm:text-3xl">

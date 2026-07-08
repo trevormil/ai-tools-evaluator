@@ -2,6 +2,7 @@ import Link from "next/link";
 import { CATEGORY_LABELS, type Category } from "@aix/core";
 import type { Item } from "@aix/db";
 import { VerdictBadge } from "./verdict-badge";
+import { CoverImage } from "./cover-image";
 import { SegMeter } from "./seg-meter";
 
 /**
@@ -13,22 +14,7 @@ export function ItemRow({ item, uses = 0 }: { item: Item; uses?: number }) {
   const pending = item.scoreStatus === "pending";
   return (
     <Link href={`/item/${item.slug}`} className="card card-hover flex items-center gap-4 px-4 py-3">
-      {item.coverImageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={item.coverImageUrl}
-          alt=""
-          className="h-11 w-11 shrink-0 rounded-lg object-cover"
-          style={{ background: "var(--surface-2)" }}
-        />
-      ) : (
-        <span
-          className="data flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-sm font-semibold text-faint"
-          style={{ background: "var(--surface-2)" }}
-        >
-          {item.title.slice(0, 2).toUpperCase()}
-        </span>
-      )}
+      <CoverImage item={item} className="h-11 w-11 shrink-0 rounded-lg object-cover" />
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
