@@ -20,6 +20,31 @@ const DIGEST_POLL_MS = 5 * 60 * 1000;
 /** Minimal channel surface we need — kept narrow so digest logic stays testable. */
 export type SendableChannel = { send: (payload: unknown) => Promise<unknown> };
 
+/** Resolves a Discord channel id to a sendable channel; throws if unreachable. */
+export type ChannelFetcher = (id: string) => Promise<SendableChannel>;
+
+/**
+ * Resolve the digest channel dynamically: prefer `primaryId` (the new home), but
+ * fall back to `fallbackId` while the primary is unreachable — e.g. before the
+ * bot has been added to the new server. The moment the primary becomes reachable
+ * the resolver returns it and the fallback is dropped, so the cutover happens on
+ * its own with no redeploy and no missed daily pick in between.
+ */
+export function makeDigestChannelResolver(
+  fetchChannel: ChannelFetcher,
+  primaryId: string,
+  fallbackId?: string,
+): () => Promise<SendableChannel> {
+  return async () => {
+    try {
+      return await fetchChannel(primaryId);
+    } catch (err) {
+      if (fallbackId && fallbackId !== primaryId) return fetchChannel(fallbackId);
+      throw err;
+    }
+  };
+}
+
 export type DigestDeps = {
   client: InternalClient;
   statePath: string;

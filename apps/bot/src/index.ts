@@ -10,6 +10,8 @@ import { handleLeaderboard } from "./commands/leaderboard";
 import {
   startDigestScheduler,
   startSubmissionDigestScheduler,
+  makeDigestChannelResolver,
+  type ChannelFetcher,
   type SendableChannel,
 } from "./digest";
 
@@ -24,14 +26,26 @@ async function main(): Promise<void> {
 
   client.once(Events.ClientReady, async (ready) => {
     console.log(`[bot] logged in as ${ready.user.tag}`);
-    await registerCommands(env);
-    const getChannel = async (): Promise<SendableChannel> => {
-      const channel = await ready.channels.fetch(env.DISCORD_DIGEST_CHANNEL_ID);
+    // Never let command registration (which can fail against a guild the bot
+    // hasn't joined yet) block the digest schedulers below from starting.
+    try {
+      await registerCommands(env);
+    } catch (err) {
+      console.error("[bot] command registration failed (continuing so the digest still runs):", err);
+    }
+    const fetchChannel: ChannelFetcher = async (id) => {
+      const channel = await ready.channels.fetch(id);
       if (!channel || !channel.isTextBased()) {
-        throw new Error(`digest channel ${env.DISCORD_DIGEST_CHANNEL_ID} not a text channel`);
+        throw new Error(`digest channel ${id} not a text channel`);
       }
       return channel as TextChannel as unknown as SendableChannel;
     };
+    // Prefer the new channel; fall back to the old one until the bot can reach it.
+    const getChannel = makeDigestChannelResolver(
+      fetchChannel,
+      env.DISCORD_DIGEST_CHANNEL_ID,
+      env.DISCORD_DIGEST_FALLBACK_CHANNEL_ID,
+    );
     startDigestScheduler({
       client: api,
       statePath,

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from "bun:test";
 import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { runDigest, runSubmissionDigest } from "./digest";
+import { runDigest, runSubmissionDigest, makeDigestChannelResolver } from "./digest";
 import { readLastPosted, readLastSubmissionPosted } from "./state";
 import type { DigestItem, InternalClient } from "./client";
 import { matchItem } from "./commands/eval";
@@ -211,6 +211,37 @@ describe("runSubmissionDigest", () => {
     });
     expect(sends).toBe(0);
     expect(await readLastSubmissionPosted(statePath)).toBe(now.toISOString());
+  });
+});
+
+describe("makeDigestChannelResolver", () => {
+  const chan = (id: string) => ({ id, send: async () => null });
+  const idOf = async (r: Promise<{ send: (p: unknown) => Promise<unknown> }>) =>
+    (await r) as unknown as { id: string };
+
+  it("returns the primary channel when it is reachable", async () => {
+    const resolve = makeDigestChannelResolver(async (id) => chan(id), "new", "old");
+    expect((await idOf(resolve())).id).toBe("new");
+  });
+
+  it("falls back to the old channel while the primary is unreachable", async () => {
+    const resolve = makeDigestChannelResolver(
+      async (id) => {
+        if (id === "new") throw new Error("Missing Access");
+        return chan(id);
+      },
+      "new",
+      "old",
+    );
+    // Cutover is automatic: once "new" stops throwing, the resolver returns it.
+    expect((await idOf(resolve())).id).toBe("old");
+  });
+
+  it("throws when the primary is unreachable and there is no fallback", async () => {
+    const resolve = makeDigestChannelResolver(async () => {
+      throw new Error("Missing Access");
+    }, "new");
+    await expect(resolve()).rejects.toThrow(/Missing Access/);
   });
 });
 
