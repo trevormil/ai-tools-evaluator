@@ -93,7 +93,20 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
   const max = deps.maxPerRun ?? 1;
   const picks = [...items].sort((a, b) => b.overallScore - a.overallScore).slice(0, max);
 
+  // Resolve the channel first, so an unreachable channel fails fast *before* we
+  // consume the day — a transient fetch failure must not burn the daily pick.
   const channel = await deps.getChannel();
+
+  // Claim the UTC day BEFORE sending. If the pod is OOMKilled (or crashes) in
+  // the window between Discord accepting the message and the watermark write,
+  // the old post-then-write order left the guard unset, so the next pod
+  // re-posted — a duplicate daily. Writing the guard first trades that for a
+  // possible *missed* pick if a send throws after this point, which is the
+  // right direction: a skipped daily beats a repeated one. Empty polls never
+  // reach here (handled above), so they still don't consume the day.
+  await writeLastPickDate(deps.statePath, today);
+  await writeLastPosted(deps.statePath, now.toISOString());
+
   for (const item of picks) {
     // Plainspoken summary as the message text above the rich embed (Discord
     // caps content at 2000 chars; whatItIs is ≤1200 but slice defensively).
@@ -103,9 +116,6 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
       embeds: [buildItemEmbed(item, { siteBaseUrl: deps.siteBaseUrl })],
     });
   }
-  await writeLastPosted(deps.statePath, now.toISOString());
-  // Mark the day consumed only after a real post, so empty polls don't block it.
-  await writeLastPickDate(deps.statePath, today);
   return picks;
 }
 

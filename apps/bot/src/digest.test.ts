@@ -3,7 +3,7 @@ import { rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { runDigest, runSubmissionDigest, makeDigestChannelResolver } from "./digest";
-import { readLastPosted, readLastSubmissionPosted } from "./state";
+import { readLastPosted, readLastPickDate, readLastSubmissionPosted } from "./state";
 import type { DigestItem, InternalClient } from "./client";
 import { matchItem } from "./commands/eval";
 
@@ -216,6 +216,72 @@ describe("runDigest once-per-day guard", () => {
     });
     expect(posted.map((p) => p.slug)).toEqual(["day2"]);
     expect(sent).toHaveLength(2);
+  });
+
+  it("claims the UTC day before posting, so a crash after delivery never double-posts", async () => {
+    // Model an OOMKill the instant Discord accepts the message: the send lands
+    // (sends === 1) but the run aborts before it can return. If the day were
+    // claimed only *after* the post (the old order), the restart below would
+    // re-deliver the same pick — the exact duplicate we're closing.
+    let sends = 0;
+    const crashingChannel = async () => ({
+      send: async () => {
+        sends++;
+        throw new Error("pod OOMKilled after send");
+      },
+    });
+    const day = () => new Date("2026-07-08T13:05:00.000Z");
+    await expect(
+      runDigest({
+        client: fakeClient([item({ slug: "pick", overallScore: 84 })]).client,
+        statePath,
+        getChannel: crashingChannel,
+        now: day,
+      }),
+    ).rejects.toThrow(/OOMKilled/);
+    expect(sends).toBe(1);
+    // The guard must already be persisted despite the abnormal exit.
+    expect(await readLastPickDate(statePath)).toBe("2026-07-08");
+
+    // Restart on the same UTC day with a healthy channel: must NOT re-post.
+    const sent: unknown[] = [];
+    const posted = await runDigest({
+      client: fakeClient([item({ slug: "pick", overallScore: 84 })]).client,
+      statePath,
+      getChannel: sink(sent),
+      now: day,
+    });
+    expect(posted).toEqual([]);
+    expect(sent).toHaveLength(0);
+    expect(sends).toBe(1); // exactly one delivery, ever
+  });
+
+  it("does not consume the day when the channel is unreachable", async () => {
+    // A transient channel-fetch failure must not burn the daily pick: the guard
+    // is claimed only after the channel resolves, so a later poll can retry.
+    const unreachable = async (): Promise<never> => {
+      throw new Error("Missing Access");
+    };
+    await expect(
+      runDigest({
+        client: fakeClient([item({ slug: "pick", overallScore: 84 })]).client,
+        statePath,
+        getChannel: unreachable,
+        now: () => new Date("2026-07-08T13:05:00.000Z"),
+      }),
+    ).rejects.toThrow(/Missing Access/);
+    expect(await readLastPickDate(statePath)).toBeNull();
+
+    // Retry once the channel is reachable — the pick still posts.
+    const sent: unknown[] = [];
+    const posted = await runDigest({
+      client: fakeClient([item({ slug: "pick", overallScore: 84 })]).client,
+      statePath,
+      getChannel: sink(sent),
+      now: () => new Date("2026-07-08T13:10:00.000Z"),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["pick"]);
+    expect(sent).toHaveLength(1);
   });
 
   it("an empty earlier tick does not consume the day — the real pick still posts later", async () => {

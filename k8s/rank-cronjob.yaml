@@ -48,4 +48,5 @@ spec:
                   memory: 24Mi
                 limits:
                   cpu: 100m
-                  memory: 64Mi
+                  # Just a curl POST, but give cheap headroom so it never OOMs.
+                  memory: 128Mi
