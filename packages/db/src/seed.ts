@@ -159,6 +159,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "Standalone binary, not a plugin or skill. It touches your workflow at the lowest possible level: it's the tool that every other tool and agent shells out to. That's exactly why it's worth standardizing on — the surface area is tiny and universal.",
         devilsAdvocate:
           "The honest counter is that grep is already installed everywhere and a model doesn't care about a 200ms difference on a small repo. If your agent only ever greps a handful of files, ripgrep buys you nothing a POSIX grep wouldn't. And 'just install another binary' is real friction in locked-down or containerized environments where you don't control the toolchain. It is not novel — it's a very good implementation of a 50-year-old idea, and treating it as exciting is exactly the kind of tool-worship AIx exists to puncture.",
+        whatWouldMakeItBetter:
+          "Nothing about rg itself needs fixing; the real win is upstream — distros and locked-down base images shipping it as grep's default, so the 'install another binary' friction disappears.",
         steelman:
           "But the gitignore-awareness alone changes agent behavior for the better, and the speed removes a real reason to under-search. It's the rare tool that's both boring and genuinely load-bearing. Adopt it and forget about it.",
       },
@@ -250,6 +252,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "It's a library you import, not a workflow change. But it quietly shapes architecture: once you parse at the edges, the interior of your app can assume clean, typed data. That's a real structural benefit, not just a convenience.",
         devilsAdvocate:
           "The pushback: for tiny scripts, Zod is overkill — a JSON.parse and a couple of `if` checks are lighter and have zero dependencies. At scale, Zod's inference can balloon TypeScript compile times and its runtime isn't free on hot paths. There are leaner alternatives (Valibot, ArkType) with smaller bundles, so 'reach for Zod reflexively' can be its own trap. And a capable agent can generate correct validators by hand, so the library is a convenience, not a capability the model lacks.",
+        whatWouldMakeItBetter:
+          "The lever now is weight, not capability: first-class tree-shaking and an optional compile-time codegen path so schemas stop taxing bundle size and TS inference on hot paths.",
         steelman:
           "Still, the single-source-of-truth property is worth the weight for anything that ships. The moment your data has more than a couple of shapes, hand-rolled guards become the liability Zod was built to remove.",
       },
@@ -356,6 +360,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "This is knowledge, not software. You can't install it. Its 'integration' is into your head: it changes how you design harnesses, budget context for observations, and reason about where an agent goes wrong.",
         devilsAdvocate:
           "The devil's advocate is strong here: as a thing to actively use in 2025, ReAct is largely obsolete. Frontier models were trained on ReAct-style traces and now do it natively, so explicitly forcing a rigid Thought/Action/Observation format often makes agents worse, not better — it's cargo-culting a scaffold the model no longer needs. Citing ReAct as if implementing it were an achievement is a tell that someone learned agents from 2022 blog posts. Its value today is purely historical and conceptual; treating it as a live engineering recipe is a mistake.",
+        whatWouldMakeItBetter:
+          "As a paper it's finished; what helps now is a companion that maps the pattern onto native tool-calling models, so people stop hand-rolling the 2022 prompt scaffold frontier models already internalize.",
         steelman:
           "That said, understanding the loop is genuinely load-bearing. When an agent spirals, the fix is almost always in the reason-act-observe cycle — starving observations, never re-planning, or acting before reasoning. Knowing the pattern by name makes those failures legible.",
       },
@@ -432,6 +438,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "This is an MCP integration: a separate server process the agent talks to over the protocol. It sits between 'plugin' and 'standalone app' — you run and authenticate it once, then any MCP client can use it. The surface area is a server plus a token to manage.",
         devilsAdvocate:
           "The hard question: what does this do that `gh` piped to your agent doesn't? For most workflows, not much. You're trading a zero-setup CLI the model already knows how to drive for a running server, a token to scope and rotate, and another process to keep alive. MCP's promise is cross-client reuse, but if you only use one client, that promise is unrealized and you've added operational overhead for structured output you could get with `gh --json`. It is not novel capability — it is a nicer wrapper around an API the agent could already reach.",
+        whatWouldMakeItBetter:
+          "Give it something gh piped to an agent genuinely can't do — cross-org actions, stateful workflows, per-tool scoped tokens — otherwise it stays a thin wrapper around an API the agent already reaches.",
         steelman:
           "When GitHub genuinely is your agent's home — an autonomous triage or review bot running unattended — typed tools and scoped tokens beat parsing CLI text, and the official server means you're not maintaining that glue yourself. In that setting it earns its keep.",
       },
@@ -521,6 +529,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "It's a library, but adopting it is closer to a workflow shift: you stop writing prompts and start writing modules, metrics, and datasets. That reframing is the whole point and also the cost — DSPy only pays off if you buy into building and maintaining eval sets.",
         devilsAdvocate:
           "The skeptic's case is serious. DSPy asks you to learn a dense abstraction layer to solve a problem — 'my prompt could be a bit better' — that, for most teams, isn't the bottleneck. The optimizer needs a labeled dev set and a good metric; if you don't have those (most people don't), you get complexity with none of the payoff. Frontier models are now good enough that careful manual prompting gets you 90% of the way, and the API has churned enough to burn early adopters. For a single prompt or a small pipeline, DSPy is a heavyweight solution to a lightweight problem — the definition of a complexity trap if adopted reflexively.",
+        whatWouldMakeItBetter:
+          "Lower the abstraction tax: a gentler on-ramp that pays off before you learn the whole compiler model, plus compiled prompts you can inspect and diff, so it reads like a build step instead of magic.",
         steelman:
           "But if you run a multi-stage pipeline in production and can define a real metric, DSPy does something you otherwise do badly by hand: it keeps the whole chain optimized as models and data shift. For teams already living in evals, that's a durable win, not a gimmick.",
       },
@@ -604,6 +614,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "A standalone desktop/mobile app you run alongside your work. It doesn't integrate with an agent workflow so much as sit next to it; the integration point is the filesystem where the Markdown lives.",
         devilsAdvocate:
           "The honest critique: for most developers, Logseq is a heavyweight answer to 'where do I keep notes' when a folder of Markdown files plus ripgrep — or your editor — already does the job, and stays just as agent-readable. The block-outliner model is polarizing; plenty of people bounce off it. The app has been historically buggy, and the multi-year database rewrite has been disruptive to the very users who invested in it. If you don't specifically want networked-outline thinking, this is a lot of app for a problem plain files already solve. That's what pins it at niche.",
+        whatWouldMakeItBetter:
+          "Trim to the one agent-relevant superpower — plain Markdown on disk any tool can read — and make that path first-class and fast, instead of a heavyweight outliner most people bounce off.",
         steelman:
           "For people whose thinking genuinely is networked and outline-shaped, the backlink graph plus local ownership is a real, durable workflow — and keeping it all in plain text means you never get locked in. That combination is rare and worth it for that audience.",
       },
@@ -687,6 +699,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "A standalone web app, not something you integrate into an existing workflow. You go to it; it doesn't come to you. That's ideal for a quick throwaway and awkward the moment you want the code in your own repo with your own agent.",
         devilsAdvocate:
           "The skeptical read: bolt.new is a beautifully packaged demo of a capability that every coding agent now has. The instant it builds something real, you want to pull the code into your own environment — at which point the sandbox that made it magical becomes the thing you're escaping. WebContainers are impressive engineering, but the prompt-to-app layer on top is exactly the commodity the base models are absorbing fastest. It optimizes the first five minutes of a project and has little to say about the next five months. As a serious tool for a working engineer it's thin; its real audience is non-coders and demos, which is why it lands at niche.",
+        whatWouldMakeItBetter:
+          "Close the gap after the demo: real project export, version control, and a clean hand-off to a normal local dev loop, so it's a launchpad for shipping rather than a sandbox non-coders get stuck in.",
         steelman:
           "For non-engineers, educators, or a designer sketching an interactive idea, the no-install, runs-instantly loop is genuinely enabling — it removes the entire environment-setup wall that stops most people before they start. Within that audience, it's excellent.",
       },
@@ -772,6 +786,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "It's a library, but a maximalist one — adopting it means adopting its worldview of documents, nodes, indices, and query engines. That's more of a workflow commitment than a typical import, and unwinding it later is real work.",
         devilsAdvocate:
           "The critique that lands it at marginal: LlamaIndex makes the easy 80% trivial and the hard 20% — the part that actually matters — harder. Production RAG quality is all in the details of chunking, retrieval strategy, reranking, and how context is assembled. A framework that hides those behind a five-line demo lets you ship something that looks done and retrieves badly, and then you're reverse-engineering the abstraction to fix what you'd have controlled directly if you'd written the ~300 lines yourself. The core RAG loop is not hard to own, and owning it means you understand every retrieval decision. Reaching for this much framework for something that simple is how RAG projects accrue complexity they can't debug.",
+        whatWouldMakeItBetter:
+          "Own the hard 20% instead of the easy 80%: make retrieval quality, chunking, and evaluation observable and debuggable end-to-end, so teams don't hit a wall the moment they leave the quickstart.",
         steelman:
           "For a fast internal prototype or to survey the space of loaders and integrations, LlamaIndex genuinely saves time, and its breadth of connectors is a real asset when you just need to ingest something odd. Used as scaffolding you'll later replace — not as the permanent foundation — it's fine.",
       },
@@ -860,6 +876,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "Nominally a library, but in practice a workflow commitment: adopt LangChain and your whole app is shaped by its abstractions, its data types, and its update cadence. Backing out later means rewriting the parts you routed through it — which is exactly what a growing number of teams end up doing.",
         devilsAdvocate:
           "This is the archetypal complexity trap, so the devil's advocate is the whole case. LangChain sells the feeling of productivity — look how few lines to a working agent — while quietly making the important work harder. The abstractions are leaky: to do anything non-trivial you must understand both your problem and LangChain's model of it, then fight the framework when they disagree. Its version churn has repeatedly broken production code. And the core value proposition erodes every month, because the thing it orchestrates — reasoning, tool use, planning — is exactly what frontier models keep absorbing natively. The tell is how many experienced teams describe their architecture as 'we started with LangChain and then ripped it out.' For most projects, writing the loop yourself is less code, more debuggable, and more durable.",
+        whatWouldMakeItBetter:
+          "Invert the abstraction — ship thin, readable primitives and drop the god-object chains, so it wins adoption by being less code than doing it yourself rather than more.",
         steelman:
           "In fairness: for rapid prototyping, teaching, or gluing together many exotic integrations you don't want to write connectors for, LangChain's breadth is a genuine shortcut, and LangGraph is a more honest attempt at real orchestration. As disposable scaffolding it can earn a place — the trap is mistaking it for the foundation.",
       },
@@ -961,6 +979,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
           "A standalone application you launch and (in theory) walk away from. That 'walk away' is the entire design and the entire problem — it's built to operate without you at exactly the moment you most need to be watching.",
         devilsAdvocate:
           "As a tool to use today, AutoGPT is a complexity trap wearing an autonomy costume. The core lesson the field learned from it is a negative result: unbounded autonomous loops don't reliably complete real tasks, and the more moving parts you add to sustain the illusion of autonomy, the more ways it has to go off the rails. You pay in tokens, wall-clock time, and babysitting for output you then have to redo. The 168k stars measure fascination, not utility — it's the most-starred cautionary tale in AI. Reaching for it because it's famous, expecting reliable autonomous work, is the mistake it exists to warn you about. Scoped tasks with a human gate win.",
+        whatWouldMakeItBetter:
+          "Trade open-ended autonomy for scoped, human-gated tasks with legible state and hard stopping conditions — the thing the field actually learned works — instead of looping until it burns tokens.",
         steelman:
           "Its genuine value is historical and pedagogical: AutoGPT ran the 'full autonomy' experiment loudly and in public, and the field's move toward scoped, supervised, human-in-the-loop agents is largely a reaction to watching it fail. As an artifact that taught everyone what not to build, it more than earned its place.",
       },

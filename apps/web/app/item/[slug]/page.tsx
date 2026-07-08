@@ -35,13 +35,14 @@ type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const SECTIONS: {
-  key: "whatItIs" | "vsVanilla" | "surfaceArea" | "devilsAdvocate" | "steelman";
+  key: "whatItIs" | "vsVanilla" | "surfaceArea" | "devilsAdvocate" | "whatWouldMakeItBetter" | "steelman";
   title: string;
 }[] = [
   { key: "whatItIs", title: "What it is" },
   { key: "vsVanilla", title: "How it differs from vanilla Claude" },
   { key: "surfaceArea", title: "Skill, plugin, or workflow shift?" },
   { key: "devilsAdvocate", title: "Devil's advocate — is this just complexity?" },
+  { key: "whatWouldMakeItBetter", title: "What would make it better" },
   { key: "steelman", title: "The honest case for it" },
 ];
 

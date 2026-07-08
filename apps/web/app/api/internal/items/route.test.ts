@@ -50,6 +50,7 @@ function validEvaluation() {
       vsVanilla: para,
       surfaceArea: para,
       devilsAdvocate: para + para,
+      whatWouldMakeItBetter: para,
       steelman: para,
     },
     media: [],

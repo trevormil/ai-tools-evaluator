@@ -143,6 +143,9 @@ export const Evaluation = z.object({
     /** 4) THE devil's advocate — why the base agent can/will handle this itself,
      *     and whether this is complexity for complexity's sake. Be harsh. */
     devilsAdvocate: z.string().min(80).max(1600),
+    /** 5) What would make it better — concrete features, a different direction, or
+     *     changes that would move the verdict up. Forward-looking and specific. */
+    whatWouldMakeItBetter: z.string().min(40).max(1200),
     /** Optional: when it genuinely IS worth it, the honest case for adoption. */
     steelman: z.string().max(1200).optional(),
   }),

@@ -49,6 +49,8 @@ const sample: Evaluation = {
       "It is an MCP server: you register it, it advertises tools. Additive, but it is real infrastructure you now run and secure.",
     devilsAdvocate:
       "The base agent reads and writes files natively with better ergonomics and no server to run. The only genuine delta is remote/sandboxed access, which most users do not need. For the common case this is complexity for complexity's sake.",
+    whatWouldMakeItBetter:
+      "Add capabilities native file tools lack — sandboxed remote hosts, audit logging, fine-grained ACLs — so it earns the extra process instead of duplicating what Claude already does.",
   },
   media: [],
   evaluatedBy: "ai",
@@ -151,6 +153,8 @@ describe("markdown round-trip", () => {
   test("toMarkdown then parseArtifact recovers the object", () => {
     const md = toMarkdown(sample);
     expect(md).toContain("## Devil's advocate");
+    expect(md).toContain("## What would make it better");
+    expect(md).toContain(sample.body.whatWouldMakeItBetter);
     expect(md).toContain("| **Overall** |");
     const back = parseArtifact(md);
     expect(back).toEqual(sample);

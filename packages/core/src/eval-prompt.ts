@@ -53,7 +53,10 @@ ${readme.slice(0, 12000)}
     AIx is for AI-first ENGINEERS who want to upskill and sharpen their workflow — not vibe coders who just want a flashier tool to do the work for them. Score aiEngineerFit on depth/leverage for a technical engineer; score vibeCoderFit on accessible does-it-for-you value. They are independent (a real workflow tool can rate high on both). Set primary honestly.
 - tagline: one line, <=160 chars, states the verdict's reasoning
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
-- body: { whatItIs, vsVanilla, surfaceArea, devilsAdvocate, steelman? }
+- body: { whatItIs, vsVanilla, surfaceArea, devilsAdvocate, whatWouldMakeItBetter, steelman? }
+    whatWouldMakeItBetter: forward-looking and specific — the concrete features, redesigns, or
+    change of direction that would move your verdict up. Name the actual gap, not vague praise;
+    if it's a complexity-trap, say what it would take to justify existing at all.
 - quickstart (include when the README shows how to install/run): { install: THE exact one-line
     install or run command copied/adapted from the README (one line, no prose), requires?: up to 6
     hidden prerequisites a reader must already have (API key, account, Docker, runtime version) }

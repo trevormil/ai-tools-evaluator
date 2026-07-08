@@ -30,6 +30,8 @@ export function makeDraft(overrides: Partial<EvaluationDraft> = {}): EvaluationD
         "It is an MCP server you register and secure — additive infrastructure rather than a slash-command skill.",
       devilsAdvocate:
         "The base agent reproduces this unaided with better ergonomics and nothing extra to run. The only genuine delta is remote/sandboxed access most users never need, so for the common case it is complexity for its own sake.",
+      whatWouldMakeItBetter:
+        "Ship a genuinely remote/sandboxed capability the base agent can't do locally, and drop the config surface to a single command — otherwise it stays a wrapper.",
     },
     ...overrides,
   };

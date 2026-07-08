@@ -74,6 +74,10 @@ ${e.body.surfaceArea}
 ## Devil's advocate — is this just complexity?
 
 ${e.body.devilsAdvocate}
+
+## What would make it better
+
+${e.body.whatWouldMakeItBetter}
 ${e.body.steelman ? `\n## The honest case for it\n\n${e.body.steelman}\n` : ""}
 ## Who it's for
 
