@@ -6,8 +6,8 @@ metadata:
   labels:
     app: aix-scanner
 spec:
-  # Daily at 14:00 UTC. Runs the discovery + evaluation pipeline once.
-  schedule: "0 14 * * *"
+  # Daily at 13:00 UTC. Runs the discovery + evaluation pipeline once.
+  schedule: "0 13 * * *"
   # Never overlap a previous run (rate-limit + daily-cap accounting rely on it).
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 300
