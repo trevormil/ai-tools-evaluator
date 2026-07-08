@@ -25,7 +25,7 @@ export function ContentTabs({ tabs, initialTab }: { tabs: ContentTab[]; initialT
   return (
     <div className="flex flex-col gap-6">
       <div
-        className="sticky top-[57px] z-10 -mx-1 flex gap-1 overflow-x-auto border-b px-1 backdrop-blur"
+        className="sticky top-[57px] z-10 -mx-1 flex gap-1 overflow-x-auto overflow-y-hidden border-b px-1 backdrop-blur"
         style={{
           borderColor: "var(--border)",
           background: "color-mix(in srgb, var(--bg) 88%, transparent)",
