@@ -1,94 +1,48 @@
 # k8s-health agent (in-repo contract)
 
-An **autonomous self-healing** health check for the *live* AIx Kubernetes
-workloads (namespace `aix` on the gauntlet DOKS `sfo2` cluster). Unlike the
-[`health`](./health.md) agent — which is a read-only repo/CI snapshot — this one
-inspects the running cluster and, when authorized, **fixes it**.
+An **hourly, open-ended, autonomous** health check + self-heal for the *live* AIx
+Kubernetes workloads (namespace `aix` on the gauntlet DOKS `sfo2` cluster).
 
-Runs **once an hour** via a TerMinal schedule.
+Unlike the read-only [`health`](./health.md) agent (a repo/CI snapshot), this one
+inspects the running cluster **and keeps it alive**.
 
-## Model discipline (the whole point)
+## Design: one free-roaming codex session per run
 
-- **A really cheap OpenRouter model decides.** The script gathers a kubectl
-  snapshot and hands it to `or-exec` (default `google/gemini-2.5-flash-lite`,
-  ~$0.10/1M in). The cheap model returns a strict-JSON verdict: is anything
-  actually wrong, and is it `auto_fix` (an operator/kubectl can fix) or `hitl`
-  (only a human can)?
-- **Opus only fixes.** No expensive tokens are spent while healthy. Only on
-  `auto_fix` does the script escalate to `claude --model opus`.
+There are deliberately **no rigid pass/fail rules**. Each hour the script starts a
+single `codex exec` session (DEFAULT model, `~/.codex` auth) with:
 
-## Mode
+- an **access map** — context/namespace, the three workloads + the single-writer
+  DB invariant, the public site + internal API, the TLS secret, and where the
+  manifests live;
+- a **checklist** — pods/deployments, cronjob-latest-job health, the public site
+  + a DB-backed route, TLS cert validity/expiry, the `aix-db` PVC + migrations,
+  logs/events, and resource/OOM headroom;
+- an explicit instruction to **go beyond the checklist** — investigate freely,
+  verify its own findings, and surface anything else that threatens availability.
 
-`self-heal` — mutates live infra (and may commit to the repo). Runs `inPlace`
-(no worktree) so a hotfix can reach the real checkout / `main`.
+The model decides what's wrong and how sure it is — that's the point of using a
+session instead of a scripted rule engine.
 
-## FORCE authorization
+## FORCE authorization + what it does with findings
 
-This agent is **FORCE-enabled** (owner-granted). The Opus escalation runs with
-`TERMINAL_FORCE_MAIN=1` and `--permission-mode bypassPermissions`, so it may:
+FORCE-enabled (owner-granted). `codex exec -s danger-full-access` +
+`TERMINAL_FORCE_MAIN=1`, so it may run anything and push a hotfix to `main`.
 
-- `kubectl apply -k k8s/`, `rollout restart`, delete stuck pods, scale, bump limits
-- rebuild + push images
-- commit and **push a hotfix straight to `main`** to keep prod alive
-  (the `block-main-merge.sh` hook honors the `TERMINAL_FORCE_MAIN=1` exception)
+- **Healthy** → emit one `activity` summary of what it checked, stop.
+- **Easy / safe fix** (rollout restart, delete a stuck pod, `kubectl apply -k
+  k8s/`, clear a wedged job, bump a limit) → **do it live and re-verify**. If the
+  fix is a manifest change, also open a PR so the repo matches reality.
+- **Needs a human** (risky/ambiguous, a real code or manifest bug, a missing/
+  expired secret value, DNS, cloud quota, a destructive data decision) → **file a
+  backlog ticket + open a merge-ready PR + notify** (`hitl` and `terminal-cli
+  notify`). It does not force these.
 
-The instruction to Opus still prefers the **smallest** fix and a feature-branch
-PR when there is no active outage; a direct-main hotfix is reserved for a live
-outage.
+## Guardrails (in the prompt, not the harness)
 
-## Determinism guard
-
-A cheap model can flake. The script computes a deterministic **hard-outage
-floor** and will escalate regardless of what the model says when any of these
-hold:
-
-- a Deployment has `availableReplicas < replicas`
-- a pod is in `CrashLoopBackOff` / `ImagePullBackOff` / `ErrImagePill` right now
-- the public endpoint (`https://aix.trevormil.com`) does not return 2xx/3xx
-
-Stale `Completed`/`Error` CronJob pods and benign
-`FailedToRetrieveImagePullSecret` warnings are explicitly treated as noise.
-
-## Process
-
-1. **Gather** (no LLM tokens): `kubectl -n aix get pods/deploy/cronjob -o …`,
-   recent Warning events, and a `curl` of the public endpoint.
-2. **Triage** via the cheap model → `{status, action, fix_kind, fix_plan,
-   hitl_reason}`. Fall back to the deterministic floor if `or-exec` is
-   unavailable or returns non-JSON.
-3. **Route**:
-   - `none` → emit an Activity event, exit 0.
-   - `auto_fix` → Opus FORCE run applies the fix, then the script **re-probes**
-     (endpoint + deployment availability) as a safety net; if still broken it
-     files a HITL.
-   - `hitl` → file a HITL item **and** a `stuck` backlog ticket (owner
-     `k8s-health`) for the human.
-4. **Activity** at every branch so the run shows live in TerMinal.
-
-## One-time setup — the OpenRouter key
-
-The cheap triage needs `OPENROUTER_API_KEY`, but **TerMinal does not provide it
-to script agents**: it stores the key encrypted in `settings.json`
-(`openrouterApiKey`, a `terminal-secret:v1` envelope decryptable only by the
-Electron app), and neither `terminal-cron`/`terminal-cli` nor the launchd env
-injects the plaintext. So the script sources it from a **user-controlled 600 env
-file** — the first of these that exists and sets the var wins:
-
-1. `~/.config/TerMinal/agent.env`  ← recommended
-2. `~/.claude/.env`
-3. `~/.config/openrouter.env`
-
-Create it once (outside the repo, owner-only perms):
-
-```bash
-umask 077 && printf 'OPENROUTER_API_KEY=%s\n' 'sk-or-…' > ~/.config/TerMinal/agent.env
-```
-
-An `OPENROUTER_API_KEY` already present in the env always takes precedence, so
-if a future TerMinal version injects it the file becomes redundant. **Without
-the key the agent still runs** — it falls back to the deterministic hard-outage
-floor and just skips the nuanced LLM triage (the run prints
-`cheap triage skipped → <reason>`).
+- Never scale `aix-web` past 1 replica (single-writer SQLite).
+- Never delete PVCs or data.
+- Prefer the smallest fix; always verify after fixing; one summary notification,
+  no spam.
 
 ## Config (env, all optional)
 
@@ -96,17 +50,18 @@ floor and just skips the nuanced LLM triage (the run prints
 | --- | --- | --- |
 | `AIX_NAMESPACE` | `aix` | namespace to inspect |
 | `AIX_KUBE_CONTEXT` | `do-sfo2-k8s-…` | kube context (auto-falls back to current if absent) |
-| `AIX_HEALTH_URL` | `https://aix.trevormil.com` | endpoint probe |
-| `OPENROUTER_API_KEY` | sourced from `agent.env` | cheap triage; without it the deterministic floor drives routing |
-| `K8S_HEALTH_DRY_RUN` | `0` | `1` → gather + triage + print verdict, never escalate (use for testing) |
+| `AIX_HEALTH_URL` | `https://aix.trevormil.com` | public site to probe |
 
-## Hard rules
+The script prepends `.claude/bin`, `~/.config/TerMinal/bin`, and `~/.bun/bin` to
+`PATH` so codex can call `activity` / `hitl` / `terminal-cli` / `gh` directly.
 
-1. **Cheap decides, Opus fixes.** Never burn Opus tokens while healthy.
-2. **Determinism floor wins.** A real outage always escalates even if the cheap
-   model says healthy.
-3. **Verify before declaring done.** An `auto_fix` re-checks endpoint +
-   deployment availability; unresolved → HITL.
-4. **HITL is for human-only blockers** (secret values, DNS, quota, destructive
-   data) — not for anything kubectl can fix.
-5. **Smallest fix, surgical scope.** Direct-`main` push reserved for live outages.
+## Schedule
+
+Hourly (`everyMinutes: 60`) in `~/.config/TerMinal/schedules.json`.
+
+## Notes
+
+- Runs in a TerMinal-provided worktree (`inPlace: false`); PRs branch off freshly
+  fetched `origin/main` so they don't entangle with in-flight work.
+- Uses codex's default model / `~/.codex` auth — no OpenRouter key needed (the
+  earlier cheap-triage design was replaced by this open-ended session).

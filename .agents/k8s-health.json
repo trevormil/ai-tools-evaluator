@@ -1,32 +1,23 @@
 {
   "id": "k8s-health",
   "title": "K8s self-heal",
-  "description": "Live kubectl health check of the aix namespace; cheap model triages, Opus (FORCE) auto-fixes, HITL only for human-only blockers.",
+  "description": "Hourly autonomous codex session: checks the live aix workloads (pods, cronjobs, site, DB, TLS), fixes easy issues live, and files ticket+PR+notify when a human is needed.",
   "icon": "HeartPulse",
   "opensPr": true,
-  "engine": "claude",
-  "model": "opus",
-  "modelPolicy": {
-    "default": "opus",
-    "cheap": "google/gemini-2.5-flash-lite",
-    "deep": "opus",
-    "allowOverride": true
-  },
-  "inPlace": true,
+  "engine": "codex",
+  "model": "",
+  "inPlace": false,
   "force": true,
-  "outputContract": "Activity event with status+action; on auto_fix an Opus FORCE run that applies kubectl/manifest fixes and verifies; on hitl a HITL item + backlog ticket.",
+  "outputContract": "One codex session per run. Emits an activity summary; applies safe live fixes directly and verifies them; for human-needed issues files a backlog ticket, opens a merge-ready PR, and pings HITL + Telegram.",
   "quality": {
     "acceptanceCriteria": [
-      "The run classifies namespace health via the cheap model and prints a JSON verdict.",
-      "Real outages (deployment unavailable, endpoint down, live CrashLoop/ImagePull) always escalate even if the cheap model says healthy.",
-      "auto_fix runs re-verify pods Running/Available and endpoint 2xx/3xx before finishing.",
-      "Human-only blockers file a HITL item plus a backlog ticket rather than looping."
+      "The run inspects pods/deployments, cronjob health, the public site + a DB-backed route, the TLS cert, the aix-db PVC, and logs/events.",
+      "Safe fixes are applied live and re-verified (pods Running/Available, endpoint 2xx).",
+      "The single-writer invariant is respected (aix-web never scaled past 1; PVCs/data never deleted).",
+      "Human-needed issues produce a ticket + PR + HITL/notify rather than a forced change."
     ],
     "requiredArtifacts": [],
-    "deterministicChecks": [
-      "kubectl -n aix get deploy -o json shows availableReplicas >= replicas after a fix",
-      "curl -sS -o /dev/null -w '%{http_code}' https://aix.trevormil.com returns 2xx/3xx"
-    ],
+    "deterministicChecks": [],
     "judge": { "enabled": false }
   }
 }
