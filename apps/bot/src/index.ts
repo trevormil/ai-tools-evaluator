@@ -31,7 +31,10 @@ async function main(): Promise<void> {
     try {
       await registerCommands(env);
     } catch (err) {
-      console.error("[bot] command registration failed (continuing so the digest still runs):", err);
+      console.error(
+        "[bot] command registration failed (continuing so the digest still runs):",
+        err,
+      );
     }
     const fetchChannel: ChannelFetcher = async (id) => {
       const channel = await ready.channels.fetch(id);

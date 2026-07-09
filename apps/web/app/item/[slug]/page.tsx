@@ -35,7 +35,13 @@ type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 const SECTIONS: {
-  key: "whatItIs" | "vsVanilla" | "surfaceArea" | "devilsAdvocate" | "whatWouldMakeItBetter" | "steelman";
+  key:
+    | "whatItIs"
+    | "vsVanilla"
+    | "surfaceArea"
+    | "devilsAdvocate"
+    | "whatWouldMakeItBetter"
+    | "steelman";
   title: string;
 }[] = [
   { key: "whatItIs", title: "What it is" },
