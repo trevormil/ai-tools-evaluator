@@ -1,4 +1,5 @@
 import type { Item } from "@aix/db";
+import type { Evaluation } from "@aix/core";
 
 /**
  * Shared helpers for the public, unauthenticated distribution surface (RSS/Atom
@@ -59,5 +60,56 @@ export function toPublicItem(item: Item): PublicItem {
     audience: item.primaryAudience ?? null,
     coverImageUrl: item.coverImageUrl ?? null,
     createdAt: new Date(item.createdAt * 1000).toISOString(),
+  };
+}
+
+/**
+ * The full public projection for the bulk dump: everything a consumer needs to
+ * mirror an item — the light `PublicItem` fields plus our official evaluation
+ * ("take"), the repo's README, and the remaining descriptive metadata. Still a
+ * whitelist (no raw internal columns like `postedById` or `score`).
+ */
+export type DumpItem = PublicItem & {
+  externalId: string;
+  tags: string[];
+  media: unknown[];
+  aiEngineerFit: number | null;
+  vibeCoderFit: number | null;
+  evaluatedBy: string;
+  model: string | null;
+  scoredAt: string | null; // ISO-8601, null until judged
+  dailyPickAt: string | null; // ISO-8601, null unless a daily trending pick
+  upvotes: number;
+  commentCount: number;
+  readmeMd: string | null; // the repo's own README markdown
+  evaluation: Evaluation; // the full canonical @aix/core evaluation
+};
+
+function parseJson<T>(raw: string | null, fallback: T): T {
+  if (!raw) return fallback;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+/** Project a DB item row into the full dump shape. */
+export function toDumpItem(item: Item): DumpItem {
+  return {
+    ...toPublicItem(item),
+    externalId: item.externalId,
+    tags: parseJson<string[]>(item.tagsJson, []),
+    media: parseJson<unknown[]>(item.mediaJson, []),
+    aiEngineerFit: item.aiEngineerFit ?? null,
+    vibeCoderFit: item.vibeCoderFit ?? null,
+    evaluatedBy: item.evaluatedBy,
+    model: item.model ?? null,
+    scoredAt: item.scoredAt ? new Date(item.scoredAt * 1000).toISOString() : null,
+    dailyPickAt: item.dailyPickAt ? new Date(item.dailyPickAt * 1000).toISOString() : null,
+    upvotes: item.upvotes,
+    commentCount: item.commentCount,
+    readmeMd: item.readmeMd ?? null,
+    evaluation: parseJson<Evaluation>(item.evaluationJson, {} as Evaluation),
   };
 }
