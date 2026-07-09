@@ -56,6 +56,14 @@ beforeAll(async () => {
   runMigrations();
   db = schema.getDb();
 
+  // This suite asserts GLOBAL counts (daily picks / published submissions today)
+  // over the shared singleton test DB. Other suites that happen to run first —
+  // CI's Linux file order differs from macOS's — seed their own picks/submissions
+  // and would inflate these counts. Neutralize any pre-existing rows first;
+  // UPDATE (not DELETE) sidesteps foreign-key entanglements in the shared DB.
+  db.update(schema.items).set({ dailyPickAt: null }).run();
+  db.update(schema.submissions).set({ status: "queued" }).run();
+
   // Two real daily picks today, plus noise that must NOT count as trending:
   db.insert(schema.items)
     .values(baseItem("pick-a", { dailyPickAt: nowSec }))
