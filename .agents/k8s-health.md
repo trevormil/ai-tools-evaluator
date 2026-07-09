@@ -65,6 +65,31 @@ Stale `Completed`/`Error` CronJob pods and benign
      `k8s-health`) for the human.
 4. **Activity** at every branch so the run shows live in TerMinal.
 
+## One-time setup — the OpenRouter key
+
+The cheap triage needs `OPENROUTER_API_KEY`, but **TerMinal does not provide it
+to script agents**: it stores the key encrypted in `settings.json`
+(`openrouterApiKey`, a `terminal-secret:v1` envelope decryptable only by the
+Electron app), and neither `terminal-cron`/`terminal-cli` nor the launchd env
+injects the plaintext. So the script sources it from a **user-controlled 600 env
+file** — the first of these that exists and sets the var wins:
+
+1. `~/.config/TerMinal/agent.env`  ← recommended
+2. `~/.claude/.env`
+3. `~/.config/openrouter.env`
+
+Create it once (outside the repo, owner-only perms):
+
+```bash
+umask 077 && printf 'OPENROUTER_API_KEY=%s\n' 'sk-or-…' > ~/.config/TerMinal/agent.env
+```
+
+An `OPENROUTER_API_KEY` already present in the env always takes precedence, so
+if a future TerMinal version injects it the file becomes redundant. **Without
+the key the agent still runs** — it falls back to the deterministic hard-outage
+floor and just skips the nuanced LLM triage (the run prints
+`cheap triage skipped → <reason>`).
+
 ## Config (env, all optional)
 
 | Env | Default | Purpose |
@@ -72,7 +97,7 @@ Stale `Completed`/`Error` CronJob pods and benign
 | `AIX_NAMESPACE` | `aix` | namespace to inspect |
 | `AIX_KUBE_CONTEXT` | `do-sfo2-k8s-…` | kube context (auto-falls back to current if absent) |
 | `AIX_HEALTH_URL` | `https://aix.trevormil.com` | endpoint probe |
-| `OPENROUTER_API_KEY` | — | required for cheap triage; without it the deterministic floor drives routing |
+| `OPENROUTER_API_KEY` | sourced from `agent.env` | cheap triage; without it the deterministic floor drives routing |
 | `K8S_HEALTH_DRY_RUN` | `0` | `1` → gather + triage + print verdict, never escalate (use for testing) |
 
 ## Hard rules
