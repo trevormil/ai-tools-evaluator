@@ -1,0 +1,23 @@
+{
+  "id": "k8s-health",
+  "title": "K8s self-heal",
+  "description": "Hourly autonomous codex session: checks the live aix workloads (pods, cronjobs, site, DB, TLS), fixes easy issues live, and files ticket+PR+notify when a human is needed.",
+  "icon": "HeartPulse",
+  "opensPr": true,
+  "engine": "codex",
+  "model": "",
+  "inPlace": false,
+  "force": true,
+  "outputContract": "One codex session per run. Emits an activity summary; applies safe live fixes directly and verifies them; for human-needed issues files a backlog ticket, opens a merge-ready PR, and pings HITL + Telegram.",
+  "quality": {
+    "acceptanceCriteria": [
+      "The run inspects pods/deployments, cronjob health, the public site + a DB-backed route, the TLS cert, the aix-db PVC, and logs/events.",
+      "Safe fixes are applied live and re-verified (pods Running/Available, endpoint 2xx).",
+      "The single-writer invariant is respected (aix-web never scaled past 1; PVCs/data never deleted).",
+      "Human-needed issues produce a ticket + PR + HITL/notify rather than a forced change."
+    ],
+    "requiredArtifacts": [],
+    "deterministicChecks": [],
+    "judge": { "enabled": false }
+  }
+}
