@@ -57,9 +57,8 @@ spec:
               memory: 512Mi
             limits:
               cpu: "1"
-              # 512Mi OOMKilled the pod on a ~47-min cycle (503s at the ingress
-              # during each Recreate). 1Gi clears steady state with room to spare.
-              memory: 1Gi
+              # 1Gi still OOMKilled under production load; keep headroom for Next.js spikes.
+              memory: 2Gi
           volumeMounts:
             - name: db
               mountPath: /data
