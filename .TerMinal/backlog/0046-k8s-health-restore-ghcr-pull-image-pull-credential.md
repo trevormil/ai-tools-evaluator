@@ -1,7 +1,7 @@
 ---
 id: 0046
 title: "k8s-health: restore ghcr-pull image pull credential"
-status: in-progress
+status: closed
 priority: medium
 type: feature
 source: script
@@ -10,8 +10,7 @@ updated: 2026-07-09
 agent_id: k8s-health
 agent_scope: repo
 agent_kind: classic
-prs:
-  - https://github.com/trevormil/ai-tools-evaluator/pull/30
+prs: []
 ---
 
 Kubernetes is emitting repeated FailedToRetrieveImagePullSecret warnings for ghcr-pull on aix-web, aix-bot, and every aix-queue pod in namespace aix. Images currently pull successfully, so this is not down, but it is a production availability risk if GHCR access changes or anonymous pulls are throttled. Proposed fix: recreate or repair the ghcr-pull docker-registry imagePullSecret with a valid GHCR token, then verify new pods/jobs no longer emit the warning. Related PR for separate web memory drift fix: https://github.com/trevormil/ai-tools-evaluator/pull/29

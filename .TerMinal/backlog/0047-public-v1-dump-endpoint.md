@@ -1,7 +1,7 @@
 ---
 id: 0047
 title: "public API: paginated /api/v1/dump of the full corpus"
-status: in-progress
+status: closed
 priority: medium
 type: feature
 source: request
@@ -10,8 +10,7 @@ updated: 2026-07-09
 agent_id: web
 agent_scope: repo
 agent_kind: classic
-prs:
-  - https://github.com/trevormil/ai-tools-evaluator/pull/31
+prs: []
 ---
 
 Expose a public, read-only, cursor-paginated endpoint that dumps every
