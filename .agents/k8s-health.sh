@@ -135,19 +135,37 @@ $snapshot
 Respond with ONE line of minified JSON, nothing else, exactly this shape:
 {\"status\":\"healthy|degraded|unhealthy\",\"summary\":\"one sentence\",\"action\":\"none|auto_fix|hitl\",\"fix_kind\":\"operational|manifest|none\",\"fix_plan\":\"concrete steps for the operator, or empty\",\"hitl_reason\":\"why a human is needed, or empty\"}"
 
+# or-exec is a `bun` shebang and TerMinal does not inject the decrypted key or
+# ~/.bun/bin into a script agent's env — harden PATH so bun is found, and locate
+# the key from the env or, failing that, the TerMinal-decrypted mirror if present.
+export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+orexec="$HOME/.claude/bin/or-exec"; [[ -x "$orexec" ]] || orexec="$HOME/.config/TerMinal/bin/or-exec"
+
 verdict=""
-if [[ -n "${OPENROUTER_API_KEY:-}" ]]; then
-  raw=$(printf '%s' "$triage_prompt" | "$HOME/.claude/bin/or-exec" 2>/dev/null || true)
+triage_reason=""
+if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+  triage_reason="OPENROUTER_API_KEY not in agent env"
+elif ! command -v bun >/dev/null 2>&1; then
+  triage_reason="bun not on PATH (or-exec needs it)"
+elif [[ ! -x "$orexec" ]]; then
+  triage_reason="or-exec not found"
+else
+  or_err=$(mktemp)
+  raw=$(printf '%s' "$triage_prompt" | "$orexec" 2>"$or_err") || true
   verdict=$(printf '%s' "$raw" | sed -e 's/^```json//' -e 's/^```//' -e 's/```$//' | jq -c . 2>/dev/null || true)
+  [[ -z "$verdict" ]] && triage_reason="or-exec: $(tail -1 "$or_err" 2>/dev/null | cut -c1-160)"
+  rm -f "$or_err"
 fi
+[[ -n "$triage_reason" ]] && echo "cheap triage skipped → $triage_reason" >&2
 
 # Deterministic fallback if the cheap model was unavailable or returned garbage.
 if [[ -z "$verdict" ]]; then
   if $hard; then
-    verdict=$(jq -cn --arg s "hard signals: deploy=${deploy_unavailable:-none} crash=${crashers:-none} endpoint=$http_code" \
+    verdict=$(jq -cn --arg s "hard signals (cheap triage skipped: ${triage_reason}): deploy=${deploy_unavailable:-none} crash=${crashers:-none} endpoint=$http_code" \
       '{status:"unhealthy",summary:$s,action:"auto_fix",fix_kind:"operational",fix_plan:"Investigate and restore the failing workloads.",hitl_reason:""}')
   else
-    verdict='{"status":"healthy","summary":"no deterministic hard signals; cheap triage unavailable","action":"none","fix_kind":"none","fix_plan":"","hitl_reason":""}'
+    verdict=$(jq -cn --arg r "$triage_reason" \
+      '{status:"healthy",summary:("no deterministic hard signals; cheap triage skipped: "+$r),action:"none",fix_kind:"none",fix_plan:"",hitl_reason:""}')
   fi
 fi
 
