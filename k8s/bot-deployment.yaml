@@ -51,5 +51,3 @@ spec:
         - name: bot-state
           persistentVolumeClaim:
             claimName: aix-bot-state
-      imagePullSecrets:
-        - name: ghcr-pull

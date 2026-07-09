@@ -66,5 +66,3 @@ spec:
         - name: db
           persistentVolumeClaim:
             claimName: aix-db
-      imagePullSecrets:
-        - name: ghcr-pull

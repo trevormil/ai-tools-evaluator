@@ -34,16 +34,20 @@ for app in web scanner bot; do
 done
 ```
 
-## 2. Namespace + pull secret + app secret (out-of-band, never committed)
+## 2. Namespace + app secret (out-of-band, never committed)
+
+The GHCR images (`ghcr.io/trevormil/aix-*`) are **public**, so the manifests pull
+them anonymously and no `imagePullSecret` is required. If you make the packages
+private, add a `ghcr-pull` docker-registry secret and re-add `imagePullSecrets:
+[{name: ghcr-pull}]` to each workload:
+
+```sh
+kubectl -n aix create secret docker-registry ghcr-pull \
+  --docker-server=ghcr.io --docker-username=trevormil --docker-password="$GHCR_PAT"
+```
 
 ```sh
 kubectl apply -f k8s/namespace.yaml
-
-# GHCR image pull secret (name must be `ghcr-pull`).
-kubectl -n aix create secret docker-registry ghcr-pull \
-  --docker-server=ghcr.io \
-  --docker-username=trevormil \
-  --docker-password="$GHCR_PAT"
 
 # App secret. Fill a copy of k8s/secret.example.yaml (keep it OUT of git), or:
 kubectl -n aix create secret generic aix-secrets \
@@ -81,6 +85,7 @@ kubectl -n aix create job --from=cronjob/aix-scanner aix-scanner-manual  # test 
 
 ## What a human must do
 
-- Provide `GHCR_PAT` and create the `ghcr-pull` + `aix-secrets` secrets (step 2).
+- Create the `aix-secrets` secret (step 2). No pull secret is needed while the
+  GHCR packages stay public.
 - Point DNS for `aix.trevormil.com` at the ingress (step 4).
 - Run the final `kubectl apply -k k8s/` (deploy is human-gated; CI only builds).

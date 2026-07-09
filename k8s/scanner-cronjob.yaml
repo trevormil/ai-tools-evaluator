@@ -45,5 +45,3 @@ spec:
                   # Discovery + LLM eval + README/avatar image processing spikes
                   # past 512Mi; 1Gi so a heavy run never OOMs and drops picks.
                   memory: 1Gi
-          imagePullSecrets:
-            - name: ghcr-pull
