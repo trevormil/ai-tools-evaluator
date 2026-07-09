@@ -1,0 +1,32 @@
+{
+  "id": "k8s-health",
+  "title": "K8s self-heal",
+  "description": "Live kubectl health check of the aix namespace; cheap model triages, Opus (FORCE) auto-fixes, HITL only for human-only blockers.",
+  "icon": "HeartPulse",
+  "opensPr": true,
+  "engine": "claude",
+  "model": "opus",
+  "modelPolicy": {
+    "default": "opus",
+    "cheap": "google/gemini-2.5-flash-lite",
+    "deep": "opus",
+    "allowOverride": true
+  },
+  "inPlace": true,
+  "force": true,
+  "outputContract": "Activity event with status+action; on auto_fix an Opus FORCE run that applies kubectl/manifest fixes and verifies; on hitl a HITL item + backlog ticket.",
+  "quality": {
+    "acceptanceCriteria": [
+      "The run classifies namespace health via the cheap model and prints a JSON verdict.",
+      "Real outages (deployment unavailable, endpoint down, live CrashLoop/ImagePull) always escalate even if the cheap model says healthy.",
+      "auto_fix runs re-verify pods Running/Available and endpoint 2xx/3xx before finishing.",
+      "Human-only blockers file a HITL item plus a backlog ticket rather than looping."
+    ],
+    "requiredArtifacts": [],
+    "deterministicChecks": [
+      "kubectl -n aix get deploy -o json shows availableReplicas >= replicas after a fix",
+      "curl -sS -o /dev/null -w '%{http_code}' https://aix.trevormil.com returns 2xx/3xx"
+    ],
+    "judge": { "enabled": false }
+  }
+}
