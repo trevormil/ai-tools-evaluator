@@ -141,10 +141,21 @@ Respond with ONE line of minified JSON, nothing else, exactly this shape:
 export PATH="$HOME/.bun/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 orexec="$HOME/.claude/bin/or-exec"; [[ -x "$orexec" ]] || orexec="$HOME/.config/TerMinal/bin/or-exec"
 
+# TerMinal stores the OpenRouter key encrypted in settings.json and does NOT
+# inject it into a script agent's env, so source it from a user-controlled 600
+# env file when it isn't already present. An injected env var still wins.
+if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
+  for f in "$HOME/.config/TerMinal/agent.env" "$HOME/.claude/.env" "$HOME/.config/openrouter.env"; do
+    [[ -f "$f" ]] || continue
+    set -a; . "$f"; set +a
+    [[ -n "${OPENROUTER_API_KEY:-}" ]] && break
+  done
+fi
+
 verdict=""
 triage_reason=""
 if [[ -z "${OPENROUTER_API_KEY:-}" ]]; then
-  triage_reason="OPENROUTER_API_KEY not in agent env"
+  triage_reason="no OPENROUTER_API_KEY in env or ~/.config/TerMinal/agent.env"
 elif ! command -v bun >/dev/null 2>&1; then
   triage_reason="bun not on PATH (or-exec needs it)"
 elif [[ ! -x "$orexec" ]]; then
