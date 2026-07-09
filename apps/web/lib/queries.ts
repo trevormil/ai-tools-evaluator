@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, like, lt, ne, or, sql } from "drizzle-orm";
 import {
   getDb,
   items,
@@ -85,6 +85,44 @@ export function getItemBySlug(slug: string): Item | undefined {
 
 export function parseEvaluation(item: Item): Evaluation {
   return JSON.parse(item.evaluationJson) as Evaluation;
+}
+
+/** Opaque cursor position for the bulk dump: last (createdAt, id) served. */
+export type DumpCursor = { createdAt: number; id: string };
+export type DumpPage = { items: Item[]; nextCursor: DumpCursor | null };
+
+/**
+ * One page of the full corpus for the public dump — every published, scored
+ * item (pending community submissions have no real evaluation yet, so they are
+ * excluded). Ordered newest-first with `id` as a stable tiebreaker so cursor
+ * paging never skips or repeats a row. Fetches `limit + 1` to know if more
+ * remain without a second COUNT query.
+ */
+export function dumpItems(opts: { limit: number; cursor?: DumpCursor; kind?: string }): DumpPage {
+  const { limit, cursor, kind } = opts;
+  const conds = [eq(items.published, true), ne(items.scoreStatus, "pending")];
+  if (kind) conds.push(eq(items.kind, kind));
+  if (cursor) {
+    const after = or(
+      lt(items.createdAt, cursor.createdAt),
+      and(eq(items.createdAt, cursor.createdAt), lt(items.id, cursor.id)),
+    );
+    if (after) conds.push(after);
+  }
+
+  const rows = getDb()
+    .select()
+    .from(items)
+    .where(and(...conds))
+    .orderBy(desc(items.createdAt), desc(items.id))
+    .limit(limit + 1)
+    .all();
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+  const nextCursor = hasMore && last ? { createdAt: last.createdAt, id: last.id } : null;
+  return { items: page, nextCursor };
 }
 
 /* --------------------------------------------------------------- posts */
