@@ -51,5 +51,3 @@ spec:
                   # Same image + eval/image work as the scanner; match its 1Gi
                   # so draining submissions never OOMs mid-evaluation.
                   memory: 1Gi
-          imagePullSecrets:
-            - name: ghcr-pull
