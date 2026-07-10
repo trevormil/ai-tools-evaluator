@@ -4,6 +4,7 @@ import "./globals.css";
 import { Nav } from "@/components/nav";
 import { MobileNav } from "@/components/mobile-nav";
 import { getCurrentUser } from "@/lib/auth";
+import { baseUrl } from "@/lib/public-api";
 
 /**
  * "Test Bench" type system: Archivo (wide, heavy) for display, Instrument Sans
@@ -26,6 +27,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(baseUrl()),
   title: "AIx — is this AI tool actually worth it?",
   description:
     "A harshly-honest directory of trending AI/GitHub tools plus the takes of the engineers who run them.",

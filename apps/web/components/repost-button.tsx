@@ -81,7 +81,7 @@ export function RepostButton({
       </button>
       {menu && !quoting && (
         <span
-          className="absolute left-0 top-6 z-10 flex flex-col overflow-hidden rounded-lg border text-left shadow-sm"
+          className="absolute left-0 top-6 z-30 flex flex-col overflow-hidden rounded-lg border text-left shadow-sm"
           style={{ borderColor: "var(--border)", background: "var(--surface)" }}
         >
           <button
@@ -100,7 +100,7 @@ export function RepostButton({
       )}
       {menu && quoting && (
         <span
-          className="absolute left-0 top-6 z-10 flex w-64 items-center gap-1.5 rounded-lg border p-1.5 shadow-sm"
+          className="absolute left-0 top-6 z-30 flex w-64 items-center gap-1.5 rounded-lg border p-1.5 shadow-sm"
           style={{ borderColor: "var(--border)", background: "var(--surface)" }}
         >
           <input
