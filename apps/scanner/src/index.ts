@@ -167,7 +167,9 @@ export async function run(deps: RunDeps): Promise<RunResult> {
 
       for (const { d, evaluation } of graded) {
         const isPick = evaluation.slug === pickSlug;
-        const res = await client.publishItem(evaluation, undefined, d.readme, { dailyPick: isPick });
+        const res = await client.publishItem(evaluation, undefined, d.readme, {
+          dailyPick: isPick,
+        });
         if (res.duplicate) {
           skippedDuplicate++;
           continue;

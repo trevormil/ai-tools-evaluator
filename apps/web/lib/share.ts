@@ -17,7 +17,10 @@ export type ShareItem = {
 
 /** "complexity-trap" → "Complexity Trap". */
 export function verdictTitle(verdict: string): string {
-  return verdict.replace(/(^|-)([a-z])/g, (_, sep, ch: string) => (sep ? " " : "") + ch.toUpperCase());
+  return verdict.replace(
+    /(^|-)([a-z])/g,
+    (_, sep, ch: string) => (sep ? " " : "") + ch.toUpperCase(),
+  );
 }
 
 export function categoryLabel(category: string): string {

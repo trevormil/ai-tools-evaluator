@@ -97,7 +97,8 @@ export const LENS_SECTIONS: Record<Lens, SectionSpec[]> = {
       key: "surfaceArea",
       title: "Skill, plugin, or workflow shift?",
       required: true,
-      prompt: "surfaceArea: justify the `integration` value — is it a skill, a plugin, or a shift in how you work?",
+      prompt:
+        "surfaceArea: justify the `integration` value — is it a skill, a plugin, or a shift in how you work?",
     },
     {
       key: "devilsAdvocate",

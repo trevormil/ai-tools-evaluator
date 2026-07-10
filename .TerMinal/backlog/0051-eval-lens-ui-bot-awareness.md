@@ -1,7 +1,7 @@
 ---
 id: 051
 title: "Eval lenses stage 2: UI + bot fully lens-aware"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-10
 updated: 2026-07-10
-prs: []
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/37"]
 refs: [ADR-0003]
 depends_on: []
 acceptance: []
