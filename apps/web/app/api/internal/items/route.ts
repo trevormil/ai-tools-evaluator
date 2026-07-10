@@ -13,6 +13,13 @@ const Body = z.object({
   submissionId: z.string().optional(),
   /** The repo's own README (markdown) — displayed alongside the evaluation. */
   readmeMd: z.string().max(200_000).optional(),
+  /**
+   * Trending only: is this THE featured daily pick? Defaults to true so a lone
+   * trending publish (the legacy 1/day path) still stamps the pick. In a
+   * multi-publish batch the scanner sends true for the top-scored item and false
+   * for the runners-up. Ignored for submissions (never picks).
+   */
+  dailyPick: z.boolean().optional(),
 });
 
 /**
@@ -31,7 +38,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { evaluation, submissionId, readmeMd } = parsed.data;
+  const { evaluation, submissionId, readmeMd, dailyPick } = parsed.data;
   const db = getDb();
 
   const kind = evaluation.source.kind;
@@ -55,10 +62,13 @@ export async function POST(req: Request) {
   const stored = { ...evaluation, overallScore };
   const cover = evaluation.media.find((m) => m.type === "image");
   const nowSec = Math.floor(Date.now() / 1000);
-  // A trending publish (no submissionId) IS the daily pick — stamp it so the
-  // daily-pick budget counts real picks (not seed rows / submissions) and the
-  // repo is never re-featured (ticket 0043). Submissions are never picks.
-  const dailyPickAt = submissionId ? undefined : nowSec;
+  // Exactly ONE trending publish per day is the featured daily pick (dailyPickAt
+  // set); the scanner's other batch publishes are runners-up (dailyPick=false →
+  // null), matching the schema contract. `dailyPick` defaults to true so the
+  // legacy lone-trending publish still stamps the pick. Submissions are never
+  // picks. The Discord/home pick is chosen by highest overallScore, which agrees
+  // with the stamped item since the scanner stamps the top-scored one.
+  const dailyPickAt = submissionId ? undefined : (dailyPick ?? true) ? nowSec : undefined;
 
   if (existing) {
     const upgraded = db
