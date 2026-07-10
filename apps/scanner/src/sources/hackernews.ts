@@ -32,7 +32,11 @@ export type HnItem = {
 };
 
 const GH_RE = /github\.com\/([A-Za-z0-9._-]+)\/([A-Za-z0-9._-]+)/;
-const strip = (s: string) => s.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+const strip = (s: string) =>
+  s
+    .replace(/<[^>]+>/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 /**
  * Classify + map an HN story to a Discovered, routing by its link target:

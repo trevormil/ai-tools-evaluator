@@ -32,16 +32,16 @@ spec:
                 # Reach web's internal API over the cluster DNS name.
                 - name: AIX_WEB_URL
                   value: http://aix-web.aix.svc.cluster.local
-                # Daily mix: 5 GitHub + 5 ProductHunt (per-source defaults), master
-                # cap 10, bounded by the server's DAILY_CAP=10. ProductHunt runs only
-                # when PRODUCTHUNT_API_TOKEN is present in aix-secrets; otherwise the
-                # scan is GitHub-only. The single Discord "pick of the day" is chosen
-                # downstream by the digest (highest score across all sources).
+                # Daily mix: 5 GitHub + 5 ProductHunt + 3 skills (per-source defaults),
+                # master cap 13, bounded by the server's DAILY_CAP=15. ProductHunt and
+                # skills each run only when their secrets are present in aix-secrets;
+                # otherwise they're skipped. The single Discord "pick of the day" is
+                # chosen downstream by the digest (highest score across all sources).
                 - name: AIX_TRENDING_PICKS
-                  value: "10"
+                  value: "13"
               envFrom:
                 # Supplies AIX_INTERNAL_TOKEN, ANTHROPIC_API_KEY, GITHUB_TOKEN,
-                # PRODUCTHUNT_API_TOKEN (optional), …
+                # PRODUCTHUNT_API_TOKEN + SKILLS_PROXY_URL/TOKEN (optional), …
                 - secretRef:
                     name: aix-secrets
               resources:

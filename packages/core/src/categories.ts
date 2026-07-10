@@ -46,7 +46,13 @@ export const INTEGRATION_KINDS = [
 ] as const;
 export type IntegrationKind = (typeof INTEGRATION_KINDS)[number];
 
-export const ITEM_KINDS = ["github_repo", "arxiv_paper", "external_link", "producthunt"] as const;
+export const ITEM_KINDS = [
+  "github_repo",
+  "arxiv_paper",
+  "external_link",
+  "producthunt",
+  "skill",
+] as const;
 export type ItemKind = (typeof ITEM_KINDS)[number];
 
 export const CATEGORY_LABELS: Record<Category, string> = {

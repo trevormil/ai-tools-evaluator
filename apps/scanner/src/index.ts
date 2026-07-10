@@ -5,6 +5,7 @@ import {
   createGitHubSource,
   createArxivSource,
   createProductHuntSource,
+  createSkillsSource,
   rankByUpvotes,
 } from "./sources";
 import { createAnthropicModel, createOpenRouterModel, evaluateItem } from "./evaluate";
@@ -282,7 +283,23 @@ async function main(): Promise<void> {
     });
     log.info(`producthunt enabled (budget ${env.AIX_TRENDING_PICKS_PRODUCTHUNT})`);
   } else {
-    log.info("producthunt disabled (no PRODUCTHUNT_API_TOKEN) — github only");
+    log.info("producthunt disabled (no PRODUCTHUNT_API_TOKEN)");
+  }
+  if (env.SKILLS_PROXY_URL && env.SKILLS_PROXY_TOKEN) {
+    const skills = createSkillsSource({
+      proxyUrl: env.SKILLS_PROXY_URL,
+      token: env.SKILLS_PROXY_TOKEN,
+      log,
+    });
+    trendingSources.push({
+      name: "skills",
+      budget: env.AIX_TRENDING_PICKS_SKILLS,
+      discover: (limit) => skills.discoverTrending!(limit),
+      rank: (cands) => rankByUpvotes(cands), // installs stored in `upvotes`
+    });
+    log.info(`skills enabled (budget ${env.AIX_TRENDING_PICKS_SKILLS})`);
+  } else {
+    log.info("skills disabled (no SKILLS_PROXY_URL/TOKEN)");
   }
 
   // arXiv is kept solely to resolve an explicit human-submitted paper URL.

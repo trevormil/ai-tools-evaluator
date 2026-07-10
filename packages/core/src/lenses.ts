@@ -26,6 +26,8 @@ export const KIND_LENS: Record<ItemKind, Lens> = {
   arxiv_paper: "research",
   external_link: "product",
   producthunt: "product",
+  // A Claude/agent skill IS an agent tool — judged against a base agent.
+  skill: "agent-tool",
 };
 
 /** Resolve the lens for a source: explicit override, else by kind, else product. */
