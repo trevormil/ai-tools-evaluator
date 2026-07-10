@@ -2,6 +2,7 @@ import { Evaluation } from "./schema";
 import { METRICS } from "./metrics";
 import { CATEGORY_LABELS } from "./categories";
 import { PRIMARY_AUDIENCE_LABELS } from "./audience";
+import { LENS_SECTIONS, lensFor } from "./lenses";
 
 /**
  * Serialize an Evaluation to a strict git-native `.md` artifact. The document is
@@ -51,6 +52,16 @@ export function toMarkdown(e: Evaluation): string {
         .join("\n\n")
     : "";
 
+  // Render the write-up sections for this item's lens, in order, skipping any
+  // optional section the evaluator didn't produce.
+  const bodyMd = LENS_SECTIONS[lensFor(e.source)]
+    .map((s) => {
+      const content = e.body[s.key];
+      return content ? `## ${s.title}\n\n${content}` : null;
+    })
+    .filter(Boolean)
+    .join("\n\n");
+
   return `${fm}
 
 # ${e.source.title}
@@ -59,26 +70,8 @@ export function toMarkdown(e: Evaluation): string {
 
 _${e.tagline}_
 
-## What it is
+${bodyMd}
 
-${e.body.whatItIs}
-
-## How it differs from vanilla Claude
-
-${e.body.vsVanilla}
-
-## Skill, plugin, or workflow shift?
-
-${e.body.surfaceArea}
-
-## Devil's advocate — is this just complexity?
-
-${e.body.devilsAdvocate}
-
-## What would make it better
-
-${e.body.whatWouldMakeItBetter}
-${e.body.steelman ? `\n## The honest case for it\n\n${e.body.steelman}\n` : ""}
 ## Who it's for
 
 **Primary: ${PRIMARY_AUDIENCE_LABELS[e.audience.primary]}** · AI-first engineer fit **${e.audience.aiEngineerFit}/100** · vibe-coder fit **${e.audience.vibeCoderFit}/100**

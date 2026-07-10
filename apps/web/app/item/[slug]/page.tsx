@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CATEGORY_LABELS, type Category } from "@aix/core";
+import { CATEGORY_LABELS, LENS_SECTIONS, lensFor, type Category } from "@aix/core";
 import { getCurrentUser } from "@/lib/auth";
 import { getItemBySlug, parseEvaluation, getItemComments, userVotes } from "@/lib/queries";
 import { listItemTakes, getMyStackEntryForItem } from "@/lib/takes";
@@ -37,24 +37,6 @@ export const dynamic = "force-dynamic";
 
 type Params = Promise<{ slug: string }>;
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
-
-const SECTIONS: {
-  key:
-    | "whatItIs"
-    | "vsVanilla"
-    | "surfaceArea"
-    | "devilsAdvocate"
-    | "whatWouldMakeItBetter"
-    | "steelman";
-  title: string;
-}[] = [
-  { key: "whatItIs", title: "What it is" },
-  { key: "vsVanilla", title: "How it differs from vanilla Claude" },
-  { key: "surfaceArea", title: "Skill, plugin, or workflow shift?" },
-  { key: "devilsAdvocate", title: "Devil's advocate — is this just complexity?" },
-  { key: "whatWouldMakeItBetter", title: "What would make it better" },
-  { key: "steelman", title: "The honest case for it" },
-];
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
@@ -142,7 +124,7 @@ export default async function ItemPage({
           <div className="flex flex-col gap-8">
             {evaluation!.media.length > 0 && <MediaGallery media={evaluation!.media} />}
             <div className="prose-none flex flex-col gap-6">
-              {SECTIONS.map(({ key, title }) => {
+              {LENS_SECTIONS[lensFor(evaluation!.source)].map(({ key, title }) => {
                 const content = evaluation!.body[key];
                 if (!content) return null;
                 return (

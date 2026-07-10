@@ -159,4 +159,56 @@ describe("markdown round-trip", () => {
     const back = parseArtifact(md);
     expect(back).toEqual(sample);
   });
+
+  test("agent-tool markdown is unchanged (vanilla-Claude heading preserved)", () => {
+    const md = toMarkdown(sample);
+    expect(md).toContain("## How it differs from vanilla Claude");
+    expect(md).toContain("## Skill, plugin, or workflow shift?");
+  });
+});
+
+/** A product-lens item: judged against incumbents, so its write-up carries
+ *  `vsAlternatives` instead of the agent-only `vsVanilla`/`surfaceArea`. */
+const productSample: Evaluation = {
+  ...sample,
+  slug: "some-product",
+  source: {
+    kind: "external_link",
+    lens: "product",
+    externalId: "https://acme.dev",
+    url: "https://acme.dev",
+    title: "Acme",
+  },
+  body: {
+    whatItIs: sample.body.whatItIs,
+    vsAlternatives:
+      "Versus Linear and a spreadsheet, it adds AI triage — but the triage is a thin GPT call you could wire yourself in an afternoon.",
+    devilsAdvocate: sample.body.devilsAdvocate,
+    whatWouldMakeItBetter: sample.body.whatWouldMakeItBetter,
+  },
+};
+
+describe("evaluation lenses", () => {
+  test("an agent-tool item missing vsVanilla is now rejected", () => {
+    const bad = structuredClone(sample) as Evaluation;
+    delete (bad.body as { vsVanilla?: string }).vsVanilla;
+    expect(Evaluation.safeParse(bad).success).toBe(false);
+  });
+
+  test("a product-lens item validates with vsAlternatives and no agent-only sections", () => {
+    expect(Evaluation.safeParse(productSample).success).toBe(true);
+  });
+
+  test("a product-lens item missing vsAlternatives is rejected", () => {
+    const bad = structuredClone(productSample) as Evaluation;
+    delete (bad.body as { vsAlternatives?: string }).vsAlternatives;
+    expect(Evaluation.safeParse(bad).success).toBe(false);
+  });
+
+  test("product-lens markdown uses the alternatives heading, never vanilla Claude", () => {
+    const md = toMarkdown(productSample);
+    expect(md).toContain("## How it compares to the alternatives");
+    expect(md).not.toContain("vanilla Claude");
+    expect(md).not.toContain("## Skill, plugin, or workflow shift?");
+  });
 });

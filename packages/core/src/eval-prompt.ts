@@ -1,25 +1,41 @@
 import { METRICS } from "./metrics";
 import { CATEGORIES, INTEGRATION_KINDS } from "./categories";
+import { LENS_DEFS, LENS_SECTIONS, lensFor, type Lens } from "./lenses";
 import type { ItemSource } from "./schema";
 
 /**
- * The system prompt for the AI evaluator. Its whole job is to be the harsh,
- * skeptical reviewer the product promises — default to "this is probably
- * incremental" and make the tool earn a higher verdict.
+ * The evaluator's job is to be the harsh, skeptical reviewer the product
+ * promises — default to "this is probably incremental" and make the item earn a
+ * higher verdict. The frame (what it's judged against) comes from the item's
+ * lens, so a skill is measured against a base agent, a product against its
+ * incumbents, and a paper against prior work.
  */
-export const EVALUATOR_SYSTEM = `You are the resident skeptic for AIx, a catalog of trending GitHub repos, tools, and papers for AI-assisted developers.
+export function evaluatorSystem(lens: Lens): string {
+  const def = LENS_DEFS[lens];
+  return `You are the resident skeptic for AIx, a catalog of trending AI tools, products, and research for AI-assisted developers.
 
-Your reputation is for being HARSH and USEFUL. The dirty secret of this space is that most repos are thin optimizations over what a capable base agent (Claude) already does unaided — a prompt in a trench coat, a wrapper, or complexity for its own sake. Your default stance is skepticism; the item must EARN a positive verdict with concrete, specific capability it adds.
+Your reputation is for being HARSH and USEFUL. ${def.framing}
 
 Rules:
 - Be concrete and technical. No marketing language, no hedging, no "it depends".
-- The devil's-advocate section is the point of the product. Argue, specifically, why a vanilla capable agent can already do this (or will soon), and whether the project is complexity for complexity's sake. If it genuinely can't be replicated, say exactly why.
-- Only call something "essential" or score >85 if it delivers a capability a base agent plainly cannot reproduce.
-- Score every one of the ten metrics 0–100 with a one-line rationale grounded in the specifics you were given. Higher is always better (including for "leanness" = fewer moving parts and "ease of adoption").
+- The devil's-advocate section is the point of the product. Argue, specifically, against the item measured against ${def.baseline}. If it genuinely can't be replaced, say exactly why.
+- Only call something "essential" or score >85 if it delivers something ${def.baseline} plainly cannot.
+- Score every one of the ten metrics 0–100 with a one-line rationale grounded in the specifics you were given. Higher is always better (including for "leanness" = fewer moving parts and "ease of adoption"). Judge "Δ vs. Baseline" against ${def.baseline}.
 - Keep prose within the length limits; dense and skimmable beats verbose.`;
+}
 
-/** Build the user turn describing the item to evaluate. */
+/**
+ * The agent-tool system prompt. Retained for back-compat and as the default;
+ * new call sites should use `evaluatorSystem(lensFor(source))`.
+ */
+export const EVALUATOR_SYSTEM = evaluatorSystem("agent-tool");
+
+/** Build the user turn describing the item to evaluate, framed by its lens. */
 export function buildEvaluatorPrompt(source: ItemSource, readme: string): string {
+  const lens = lensFor(source);
+  const def = LENS_DEFS[lens];
+  const sections = LENS_SECTIONS[lens];
+
   const signals: string[] = [
     `kind: ${source.kind}`,
     `title: ${source.title}`,
@@ -35,7 +51,12 @@ export function buildEvaluatorPrompt(source: ItemSource, readme: string): string
     source.publishedAt ? `published: ${source.publishedAt}` : null,
   ].filter(Boolean) as string[];
 
+  const bodyKeys = sections.map((s) => s.key).join(", ");
+  const bodyGuide = sections.map((s) => `    - ${s.prompt}`).join("\n");
+
   return `Evaluate this item and return ONLY a JSON object matching the EvaluationDraft schema.
+
+You are judging it as a ${def.noun}, against ${def.baseline}.
 
 ## Signals
 ${signals.join("\n")}
@@ -53,10 +74,8 @@ ${readme.slice(0, 12000)}
     AIx is for AI-first ENGINEERS who want to upskill and sharpen their workflow — not vibe coders who just want a flashier tool to do the work for them. Score aiEngineerFit on depth/leverage for a technical engineer; score vibeCoderFit on accessible does-it-for-you value. They are independent (a real workflow tool can rate high on both). Set primary honestly.
 - tagline: one line, <=160 chars, states the verdict's reasoning
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
-- body: { whatItIs, vsVanilla, surfaceArea, devilsAdvocate, whatWouldMakeItBetter, steelman? }
-    whatWouldMakeItBetter: forward-looking and specific — the concrete features, redesigns, or
-    change of direction that would move your verdict up. Name the actual gap, not vague praise;
-    if it's a complexity-trap, say what it would take to justify existing at all.
+- body: an object with exactly these keys [${bodyKeys}]:
+${bodyGuide}
 - quickstart (include when the README shows how to install/run): { install: THE exact one-line
     install or run command copied/adapted from the README (one line, no prose), requires?: up to 6
     hidden prerequisites a reader must already have (API key, account, Docker, runtime version) }
