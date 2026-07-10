@@ -86,8 +86,7 @@ test("createProductHuntSource sends a bearer token and returns ranked discoverie
 });
 
 test("discovery returns [] on a non-OK response (never throws into the scan)", async () => {
-  const fetchImpl = (async () =>
-    new Response("nope", { status: 500 })) as unknown as typeof fetch;
+  const fetchImpl = (async () => new Response("nope", { status: 500 })) as unknown as typeof fetch;
   const src = createProductHuntSource({ token: "t", fetchImpl });
   expect(await src.discoverTrending!(5)).toEqual([]);
 });

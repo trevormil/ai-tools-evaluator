@@ -193,7 +193,10 @@ describe("run loop", () => {
         trendingSources: [
           ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 3),
         ],
-        evaluate: async (d) => ({ ...evalFor(d.source.externalId), overallScore: scores[d.source.externalId]! }),
+        evaluate: async (d) => ({
+          ...evalFor(d.source.externalId),
+          overallScore: scores[d.source.externalId]!,
+        }),
       }),
     );
     expect(result.published).toBe(3); // all three saved to the directory
@@ -212,7 +215,10 @@ describe("run loop", () => {
           orderedSource("github", ["gh/a", "gh/b"], 2),
           orderedSource("producthunt", ["ph/a", "ph/b"], 2),
         ],
-        evaluate: async (d) => ({ ...evalFor(d.source.externalId), overallScore: scores[d.source.externalId]! }),
+        evaluate: async (d) => ({
+          ...evalFor(d.source.externalId),
+          overallScore: scores[d.source.externalId]!,
+        }),
       }),
     );
     expect(result.published).toBe(4); // 2 from each source (the 5+5 mix, scaled down)

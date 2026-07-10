@@ -1,7 +1,7 @@
 ---
 id: 053
 title: "Eval lenses stage 4: ProductHunt source (product lens) + 5+5 daily mix"
-status: open
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-10
 updated: 2026-07-10
-prs: []
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/38"]
 refs: [ADR-0003]
 depends_on: [051]
 acceptance: []
