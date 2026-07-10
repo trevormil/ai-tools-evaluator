@@ -42,16 +42,20 @@ describe("AIX_MODEL default", () => {
 });
 
 describe("trending budgets", () => {
-  // Master cap 10 = the 5 GitHub + 5 ProductHunt daily mix; Discord features one.
-  test("master cap defaults to 10, per-source to 5+5", () => {
+  // Master cap 13 = the 5 GitHub + 5 ProductHunt + 3 skills daily mix; Discord features one.
+  test("master cap defaults to 13, per-source to 5+5+3", () => {
     const env = loadEnv({ ...base });
-    expect(env.AIX_TRENDING_PICKS).toBe(10);
+    expect(env.AIX_TRENDING_PICKS).toBe(13);
     expect(env.AIX_TRENDING_PICKS_GITHUB).toBe(5);
     expect(env.AIX_TRENDING_PICKS_PRODUCTHUNT).toBe(5);
+    expect(env.AIX_TRENDING_PICKS_SKILLS).toBe(3);
   });
 
-  test("PRODUCTHUNT_API_TOKEN is optional (absent → PH disabled, GitHub-only)", () => {
-    expect(loadEnv({ ...base }).PRODUCTHUNT_API_TOKEN).toBeUndefined();
+  test("PH + skills sources are optional (absent secret → that source disabled)", () => {
+    const env = loadEnv({ ...base });
+    expect(env.PRODUCTHUNT_API_TOKEN).toBeUndefined();
+    expect(env.SKILLS_PROXY_URL).toBeUndefined();
+    expect(env.SKILLS_PROXY_TOKEN).toBeUndefined();
     expect(loadEnv({ ...base, PRODUCTHUNT_API_TOKEN: "tok" }).PRODUCTHUNT_API_TOKEN).toBe("tok");
   });
 });
