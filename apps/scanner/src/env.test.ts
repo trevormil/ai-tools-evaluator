@@ -40,3 +40,11 @@ describe("AIX_MODEL default", () => {
     expect(env.AIX_MODEL).toBe("deepseek/deepseek-v4-flash");
   });
 });
+
+describe("AIX_TRENDING_PICKS default", () => {
+  // Product decision: score & save the top 10 trending repos per scan so AIx
+  // grows into a full directory (Discord still features exactly one/day).
+  test("defaults to 10", () => {
+    expect(loadEnv({ ...base }).AIX_TRENDING_PICKS).toBe(10);
+  });
+});

@@ -31,11 +31,13 @@ const EnvSchema = z.object({
   AIX_MODEL: z.string().min(1).default("deepseek/deepseek-v4-flash"),
   AIX_DAILY_CAP: z.coerce.number().int().positive().max(100).default(10),
   /**
-   * How many trending discovery items to publish per scan (the "pick of the day"
-   * that anchors Discord). Default 1 — fetch a pool, drop already-graded, rank by
-   * star velocity, grade only the top pick. The human queue is separate.
+   * How many trending discovery items to LLM-score and publish per scan. Default
+   * 10 — fetch a pool of ~20, drop already-graded, rank by star velocity, and
+   * grade the top N so AIx grows into a full directory (not just one row/day).
+   * The single Discord "pick of the day" is chosen downstream by the digest
+   * (highest overallScore in the window); the human queue is separate.
    */
-  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(10).default(1),
+  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(20).default(10),
   /**
    * Quality gate on GitHub *discovery* (queue submissions bypass it — a human
    * asked for those). Repos below the star floor are dropped unless they are

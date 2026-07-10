@@ -71,6 +71,9 @@ export type InternalClient = {
     evaluation: Evaluation,
     submissionId?: string,
     readmeMd?: string,
+    /** Trending only: mark this publish as THE daily pick (default true for a
+     *  lone trending publish; runners-up in a multi-publish batch pass false). */
+    opts?: { dailyPick?: boolean },
   ): Promise<PublishResult>;
   patchSubmission(
     id: string | number,
@@ -126,12 +129,17 @@ export function createInternalClient(opts: {
       return SubmissionsSchema.parse(data).submissions;
     },
 
-    async publishItem(evaluation, submissionId, readmeMd) {
+    async publishItem(evaluation, submissionId, readmeMd, opts) {
       const data = await req("/api/internal/items", {
         method: "POST",
         // README travels alongside the evaluation so the item page can show
         // what the repo says about itself (cap matches the server's).
-        body: JSON.stringify({ evaluation, submissionId, readmeMd: readmeMd?.slice(0, 200_000) }),
+        body: JSON.stringify({
+          evaluation,
+          submissionId,
+          readmeMd: readmeMd?.slice(0, 200_000),
+          dailyPick: opts?.dailyPick,
+        }),
       });
       return PublishSchema.parse(data);
     },

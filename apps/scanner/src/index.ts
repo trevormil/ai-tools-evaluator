@@ -21,7 +21,7 @@ export type RunDeps = {
   writeArtifact: (e: Evaluation) => Promise<unknown>;
   /** Local daily cap (AIX_DAILY_CAP); the real bound is min(this, server remaining). */
   cap: number;
-  /** Trending items to publish per scan (the daily pick). Default 1. */
+  /** Trending items to LLM-score and publish per scan. Default 10. */
   trendingPicks: number;
   dryRun: boolean;
   now: () => Date;
@@ -110,10 +110,12 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       }
     }
 
-    // 2) TRENDING PICK(S): fetch a pool of ~20, drop already-graded candidates,
-    //    rank by trending (recent star velocity, heavily weighted), and grade
-    //    only the top `trendingPicks` (default 1 — the daily Discord pick). If
-    //    the top pick fails to grade/publish, we fall through to the next best.
+    // 2) TRENDING: fetch a pool of ~20, drop already-graded candidates, rank by
+    //    trending (recent star velocity, heavily weighted), and LLM-score+publish
+    //    the top `trendingPicks` (default 10) so the directory grows daily. Only
+    //    the highest-scored of the batch is stamped as the featured daily pick;
+    //    the rest are runners-up. Discord still posts exactly one/day (the digest
+    //    picks the top-scored in its window, guarded once per UTC day).
     const want = trendBudget;
     if (want > 0) {
       const pool = await discoverTrending(20);
@@ -123,30 +125,43 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       const fresh = pool.filter((d) => !known.has(d.source.externalId));
       const ranked = rankCandidates(fresh, deps.now());
       log.info(
-        `trending: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) picking top ${want}`,
+        `trending: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) grading top ${want}`,
       );
-      let picked = 0;
+
+      // Grade the top `want` ranked candidates (star-velocity order). A malformed
+      // evaluation is skipped, not fatal.
+      const graded: { d: Discovered; evaluation: Evaluation }[] = [];
       for (const d of ranked) {
-        if (picked >= want) break;
+        if (graded.length >= want) break;
         discovered++;
-        let evaluation: Evaluation;
         try {
-          evaluation = await evaluate(d);
+          graded.push({ d, evaluation: await evaluate(d) });
         } catch (err) {
-          // One malformed evaluation must not abort the scan — try the next best.
           log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
-          continue;
         }
-        const res = await client.publishItem(evaluation, undefined, d.readme);
+      }
+
+      // Exactly ONE item is the featured daily pick — the highest-scored of this
+      // run (agreeing with the digest/home, which choose by score). The rest
+      // publish as runners-up so the directory grows without extra Discord posts.
+      const pickSlug = graded.reduce<{ slug: string; score: number } | null>((best, g) => {
+        if (!best || g.evaluation.overallScore > best.score) {
+          return { slug: g.evaluation.slug, score: g.evaluation.overallScore };
+        }
+        return best;
+      }, null)?.slug;
+
+      for (const { d, evaluation } of graded) {
+        const isPick = evaluation.slug === pickSlug;
+        const res = await client.publishItem(evaluation, undefined, d.readme, { dailyPick: isPick });
         if (res.duplicate) {
           skippedDuplicate++;
           continue;
         }
         published++;
-        picked++;
         await deps.writeArtifact(evaluation);
         log.info(
-          `published (pick) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
+          `published (${isPick ? "pick" : "runner-up"}) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
         );
       }
     }

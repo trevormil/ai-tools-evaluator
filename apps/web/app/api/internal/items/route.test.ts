@@ -151,3 +151,10 @@ test("a submission publish (submissionId set) is NOT a daily pick — leaves dai
   const data = (await res.json()) as { item: { dailyPickAt: number | null } };
   expect(data.item.dailyPickAt).toBeNull();
 });
+
+test("a trending runner-up (dailyPick:false) leaves dailyPickAt null — only THE pick is stamped", async () => {
+  const res = await post({ evaluation: freshEvaluation("runnerup"), dailyPick: false });
+  expect(res.status).toBe(201);
+  const data = (await res.json()) as { item: { dailyPickAt: number | null } };
+  expect(data.item.dailyPickAt).toBeNull();
+});

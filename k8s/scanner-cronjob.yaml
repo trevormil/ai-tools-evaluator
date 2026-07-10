@@ -32,6 +32,12 @@ spec:
                 # Reach web's internal API over the cluster DNS name.
                 - name: AIX_WEB_URL
                   value: http://aix-web.aix.svc.cluster.local
+                # Score & publish the top 10 trending repos each day (bounded by
+                # the server's DAILY_CAP=10). The single Discord "pick of the day"
+                # is chosen downstream by the digest (highest score in the window),
+                # so the directory grows ~10/day while Discord still posts once.
+                - name: AIX_TRENDING_PICKS
+                  value: "10"
               envFrom:
                 # Supplies AIX_INTERNAL_TOKEN, ANTHROPIC_API_KEY, GITHUB_TOKEN, …
                 - secretRef:

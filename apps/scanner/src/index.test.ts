@@ -31,14 +31,16 @@ function fakeClient(opts: {
   duplicates?: Set<string>; // externalIds that should report duplicate on publish
   known?: Set<string>; // externalIds already graded (pre-eval dedup)
   submissionRemaining?: number; // submission budget remaining (default: plenty)
-}): InternalClient & { calls: ClientCall[]; publishedOrder: string[] } {
+}): InternalClient & { calls: ClientCall[]; publishedOrder: string[]; pickedOrder: string[] } {
   const calls: ClientCall[] = [];
   const publishedOrder: string[] = [];
+  const pickedOrder: string[] = [];
   const dups = opts.duplicates ?? new Set<string>();
   const known = opts.known ?? new Set<string>();
   return {
     calls,
     publishedOrder,
+    pickedOrder,
     async getCap() {
       calls.push({ op: "getCap" });
       return {
@@ -57,11 +59,13 @@ function fakeClient(opts: {
       calls.push({ op: "listQueued", arg: limit });
       return opts.queued.slice(0, limit);
     },
-    async publishItem(evaluation, submissionId) {
+    async publishItem(evaluation, submissionId, _readmeMd, publishOpts) {
       const ext = evaluation.source.externalId;
-      calls.push({ op: "publish", arg: { ext, submissionId } });
+      calls.push({ op: "publish", arg: { ext, submissionId, dailyPick: publishOpts?.dailyPick } });
       if (dups.has(ext)) return { duplicate: true, item: { id: `existing-${ext}` } };
       publishedOrder.push(ext);
+      // A trending publish flagged as the pick (default true when omitted).
+      if (submissionId === undefined && (publishOpts?.dailyPick ?? true)) pickedOrder.push(ext);
       return { duplicate: false, item: { id: `item-${ext}` } };
     },
     async patchSubmission(id, body) {
@@ -163,6 +167,25 @@ describe("run loop", () => {
     );
     expect(result.published).toBe(1);
     expect(client.publishedOrder).toEqual(["t/a"]);
+  });
+
+  test("a multi-item trending batch stamps exactly ONE daily pick (the highest-scored)", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    // b outscores a and c, so it must be THE pick; a and c publish as runners-up.
+    const scores: Record<string, number> = { "t/a": 60, "t/b": 88, "t/c": 71 };
+    const result = await run(
+      baseDeps({
+        client,
+        trendingPicks: 3,
+        discoverTrending: async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)),
+        evaluate: async (d) => {
+          const ext = d.source.externalId;
+          return { ...evalFor(ext), overallScore: scores[ext]! };
+        },
+      }),
+    );
+    expect(result.published).toBe(3); // all three saved to the directory
+    expect(client.pickedOrder).toEqual(["t/b"]); // exactly one pick, the top score
   });
 
   test("the queue drains against the submission budget even when trending is exhausted", async () => {
