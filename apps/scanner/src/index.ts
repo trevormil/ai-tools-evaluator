@@ -1,13 +1,18 @@
 import type { Evaluation } from "@aix/core";
 import { loadEnv, requireLiveSecrets, type ScannerEnv } from "./env";
 import { createLogger, type Logger } from "./logger";
-import { createGitHubSource, createArxivSource } from "./sources";
+import {
+  createGitHubSource,
+  createArxivSource,
+  createProductHuntSource,
+  rankByUpvotes,
+} from "./sources";
 import { createAnthropicModel, createOpenRouterModel, evaluateItem } from "./evaluate";
 import { rankCandidates } from "./rank";
 import { buildMedia, coverImageUrl } from "./media";
 import { createInternalClient, type InternalClient } from "./client";
 import { writeArtifact } from "./artifact";
-import type { Discovered } from "./types";
+import type { Discovered, TrendingSource } from "./types";
 
 /**
  * The run loop. Everything the loop needs is injected so it is fully testable
@@ -15,14 +20,15 @@ import type { Discovered } from "./types";
  */
 export type RunDeps = {
   client: InternalClient;
-  discoverTrending: (limit: number) => Promise<Discovered[]>;
+  /** Trending sources (GitHub, ProductHunt, …), each with its own budget + rank. */
+  trendingSources: TrendingSource[];
   resolveSubmission: (url: string) => Promise<Discovered | null>;
   evaluate: (d: Discovered) => Promise<Evaluation>;
   writeArtifact: (e: Evaluation) => Promise<unknown>;
   /** Local daily cap (AIX_DAILY_CAP); the real bound is min(this, server remaining). */
   cap: number;
-  /** Trending items to LLM-score and publish per scan. Default 10. */
-  trendingPicks: number;
+  /** Master cap on total trending published per scan (AIX_TRENDING_PICKS; 0 = off). */
+  trendingCap: number;
   dryRun: boolean;
   now: () => Date;
   log: Logger;
@@ -46,7 +52,7 @@ export type RunResult = {
 export async function run(deps: RunDeps): Promise<RunResult> {
   if (deps.dryRun) return runDry(deps);
 
-  const { client, discoverTrending, resolveSubmission, evaluate, log } = deps;
+  const { client, resolveSubmission, evaluate, log } = deps;
   const runId = await client.openScanRun("scanner");
 
   let discovered = 0;
@@ -60,9 +66,11 @@ export async function run(deps: RunDeps): Promise<RunResult> {
     // deps.cap, the circuit breaker); the trending pick draws from DAILY_CAP.
     const subRemaining = capInfo.submissions?.remaining ?? capInfo.remaining;
     const queueBudget = Math.max(0, Math.min(deps.cap, subRemaining));
-    const trendBudget = Math.max(0, Math.min(deps.trendingPicks, capInfo.remaining));
+    // Total trending is bounded by the master cap (0 = queue-only) AND the
+    // server's remaining daily budget; per-source budgets divide it up below.
+    const totalCap = Math.max(0, Math.min(deps.trendingCap, capInfo.remaining));
     log.info(
-      `cap: trending=${capInfo.remaining} submissions=${subRemaining} queueBudget=${queueBudget} trendBudget=${trendBudget}`,
+      `cap: trending=${capInfo.remaining} submissions=${subRemaining} queueBudget=${queueBudget} totalCap=${totalCap}`,
     );
 
     // 1) DRAIN THE QUEUE (bounded by the submission budget).
@@ -110,40 +118,46 @@ export async function run(deps: RunDeps): Promise<RunResult> {
       }
     }
 
-    // 2) TRENDING: fetch a pool of ~20, drop already-graded candidates, rank by
-    //    trending (recent star velocity, heavily weighted), and LLM-score+publish
-    //    the top `trendingPicks` (default 10) so the directory grows daily. Only
-    //    the highest-scored of the batch is stamped as the featured daily pick;
-    //    the rest are runners-up. Discord still posts exactly one/day (the digest
-    //    picks the top-scored in its window, guarded once per UTC day).
-    const want = trendBudget;
-    if (want > 0) {
-      const pool = await discoverTrending(20);
-      const known = await client.filterKnown(
-        pool.map((d) => ({ kind: d.source.kind, externalId: d.source.externalId })),
-      );
-      const fresh = pool.filter((d) => !known.has(d.source.externalId));
-      const ranked = rankCandidates(fresh, deps.now());
-      log.info(
-        `trending: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) grading top ${want}`,
-      );
-
-      // Grade the top `want` ranked candidates (star-velocity order). A malformed
-      // evaluation is skipped, not fatal.
+    // 2) TRENDING (multi-source): each source (GitHub, ProductHunt, …) grades up
+    //    to its own budget, bounded in total by `totalCap`. All graded items
+    //    publish; only the single highest-scored across ALL sources is stamped
+    //    the featured daily pick (the rest are runners-up), so the directory
+    //    grows ~10/day while Discord still posts exactly one (the digest picks
+    //    the top score in its window, guarded once per UTC day).
+    if (totalCap > 0) {
       const graded: { d: Discovered; evaluation: Evaluation }[] = [];
-      for (const d of ranked) {
-        if (graded.length >= want) break;
-        discovered++;
-        try {
-          graded.push({ d, evaluation: await evaluate(d) });
-        } catch (err) {
-          log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
+      let capLeft = totalCap;
+      for (const src of deps.trendingSources) {
+        if (capLeft <= 0) break;
+        const want = Math.min(src.budget, capLeft);
+        if (want <= 0) continue;
+        const pool = await src.discover(20);
+        const known = await client.filterKnown(
+          pool.map((d) => ({ kind: d.source.kind, externalId: d.source.externalId })),
+        );
+        const fresh = pool.filter((d) => !known.has(d.source.externalId));
+        const ranked = src.rank(fresh, deps.now());
+        log.info(
+          `trending[${src.name}]: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) grading top ${want}`,
+        );
+        // Grade up to `want` from this source. A malformed eval is skipped, not fatal.
+        let gradedFromSrc = 0;
+        for (const d of ranked) {
+          if (gradedFromSrc >= want) break;
+          discovered++;
+          try {
+            graded.push({ d, evaluation: await evaluate(d) });
+            gradedFromSrc++;
+          } catch (err) {
+            log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
+          }
         }
+        capLeft -= gradedFromSrc;
       }
 
-      // Exactly ONE item is the featured daily pick — the highest-scored of this
-      // run (agreeing with the digest/home, which choose by score). The rest
-      // publish as runners-up so the directory grows without extra Discord posts.
+      // Exactly ONE featured daily pick — the highest-scored across ALL sources
+      // (agreeing with the digest/home, which choose by score). The rest publish
+      // as runners-up so the directory grows without extra Discord posts.
       const pickSlug = graded.reduce<{ slug: string; score: number } | null>((best, g) => {
         if (!best || g.evaluation.overallScore > best.score) {
           return { slug: g.evaluation.slug, score: g.evaluation.overallScore };
@@ -188,35 +202,41 @@ export async function run(deps: RunDeps): Promise<RunResult> {
 }
 
 async function runDry(deps: RunDeps): Promise<RunResult> {
-  const { discoverTrending, evaluate, cap, log } = deps;
+  const { trendingSources, evaluate, log } = deps;
   log.info("DRY RUN — discovering + ranking + evaluating, nothing will be published");
-  // Mirror the real path: rank the pool by trending, preview the top `cap`.
-  const candidates = rankCandidates(await discoverTrending(20), deps.now());
+  // Mirror the real path per source: rank the pool, preview the top `budget`.
+  let discovered = 0;
   let evaluated = 0;
-  for (const d of candidates.slice(0, cap)) {
-    const evaluation = await evaluate(d);
-    evaluated++;
-    log.info(
-      `[dry-run] ${evaluation.slug} — ${evaluation.verdict} (${evaluation.overallScore}) — ${evaluation.tagline}`,
-    );
-    console.log(
-      JSON.stringify(
-        {
-          slug: evaluation.slug,
-          category: evaluation.category,
-          integration: evaluation.integration,
-          verdict: evaluation.verdict,
-          overallScore: evaluation.overallScore,
-          noiseScore: evaluation.noiseScore,
-          coverImageUrl: coverImageUrl(evaluation.media),
-        },
-        null,
-        2,
-      ),
-    );
+  for (const src of trendingSources) {
+    const ranked = src.rank(await src.discover(20), deps.now());
+    for (const d of ranked.slice(0, src.budget)) {
+      discovered++;
+      const evaluation = await evaluate(d);
+      evaluated++;
+      log.info(
+        `[dry-run:${src.name}] ${evaluation.slug} — ${evaluation.verdict} (${evaluation.overallScore}) — ${evaluation.tagline}`,
+      );
+      console.log(
+        JSON.stringify(
+          {
+            source: src.name,
+            slug: evaluation.slug,
+            kind: evaluation.source.kind,
+            category: evaluation.category,
+            integration: evaluation.integration,
+            verdict: evaluation.verdict,
+            overallScore: evaluation.overallScore,
+            noiseScore: evaluation.noiseScore,
+            coverImageUrl: coverImageUrl(evaluation.media),
+          },
+          null,
+          2,
+        ),
+      );
+    }
   }
   log.info(`dry-run evaluated ${evaluated} item(s)`);
-  return { discovered: candidates.length, published: 0, skippedDuplicate: 0 };
+  return { discovered, published: 0, skippedDuplicate: 0 };
 }
 
 /** Wire the real dependencies from env and run one pass. */
@@ -240,11 +260,30 @@ async function main(): Promise<void> {
   const evaluate = (d: Discovered) =>
     evaluateItem(d, { model, modelName: env.AIX_MODEL, deriveMedia: buildMedia });
 
-  // Candidates are GitHub repos only (papers excluded for now). arXiv is kept
-  // solely to resolve an explicit human-submitted paper URL.
-  const discoverTrending = async (limit: number): Promise<Discovered[]> =>
-    github.discoverTrending!(limit);
+  // Trending sources for the daily mix: GitHub always; ProductHunt only when a
+  // token is configured (else PH is silently skipped — GitHub-only, no failure).
+  const trendingSources: TrendingSource[] = [
+    {
+      name: "github",
+      budget: env.AIX_TRENDING_PICKS_GITHUB,
+      discover: (limit) => github.discoverTrending!(limit),
+      rank: (cands, now) => rankCandidates(cands, now),
+    },
+  ];
+  if (env.PRODUCTHUNT_API_TOKEN) {
+    const ph = createProductHuntSource({ token: env.PRODUCTHUNT_API_TOKEN, log });
+    trendingSources.push({
+      name: "producthunt",
+      budget: env.AIX_TRENDING_PICKS_PRODUCTHUNT,
+      discover: (limit) => ph.discoverTrending!(limit),
+      rank: (cands) => rankByUpvotes(cands),
+    });
+    log.info(`producthunt enabled (budget ${env.AIX_TRENDING_PICKS_PRODUCTHUNT})`);
+  } else {
+    log.info("producthunt disabled (no PRODUCTHUNT_API_TOKEN) — github only");
+  }
 
+  // arXiv is kept solely to resolve an explicit human-submitted paper URL.
   const resolveSubmission = async (url: string): Promise<Discovered | null> =>
     (await github.resolveUrl(url)) ?? (await arxiv.resolveUrl(url));
 
@@ -255,12 +294,12 @@ async function main(): Promise<void> {
 
   const result = await run({
     client,
-    discoverTrending,
+    trendingSources,
     resolveSubmission,
     evaluate,
     writeArtifact: env.AIX_DRY_RUN ? async () => {} : (e: Evaluation) => writeArtifact(e),
     cap: env.AIX_DAILY_CAP,
-    trendingPicks: env.AIX_TRENDING_PICKS,
+    trendingCap: env.AIX_TRENDING_PICKS,
     dryRun: env.AIX_DRY_RUN,
     now: () => new Date(),
     log,

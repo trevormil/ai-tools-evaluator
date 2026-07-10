@@ -2,8 +2,9 @@ import { describe, expect, test } from "bun:test";
 import { Evaluation, computeOverall } from "@aix/core";
 import { run, type RunDeps } from "./index";
 import { nullLogger } from "./logger";
+import { rankCandidates } from "./rank";
 import type { InternalClient, Submission } from "./client";
-import type { Discovered } from "./types";
+import type { Discovered, TrendingSource } from "./types";
 import { makeDraft, makeGithubSource } from "./test-fixtures";
 
 /** Build a valid Evaluation for a given externalId (used by the fake evaluate). */
@@ -88,18 +89,31 @@ function fakeClient(opts: {
   };
 }
 
+/** A GitHub-style trending source (real star-velocity rank) for the loop tests. */
+function ghSource(discover: () => Promise<Discovered[]>, budget = 10): TrendingSource {
+  return { name: "github", budget, discover, rank: (c, now) => rankCandidates(c, now) };
+}
+
+/** A trending source that preserves the given order (for multi-source tests). */
+function orderedSource(name: string, exts: string[], budget: number): TrendingSource {
+  return {
+    name,
+    budget,
+    discover: async () => exts.map((e) => trendingDiscovered(e)),
+    rank: (c) => c,
+  };
+}
+
 function baseDeps(overrides: Partial<RunDeps>): RunDeps {
   const writes: string[] = [];
   return {
     client: fakeClient({ remaining: 10, queued: [] }),
-    discoverTrending: async () => [],
+    trendingSources: [ghSource(async () => [], 10)],
     resolveSubmission: async () => null,
     evaluate: async (d: Discovered) => evalFor(d.source.externalId),
     writeArtifact: async (e) => writes.push(e.slug),
     cap: 10,
-    // Existing loop-mechanics tests assume trending can publish multiple; the
-    // top-1 behavior is covered by its own tests below with trendingPicks: 1.
-    trendingPicks: 10,
+    trendingCap: 10,
     dryRun: false,
     now: () => new Date("2026-07-07T00:00:00.000Z"),
     log: nullLogger,
@@ -134,9 +148,8 @@ describe("run loop", () => {
         client,
         resolveSubmission: async (url) =>
           resolveMap[url] ? trendingDiscovered(resolveMap[url]!) : null,
-        discoverTrending: async () => [
-          trendingDiscovered("trend/a"),
-          trendingDiscovered("trend/b"),
+        trendingSources: [
+          ghSource(async () => [trendingDiscovered("trend/a"), trendingDiscovered("trend/b")]),
         ],
       }),
     );
@@ -144,7 +157,7 @@ describe("run loop", () => {
     // Queue items published first, in order, before any trending item.
     expect(client.publishedOrder).toEqual(["q/one", "q/two", "trend/a", "trend/b"]);
     expect(result.published).toBe(4);
-    // discoverTrending must be asked only AFTER the queue is listed.
+    // Trending must be graded only AFTER the queue is listed.
     const listIdx = client.calls.findIndex((c) => c.op === "listQueued");
     const firstTrendPublish = client.calls.findIndex(
       (c) => c.op === "publish" && (c.arg as { ext: string }).ext.startsWith("trend/"),
@@ -156,13 +169,14 @@ describe("run loop", () => {
     expect(firstQueuePublish).toBeLessThan(firstTrendPublish);
   });
 
-  test("the trending pick respects the trending cap (server remaining)", async () => {
+  test("trending respects the server's remaining daily budget", async () => {
     const client = fakeClient({ remaining: 1, queued: [] }); // only 1 trending slot left
     const result = await run(
       baseDeps({
         client,
-        trendingPicks: 10,
-        discoverTrending: async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)),
+        trendingSources: [
+          ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 10),
+        ],
       }),
     );
     expect(result.published).toBe(1);
@@ -176,19 +190,54 @@ describe("run loop", () => {
     const result = await run(
       baseDeps({
         client,
-        trendingPicks: 3,
-        discoverTrending: async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)),
-        evaluate: async (d) => {
-          const ext = d.source.externalId;
-          return { ...evalFor(ext), overallScore: scores[ext]! };
-        },
+        trendingSources: [
+          ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 3),
+        ],
+        evaluate: async (d) => ({ ...evalFor(d.source.externalId), overallScore: scores[d.source.externalId]! }),
       }),
     );
     expect(result.published).toBe(3); // all three saved to the directory
     expect(client.pickedOrder).toEqual(["t/b"]); // exactly one pick, the top score
   });
 
-  test("the queue drains against the submission budget even when trending is exhausted", async () => {
+  test("runs multiple sources with per-source budgets, featuring the single best across ALL", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    // ph/a is the highest score across BOTH sources → it must be THE pick.
+    const scores: Record<string, number> = { "gh/a": 60, "gh/b": 55, "ph/a": 91, "ph/b": 70 };
+    const result = await run(
+      baseDeps({
+        client,
+        trendingCap: 10,
+        trendingSources: [
+          orderedSource("github", ["gh/a", "gh/b"], 2),
+          orderedSource("producthunt", ["ph/a", "ph/b"], 2),
+        ],
+        evaluate: async (d) => ({ ...evalFor(d.source.externalId), overallScore: scores[d.source.externalId]! }),
+      }),
+    );
+    expect(result.published).toBe(4); // 2 from each source (the 5+5 mix, scaled down)
+    expect(client.publishedOrder).toEqual(["gh/a", "gh/b", "ph/a", "ph/b"]);
+    expect(client.pickedOrder).toEqual(["ph/a"]); // single best across both sources
+  });
+
+  test("the master trending cap bounds the total across sources", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    const result = await run(
+      baseDeps({
+        client,
+        trendingCap: 3, // less than the 2+2 the sources would otherwise publish
+        trendingSources: [
+          orderedSource("github", ["gh/a", "gh/b"], 2),
+          orderedSource("producthunt", ["ph/a", "ph/b"], 2),
+        ],
+      }),
+    );
+    // github fills 2, producthunt gets the remaining 1 → 3 total.
+    expect(result.published).toBe(3);
+    expect(client.publishedOrder).toEqual(["gh/a", "gh/b", "ph/a"]);
+  });
+
+  test("the queue drains against the submission budget even when trending is off", async () => {
     // The TerMinal case: trending cap is 0, but human submissions still process.
     const client = fakeClient({
       remaining: 0, // trending exhausted
@@ -204,7 +253,7 @@ describe("run loop", () => {
       baseDeps({
         client,
         cap: 10,
-        trendingPicks: 0,
+        trendingCap: 0,
         resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
       }),
     );
@@ -227,7 +276,7 @@ describe("run loop", () => {
       baseDeps({
         client,
         cap: 2, // circuit breaker: max 2 per run
-        trendingPicks: 0,
+        trendingCap: 0,
         resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
       }),
     );
@@ -243,7 +292,9 @@ describe("run loop", () => {
     const result = await run(
       baseDeps({
         client,
-        discoverTrending: async () => [trendingDiscovered("t/dup"), trendingDiscovered("t/new")],
+        trendingSources: [
+          ghSource(async () => [trendingDiscovered("t/dup"), trendingDiscovered("t/new")]),
+        ],
       }),
     );
     expect(client.publishedOrder).toEqual(["t/new"]);
@@ -254,10 +305,7 @@ describe("run loop", () => {
   test("closes a successful run with the server-accepted 'success' status", async () => {
     const client = fakeClient({ remaining: 10, queued: [] });
     await run(
-      baseDeps({
-        client,
-        discoverTrending: async () => [trendingDiscovered("t/a")],
-      }),
+      baseDeps({ client, trendingSources: [ghSource(async () => [trendingDiscovered("t/a")])] }),
     );
     const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
     expect(close.status).toBe("success");
@@ -267,9 +315,11 @@ describe("run loop", () => {
     const client = fakeClient({ remaining: 10, queued: [] });
     const boom = baseDeps({
       client,
-      discoverTrending: async () => {
-        throw new Error("discovery blew up");
-      },
+      trendingSources: [
+        ghSource(async () => {
+          throw new Error("discovery blew up");
+        }),
+      ],
     });
     await expect(run(boom)).rejects.toThrow("discovery blew up");
     const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
@@ -281,8 +331,9 @@ describe("run loop", () => {
     const result = await run(
       baseDeps({
         client,
-        discoverTrending: async () =>
-          ["t/good1", "t/bad", "t/good2"].map((e) => trendingDiscovered(e)),
+        trendingSources: [
+          ghSource(async () => ["t/good1", "t/bad", "t/good2"].map((e) => trendingDiscovered(e))),
+        ],
         evaluate: async (d: Discovered) => {
           if (d.source.externalId === "t/bad") throw new Error("schema never repaired");
           return evalFor(d.source.externalId);
@@ -303,17 +354,20 @@ describe("run loop", () => {
       createdAt: new Date(NOW.getTime() - daysOld * 86_400_000).toISOString(),
     });
 
-  test("trendingPicks=1 publishes only the single highest-velocity pick", async () => {
+  test("a budget of 1 publishes only the single highest-velocity pick", async () => {
     const client = fakeClient({ remaining: 10, queued: [] });
     const result = await run(
       baseDeps({
         client,
-        trendingPicks: 1,
-        // fast = 500 stars/day, mid = 50/day, slow = 1/day
-        discoverTrending: async () => [
-          veloRepo("t/slow", 1000, 1000),
-          veloRepo("t/fast", 5000, 10),
-          veloRepo("t/mid", 2000, 40),
+        trendingSources: [
+          ghSource(
+            async () => [
+              veloRepo("t/slow", 1000, 1000),
+              veloRepo("t/fast", 5000, 10),
+              veloRepo("t/mid", 2000, 40),
+            ],
+            1,
+          ),
         ],
       }),
     );
@@ -331,12 +385,13 @@ describe("run loop", () => {
     const result = await run(
       baseDeps({
         client,
-        trendingPicks: 1,
         evaluate: async (d: Discovered) => {
           evaluated.push(d.source.externalId);
           return evalFor(d.source.externalId);
         },
-        discoverTrending: async () => [veloRepo("t/fast", 5000, 10), veloRepo("t/fresh", 3000, 30)],
+        trendingSources: [
+          ghSource(async () => [veloRepo("t/fast", 5000, 10), veloRepo("t/fresh", 3000, 30)], 1),
+        ],
       }),
     );
     // The known top pick is never graded; the next-best fresh one is chosen.
@@ -351,7 +406,9 @@ describe("run loop", () => {
       baseDeps({
         client,
         dryRun: true,
-        discoverTrending: async () => [trendingDiscovered("t/a"), trendingDiscovered("t/b")],
+        trendingSources: [
+          ghSource(async () => [trendingDiscovered("t/a"), trendingDiscovered("t/b")]),
+        ],
       }),
     );
     expect(result.published).toBe(0);
