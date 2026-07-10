@@ -2,6 +2,7 @@ import { z } from "zod";
 import { CATEGORIES, INTEGRATION_KINDS, ITEM_KINDS } from "./categories";
 import { METRIC_KEYS } from "./metrics";
 import { PRIMARY_AUDIENCES } from "./audience";
+import { LENSES, lensFor, requiredBodySections } from "./lenses";
 
 /**
  * Who this is actually for. AIx targets AI-first engineers who want to upskill,
@@ -87,6 +88,12 @@ export type MediaAsset = z.infer<typeof MediaAsset>;
 /** Raw signal captured from the source, before/around evaluation. */
 export const ItemSource = z.object({
   kind: z.enum(ITEM_KINDS),
+  /**
+   * Evaluation lens override. Absent → derived from `kind` (see `lensFor`), so
+   * existing items keep their frame; a source sets this only when the kind's
+   * default is wrong (e.g. a GitHub repo that is really a launched product).
+   */
+  lens: z.enum(LENSES).optional(),
   /** Canonical external id: "owner/repo" for GitHub, arXiv id for papers. */
   externalId: z.string().min(1).max(200),
   url,
@@ -111,7 +118,7 @@ export type ItemSource = z.infer<typeof ItemSource>;
  * THE strict document schema. `body.*` are the five required plaintext
  * explanations the product is built around.
  */
-export const Evaluation = z.object({
+const EvaluationShape = z.object({
   schemaVersion: z.literal(1),
   slug,
   source: ItemSource,
@@ -133,20 +140,30 @@ export const Evaluation = z.object({
   /** One-line hook shown in feeds. Must state the verdict's reasoning tersely. */
   tagline: z.string().min(10).max(160),
 
+  /**
+   * The write-up. Three sections are common to every lens (whatItIs,
+   * devilsAdvocate, whatWouldMakeItBetter); the rest are lens-specific and
+   * optional at the field level. Which optional sections are REQUIRED is
+   * enforced per lens by the refinement on `Evaluation` below (see LENS_SECTIONS).
+   */
   body: z.object({
-    /** 1) What it is — plainspoken, no marketing. */
+    /** Common — plainspoken, no marketing: what the thing actually is. */
     whatItIs: z.string().min(40).max(1200),
-    /** 2) How it differs from a vanilla capable base agent (Claude). */
-    vsVanilla: z.string().min(40).max(1200),
-    /** 3) Skill vs plugin vs workflow-shift — justify the `integration` value. */
-    surfaceArea: z.string().min(40).max(1000),
-    /** 4) THE devil's advocate — why the base agent can/will handle this itself,
-     *     and whether this is complexity for complexity's sake. Be harsh. */
+    /** agent-tool — how it differs from a vanilla capable base agent (Claude). */
+    vsVanilla: z.string().min(40).max(1200).optional(),
+    /** agent-tool — skill vs plugin vs workflow-shift; justify `integration`. */
+    surfaceArea: z.string().min(40).max(1000).optional(),
+    /** product — how it compares to incumbents and to doing it yourself. */
+    vsAlternatives: z.string().min(40).max(1200).optional(),
+    /** research — the specific delta over prior work. */
+    vsPriorWork: z.string().min(40).max(1200).optional(),
+    /** research — can a practitioner actually reproduce / apply it. */
+    reproducibility: z.string().min(40).max(1000).optional(),
+    /** Common — THE devil's advocate; framed per lens. Be harsh. */
     devilsAdvocate: z.string().min(80).max(1600),
-    /** 5) What would make it better — concrete features, a different direction, or
-     *     changes that would move the verdict up. Forward-looking and specific. */
+    /** Common — concrete, forward-looking changes that would raise the verdict. */
     whatWouldMakeItBetter: z.string().min(40).max(1200),
-    /** Optional: when it genuinely IS worth it, the honest case for adoption. */
+    /** Optional — when it genuinely IS worth it, the honest case for adoption. */
     steelman: z.string().max(1200).optional(),
   }),
 
@@ -184,11 +201,30 @@ export const Evaluation = z.object({
   model: z.string().max(80).optional(),
   evaluatedAt: z.string().datetime(),
 });
+
+/**
+ * THE strict document schema: the base shape plus per-lens body enforcement.
+ * The three common sections are required at the field level; the lens (derived
+ * from `source`) decides which lens-specific sections must also be present.
+ */
+export const Evaluation = EvaluationShape.superRefine((data, ctx) => {
+  const lens = lensFor(data.source);
+  for (const key of requiredBodySections(lens)) {
+    const value = (data.body as Record<string, unknown>)[key];
+    if (typeof value !== "string" || value.trim().length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["body", key],
+        message: `body.${key} is required for the "${lens}" lens`,
+      });
+    }
+  }
+});
 export type Evaluation = z.infer<typeof Evaluation>;
 
 /** Input the AI evaluator must produce (everything it can't know, or that we
  *  recompute deterministically like `overallScore`, is omitted). */
-export const EvaluationDraft = Evaluation.omit({
+export const EvaluationDraft = EvaluationShape.omit({
   schemaVersion: true,
   source: true,
   media: true,

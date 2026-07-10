@@ -1,8 +1,9 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import {
-  EVALUATOR_SYSTEM,
+  evaluatorSystem,
   buildEvaluatorPrompt,
+  lensFor,
   EvaluationDraft,
   Evaluation,
   computeOverall,
@@ -119,6 +120,7 @@ function extractJson(text: string): unknown {
  * object is re-parsed against the strict `Evaluation` schema before returning.
  */
 export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promise<Evaluation> {
+  const system = evaluatorSystem(lensFor(d.source));
   const basePrompt = buildEvaluatorPrompt(d.source, d.readme);
   const maxRetries = opts.maxRetries ?? 2;
   let lastError = "";
@@ -129,7 +131,7 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
         ? basePrompt
         : `${basePrompt}\n\n## Repair\nYour previous response was rejected: ${lastError}\nReturn ONLY corrected raw JSON that matches the schema — no code fences, no commentary.`;
 
-    const raw = await opts.model.complete(EVALUATOR_SYSTEM, user);
+    const raw = await opts.model.complete(system, user);
 
     let draft: z.infer<typeof EvaluationDraft>;
     try {
