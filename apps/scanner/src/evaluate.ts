@@ -4,6 +4,7 @@ import {
   evaluatorSystem,
   buildEvaluatorPrompt,
   lensFor,
+  sanitizeEvaluationDraft,
   EvaluationDraft,
   Evaluation,
   computeOverall,
@@ -135,7 +136,9 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
 
     let draft: z.infer<typeof EvaluationDraft>;
     try {
-      draft = EvaluationDraft.parse(extractJson(raw));
+      // Clean the model's minor slips (junk tags, over-length fields) to the
+      // schema bounds before validating, so they don't hard-fail the eval (0055).
+      draft = EvaluationDraft.parse(sanitizeEvaluationDraft(extractJson(raw)));
     } catch (err) {
       lastError =
         err instanceof z.ZodError

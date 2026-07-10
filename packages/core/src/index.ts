@@ -4,6 +4,7 @@ export * from "./audience";
 export * from "./lenses";
 export * from "./metrics";
 export * from "./schema";
+export * from "./sanitize";
 export * from "./markdown";
 export * from "./eval-prompt";
 export * from "./submission";
