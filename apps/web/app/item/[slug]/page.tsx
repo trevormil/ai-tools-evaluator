@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { CATEGORY_LABELS, type Category } from "@aix/core";
 import { getCurrentUser } from "@/lib/auth";
@@ -14,6 +15,7 @@ import { MediaGallery } from "@/components/media-gallery";
 import { CoverImage } from "@/components/cover-image";
 import { VoteButtons } from "@/components/vote-buttons";
 import { RepostButton } from "@/components/repost-button";
+import { ShareButton } from "@/components/share-button";
 import { UseThisButton } from "@/components/use-this-button";
 import { TakeComposer } from "@/components/take-composer";
 import { TakeCard } from "@/components/take-card";
@@ -26,6 +28,8 @@ import { IntegrationDiagram } from "@/components/integration-diagram";
 import { ContentTabs, type ContentTab } from "@/components/content-tabs";
 import { getOrFetchReadme, prepareReadme } from "@/lib/github-readme";
 import { renderMarkdown } from "@/lib/markdown";
+import { shareBlurb, shareSummary } from "@/lib/share";
+import { absoluteUrl } from "@/lib/public-api";
 import { timeAgo } from "@/lib/format";
 import type { StackStatus } from "@/lib/stack-types";
 
@@ -45,6 +49,26 @@ const SECTIONS: {
   { key: "whatWouldMakeItBetter", title: "What would make it better" },
   { key: "steelman", title: "The honest case for it" },
 ];
+
+export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
+  const { slug } = await params;
+  const item = getItemBySlug(slug);
+  if (!item) return { title: "Not found — AIx" };
+
+  const title = `${item.title} — AIx`;
+  // Pending items have no scores yet; keep the unfurl honest.
+  const description =
+    item.scoreStatus === "pending"
+      ? `${item.tagline} — awaiting its ten-metric AIx evaluation.`
+      : shareBlurb(item);
+
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "article" },
+    twitter: { card: "summary_large_image", title, description },
+  };
+}
 
 export default async function ItemPage({
   params,
@@ -74,6 +98,13 @@ export default async function ItemPage({
   const usingCount = (stack.byStatus["using"] ?? 0) + (stack.byStatus["trying"] ?? 0);
   const itemReposts = repostCount("item", item.id);
   const iReposted = user ? hasReposted(user.id, "item", item.id) : false;
+
+  // Share surface: link unfurls to the OG card; summary carries the scorecard.
+  const shareUrl = absoluteUrl(`/item/${item.slug}`);
+  const shareText = pending ? item.tagline : shareBlurb(item);
+  const shareBlob = pending
+    ? `**${item.title}** — ${item.tagline}\n\n${shareUrl}`
+    : shareSummary(item, shareUrl);
 
   // The repo's own README — stored at publish time, lazy-fetched for
   // pending/legacy GitHub items (best-effort).
@@ -256,6 +287,9 @@ export default async function ItemPage({
                     initialReposted={iReposted}
                     signedIn={!!user}
                   />
+                </span>
+                <span className="text-xs">
+                  <ShareButton url={shareUrl} blurb={shareText} summary={shareBlob} />
                 </span>
               </div>
             </div>
