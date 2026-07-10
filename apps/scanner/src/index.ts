@@ -5,7 +5,6 @@ import {
   createGitHubSource,
   createArxivSource,
   createProductHuntSource,
-  createSkillsSource,
   rankByUpvotes,
 } from "./sources";
 import { createAnthropicModel, createOpenRouterModel, evaluateItem } from "./evaluate";
@@ -283,24 +282,11 @@ async function main(): Promise<void> {
     });
     log.info(`producthunt enabled (budget ${env.AIX_TRENDING_PICKS_PRODUCTHUNT})`);
   } else {
-    log.info("producthunt disabled (no PRODUCTHUNT_API_TOKEN)");
+    log.info("producthunt disabled (no PRODUCTHUNT_API_TOKEN) — github only");
   }
-  if (env.SKILLS_PROXY_URL && env.SKILLS_PROXY_TOKEN) {
-    const skills = createSkillsSource({
-      proxyUrl: env.SKILLS_PROXY_URL,
-      token: env.SKILLS_PROXY_TOKEN,
-      log,
-    });
-    trendingSources.push({
-      name: "skills",
-      budget: env.AIX_TRENDING_PICKS_SKILLS,
-      discover: (limit) => skills.discoverTrending!(limit),
-      rank: (cands) => rankByUpvotes(cands), // installs stored in `upvotes`
-    });
-    log.info(`skills enabled (budget ${env.AIX_TRENDING_PICKS_SKILLS})`);
-  } else {
-    log.info("skills disabled (no SKILLS_PROXY_URL/TOKEN)");
-  }
+  // NOTE: the skills.sh source (sources/skills.ts, agent-tool lens) is a dormant
+  // scaffold — wired in a future PR once a skills.sh access path (a Vercel OIDC
+  // proxy) is in place. Today the mix is GitHub + ProductHunt.
 
   // arXiv is kept solely to resolve an explicit human-submitted paper URL.
   const resolveSubmission = async (url: string): Promise<Discovered | null> =>
