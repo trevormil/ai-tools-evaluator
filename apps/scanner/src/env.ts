@@ -23,10 +23,6 @@ const EnvSchema = z.object({
   /** ProductHunt developer token. When absent, the PH trending source is
    *  disabled and the scan runs GitHub-only (no failure). */
   PRODUCTHUNT_API_TOKEN: optionalSecret,
-  /** skills.sh proxy URL + shared secret (see docs/skills-proxy). When either is
-   *  absent, the skills trending source is disabled (no failure). */
-  SKILLS_PROXY_URL: optionalSecret,
-  SKILLS_PROXY_TOKEN: optionalSecret,
   AIX_WEB_URL: z.string().url().default("http://localhost:3000"),
   /**
    * Evaluator model. Defaults to the cheapest OpenRouter model that reliably
@@ -40,16 +36,14 @@ const EnvSchema = z.object({
   /**
    * MASTER cap on total trending items published per scan, across all sources.
    * The queue-only cronjob sets this to 0 to disable trending entirely. Default
-   * 13 (= 5 GitHub + 5 ProductHunt + 3 skills). The single Discord "pick of the
-   * day" is chosen downstream (highest overallScore); the queue is separate.
+   * 10 (= 5 GitHub + 5 ProductHunt). The single Discord "pick of the day" is
+   * chosen downstream (highest overallScore); the queue is separate.
    */
-  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(40).default(13),
+  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(40).default(10),
   /** Per-source trending budget: how many GitHub repos to grade+publish per scan. */
   AIX_TRENDING_PICKS_GITHUB: z.coerce.number().int().nonnegative().max(20).default(5),
   /** Per-source trending budget: how many ProductHunt launches per scan (needs token). */
   AIX_TRENDING_PICKS_PRODUCTHUNT: z.coerce.number().int().nonnegative().max(20).default(5),
-  /** Per-source trending budget: how many skills.sh skills per scan (needs proxy). */
-  AIX_TRENDING_PICKS_SKILLS: z.coerce.number().int().nonnegative().max(20).default(3),
   /**
    * Quality gate on GitHub *discovery* (queue submissions bypass it — a human
    * asked for those). Repos below the star floor are dropped unless they are
