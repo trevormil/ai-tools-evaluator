@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import Link from "next/link";
-import { CATEGORY_LABELS, LENS_SECTIONS, lensFor, type Category } from "@aix/core";
+import { CATEGORY_LABELS, LENS_DEFS, LENS_SECTIONS, lensFor, type Category } from "@aix/core";
 import { getCurrentUser } from "@/lib/auth";
 import { getItemBySlug, parseEvaluation, getItemComments, userVotes } from "@/lib/queries";
 import { listItemTakes, getMyStackEntryForItem } from "@/lib/takes";
@@ -93,6 +93,11 @@ export default async function ItemPage({
   const shareBlob = pending
     ? `**${item.title}** — ${item.tagline}\n\n${shareUrl}`
     : shareSummary(item, shareUrl);
+
+  // Lens (ADR-0003) drives which signals + framing the readout shows.
+  const lens = lensFor(evaluation?.source ?? { kind: item.kind });
+  const sourceLinkLabel =
+    lens === "research" ? "Read paper ↗" : lens === "product" ? "Visit site ↗" : "Source ↗";
 
   // The repo's own README — stored at publish time, lazy-fetched for
   // pending/legacy GitHub items (best-effort).
@@ -246,7 +251,14 @@ export default async function ItemPage({
                     Awaiting score…
                   </span>
                 ) : (
-                  <VerdictBadge verdict={item.verdict} />
+                  <>
+                    <VerdictBadge verdict={item.verdict} />
+                    {/* Badge the frame only for non-default lenses; agent-tool
+                        (the common case) stays visually unchanged. */}
+                    {lens !== "agent-tool" && (
+                      <span className="chip text-xs">{LENS_DEFS[lens].label}</span>
+                    )}
+                  </>
                 )}
               </div>
               <p className="mt-1.5 text-muted">{item.tagline}</p>
@@ -265,7 +277,7 @@ export default async function ItemPage({
                   rel="noreferrer"
                   className="link-brand font-medium"
                 >
-                  {item.kind === "arxiv_paper" ? "View paper ↗" : "Source ↗"}
+                  {sourceLinkLabel}
                 </a>
                 <span className="text-xs">
                   <RepostButton
@@ -327,12 +339,28 @@ export default async function ItemPage({
                       {CATEGORY_LABELS[item.category as Category] ?? item.category}
                     </span>
                   </SpecRow>
-                  <SpecRow label="integration">
-                    <span className="data text-xs">{item.integration}</span>
-                  </SpecRow>
+                  {lens === "agent-tool" && (
+                    <SpecRow label="integration">
+                      <span className="data text-xs">{item.integration}</span>
+                    </SpecRow>
+                  )}
                   {evaluation?.source.stars != null && (
                     <SpecRow label="stars">
                       <span className="data text-xs">★ {evaluation.source.stars}</span>
+                    </SpecRow>
+                  )}
+                  {evaluation?.source.authors?.length ? (
+                    <SpecRow label="authors">
+                      <span className="data max-w-[170px] truncate text-xs">
+                        {evaluation.source.authors.join(", ")}
+                      </span>
+                    </SpecRow>
+                  ) : null}
+                  {evaluation?.source.publishedAt && (
+                    <SpecRow label="published">
+                      <span className="data text-xs">
+                        {timeAgo(Math.floor(Date.parse(evaluation.source.publishedAt) / 1000))} ago
+                      </span>
                     </SpecRow>
                   )}
                   {evaluation?.source.language && (
@@ -430,7 +458,7 @@ export default async function ItemPage({
             </div>
           )}
 
-          {!pending && (
+          {!pending && lens === "agent-tool" && (
             <div className="card flex flex-col gap-2 p-4">
               <p className="eyebrow">Where it sits</p>
               <IntegrationDiagram integration={item.integration} title={item.title} />
