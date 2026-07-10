@@ -1,9 +1,9 @@
 ---
 id: 052
 title: "Eval lenses stage 3: Claude/agent Skills source (agent-tool lens)"
-status: open
-priority: high
-horizon: next
+status: icebox
+priority: medium
+horizon: future
 hitl: false
 type: feature
 source: manual
@@ -17,6 +17,11 @@ agent_id: 1000x-ai-engineer
 agent_scope: global
 agent_kind: classic
 ---
+
+**Iceboxed (2026-07-10):** deferred — most skills ship inside GitHub repos, which
+the existing GitHub source + agent-tool lens already cover, so a dedicated Skills
+source is low marginal value for now. Revisit if a strong standalone skills
+registry emerges. ProductHunt (0053) took its slot as the next source.
 
 Stage 3 of ADR-0003. Add **Claude/agent skills** (skills, slash-commands,
 subagents, plugins) as a discovery source. Reuses the existing `agent-tool` lens,

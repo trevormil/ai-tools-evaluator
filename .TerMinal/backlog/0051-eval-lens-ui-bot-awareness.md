@@ -1,9 +1,9 @@
 ---
 id: 051
 title: "Eval lenses stage 2: UI + bot fully lens-aware"
-status: open
+status: in-progress
 priority: high
-horizon: next
+horizon: now
 hitl: false
 type: feature
 source: manual
