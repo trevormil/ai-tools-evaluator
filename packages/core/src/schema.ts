@@ -111,6 +111,8 @@ export const ItemSource = z.object({
   // Paper-ish signals
   publishedAt: z.string().datetime().optional(),
   authors: z.array(z.string().max(120)).max(50).optional(),
+  // Product-ish signals (ProductHunt etc.)
+  upvotes: z.number().int().nonnegative().optional(),
 });
 export type ItemSource = z.infer<typeof ItemSource>;
 

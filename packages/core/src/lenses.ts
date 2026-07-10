@@ -25,6 +25,7 @@ export const KIND_LENS: Record<ItemKind, Lens> = {
   github_repo: "agent-tool",
   arxiv_paper: "research",
   external_link: "product",
+  producthunt: "product",
 };
 
 /** Resolve the lens for a source: explicit override, else by kind, else product. */

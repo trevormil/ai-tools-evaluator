@@ -20,6 +20,9 @@ const EnvSchema = z.object({
   /** OpenRouter (OpenAI-compatible) key — preferred when set, for cheap inference. */
   OPENROUTER_API_KEY: optionalSecret,
   AIX_INTERNAL_TOKEN: optionalSecret,
+  /** ProductHunt developer token. When absent, the PH trending source is
+   *  disabled and the scan runs GitHub-only (no failure). */
+  PRODUCTHUNT_API_TOKEN: optionalSecret,
   AIX_WEB_URL: z.string().url().default("http://localhost:3000"),
   /**
    * Evaluator model. Defaults to the cheapest OpenRouter model that reliably
@@ -31,13 +34,16 @@ const EnvSchema = z.object({
   AIX_MODEL: z.string().min(1).default("deepseek/deepseek-v4-flash"),
   AIX_DAILY_CAP: z.coerce.number().int().positive().max(100).default(10),
   /**
-   * How many trending discovery items to LLM-score and publish per scan. Default
-   * 10 — fetch a pool of ~20, drop already-graded, rank by star velocity, and
-   * grade the top N so AIx grows into a full directory (not just one row/day).
-   * The single Discord "pick of the day" is chosen downstream by the digest
-   * (highest overallScore in the window); the human queue is separate.
+   * MASTER cap on total trending items published per scan, across all sources.
+   * The queue-only cronjob sets this to 0 to disable trending entirely. Default
+   * 10 (= the 5 GitHub + 5 ProductHunt mix below). The single Discord "pick of
+   * the day" is chosen downstream (highest overallScore); the queue is separate.
    */
-  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(20).default(10),
+  AIX_TRENDING_PICKS: z.coerce.number().int().nonnegative().max(40).default(10),
+  /** Per-source trending budget: how many GitHub repos to grade+publish per scan. */
+  AIX_TRENDING_PICKS_GITHUB: z.coerce.number().int().nonnegative().max(20).default(5),
+  /** Per-source trending budget: how many ProductHunt launches per scan (needs token). */
+  AIX_TRENDING_PICKS_PRODUCTHUNT: z.coerce.number().int().nonnegative().max(20).default(5),
   /**
    * Quality gate on GitHub *discovery* (queue submissions bypass it — a human
    * asked for those). Repos below the star floor are dropped unless they are

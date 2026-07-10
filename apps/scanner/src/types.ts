@@ -20,5 +20,20 @@ export type DiscoverySource = {
   resolveUrl(url: string): Promise<Discovered | null>;
 };
 
+/**
+ * A trending source plugged into the daily scan with its own budget and ranking.
+ * The scan runs each in order (GitHub, ProductHunt, …), publishes up to `budget`
+ * from each, and features the single highest-scored across all of them.
+ */
+export type TrendingSource = {
+  readonly name: string;
+  /** How many items to grade+publish from this source per scan. */
+  budget: number;
+  /** Fetch a candidate pool (bounded by `limit`). */
+  discover: (limit: number) => Promise<Discovered[]>;
+  /** Order the pool best-first by this source's own signal. */
+  rank: (candidates: Discovered[], now: Date) => Discovered[];
+};
+
 /** Turns a Discovered candidate into a validated, publishable Evaluation. */
 export type Evaluate = (d: Discovered) => Promise<Evaluation>;
