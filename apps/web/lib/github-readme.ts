@@ -1,13 +1,11 @@
-import { eq } from "drizzle-orm";
-import { getDb, items, type Item } from "@aix/db";
+import type { Item } from "@aix/db";
 
 /**
  * The repo's own README, shown alongside our evaluation so users can explore
- * what the project says about itself — not just our verdict and the takes.
+ * what the project says about itself — not just our verdict.
  *
- * Scored items get their README persisted at publish time (the scanner already
- * fetched it for the evaluation). Pending/legacy items lazy-fetch from
- * raw.githubusercontent on first view, best-effort.
+ * The corpus (ADR-0004) doesn't store READMEs, so GitHub items lazy-fetch from
+ * raw.githubusercontent (best-effort, at render/build time). No DB cache.
  */
 
 export const READMES_MAX_CHARS = 80_000;
@@ -75,16 +73,13 @@ export async function fetchRepoReadme(externalId: string): Promise<string | null
 }
 
 /**
- * The README for an item: stored copy, or a one-time lazy fetch for GitHub
- * repos that don't have one yet (instant submissions, legacy rows).
- * Returns null when there is nothing to show.
+ * The README for an item: a stored copy if present, else a lazy fetch for
+ * GitHub repos. Returns null when there is nothing to show.
  */
 export async function getOrFetchReadme(item: Item): Promise<string | null> {
   if (item.readmeMd != null) return item.readmeMd === "" ? null : item.readmeMd;
   if (item.kind !== "github_repo") return null;
 
   const fetched = await fetchRepoReadme(item.externalId);
-  if (fetched === null) return null; // transient failure — try again next view
-  getDb().update(items).set({ readmeMd: fetched }).where(eq(items.id, item.id)).run();
-  return fetched === "" ? null : fetched;
+  return fetched ? fetched : null;
 }

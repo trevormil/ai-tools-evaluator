@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { listItems, countItems, type ItemSort } from "@/lib/queries";
 import { latestRecap } from "@/lib/recap";
+import { listQueued } from "@/lib/queue";
 import { Filters } from "@/components/filters";
 import { ItemRow } from "@/components/item-row";
+import { QueueStrip } from "@/components/queue-strip";
 import { VerdictBadge } from "@/components/verdict-badge";
 
 export const dynamic = "force-dynamic";
@@ -43,6 +45,7 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
 
   const recap = latestRecap();
   const pick = recap?.leadPick;
+  const queued = listQueued();
 
   const moreParams = new URLSearchParams();
   for (const [k, v] of Object.entries(sp)) {
@@ -85,6 +88,8 @@ export default async function HomePage({ searchParams }: { searchParams: SearchP
           leaderboard.
         </p>
       </div>
+
+      {queued.length > 0 && <QueueStrip queued={queued} />}
 
       <section className="flex flex-col gap-3">
         <Filters />

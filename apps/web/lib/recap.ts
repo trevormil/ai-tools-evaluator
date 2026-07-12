@@ -1,10 +1,10 @@
-import { and, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
-import { getDb, items, type Item } from "@aix/db";
+import type { Item } from "@aix/db";
+import { loadCorpus } from "./corpus";
 
 /**
  * The nightly recap (ticket 0040): the tools JUDGED on one UTC calendar day,
- * framed editorially. This is the product's spine — the web archive and the
- * email are both rendered from getRecap().
+ * framed editorially. This is the product's spine — the web archive is rendered
+ * from getRecap(), grouping the git corpus by each item's `scoredAt` day.
  */
 
 export type RecapItem = Item;
@@ -30,72 +30,54 @@ function dayBounds(date: string): { start: number; end: number } | null {
   return { start, end: start + 86_400 };
 }
 
+/** UTC "YYYY-MM-DD" for a unix-seconds timestamp. */
+function utcDay(sec: number): string {
+  return new Date(sec * 1000).toISOString().slice(0, 10);
+}
+
 /** The recap for one UTC day, or null when nothing was judged that day. */
-export function getRecap(date: string): Recap | null {
+export function getRecap(date: string, corpus: Item[] = loadCorpus()): Recap | null {
   const bounds = dayBounds(date);
   if (!bounds) return null;
 
-  const rows = getDb()
-    .select()
-    .from(items)
-    .where(
-      and(
-        eq(items.published, true),
-        eq(items.scoreStatus, "scored"),
-        isNotNull(items.scoredAt),
-        gte(items.scoredAt, bounds.start),
-        lt(items.scoredAt, bounds.end),
-      ),
-    )
-    .orderBy(desc(items.overallScore))
-    .all();
+  const rows = corpus
+    .filter((i) => i.scoredAt != null && i.scoredAt >= bounds.start && i.scoredAt < bounds.end)
+    .sort((a, b) => b.overallScore - a.overallScore);
   if (rows.length === 0) return null;
 
-  const items_: RecapItem[] = rows;
-
   const verdictCounts: Record<string, number> = {};
-  for (const i of items_) verdictCounts[i.verdict] = (verdictCounts[i.verdict] ?? 0) + 1;
+  for (const i of rows) verdictCounts[i.verdict] = (verdictCounts[i.verdict] ?? 0) + 1;
 
-  const traps = items_
+  const traps = rows
     .filter((i) => i.verdict === "complexity-trap" || i.verdict === "redundant")
     .sort((a, b) => b.noiseScore - a.noiseScore);
 
   return {
     date,
-    items: items_,
-    total: items_.length,
+    items: rows,
+    total: rows.length,
     verdictCounts,
-    leadPick: items_[0] ?? null, // already sorted by score desc
+    leadPick: rows[0] ?? null, // already sorted by score desc
     complexityTrap: traps[0] ?? null,
   };
 }
 
 /** UTC dates (newest first) that have at least one judged item. */
-export function recentRecapDates(limit = 30): string[] {
-  const rows = getDb()
-    .select({
-      day: sql<string>`strftime('%Y-%m-%d', ${items.scoredAt}, 'unixepoch')`,
-    })
-    .from(items)
-    .where(
-      and(eq(items.published, true), eq(items.scoreStatus, "scored"), isNotNull(items.scoredAt)),
-    )
-    .groupBy(sql`1`)
-    .orderBy(sql`1 desc`)
-    .limit(limit)
-    .all();
-  return rows.map((r) => r.day).filter(Boolean);
+export function recentRecapDates(limit = 30, corpus: Item[] = loadCorpus()): string[] {
+  const days = new Set<string>();
+  for (const i of corpus) if (i.scoredAt != null) days.add(utcDay(i.scoredAt));
+  return [...days].sort((a, b) => b.localeCompare(a)).slice(0, limit);
 }
 
 /** The most recent day with a recap, or null if none exist yet. */
-export function latestRecapDate(): string | null {
-  return recentRecapDates(1)[0] ?? null;
+export function latestRecapDate(corpus: Item[] = loadCorpus()): string | null {
+  return recentRecapDates(1, corpus)[0] ?? null;
 }
 
-/** Convenience for the pages/email: the latest recap object, or null. */
-export function latestRecap(): Recap | null {
-  const d = latestRecapDate();
-  return d ? getRecap(d) : null;
+/** Convenience for the pages: the latest recap object, or null. */
+export function latestRecap(corpus: Item[] = loadCorpus()): Recap | null {
+  const d = latestRecapDate(corpus);
+  return d ? getRecap(d, corpus) : null;
 }
 
 /** Human date label, e.g. "Monday, July 6, 2026" (UTC). */

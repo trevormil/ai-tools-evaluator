@@ -1,121 +1,81 @@
-import { test, expect, beforeAll } from "bun:test";
-import { rmSync } from "node:fs";
+import { test, expect } from "bun:test";
+import type { Item } from "@aix/db";
+import { getRecap, latestRecapDate, recentRecapDates } from "./recap";
 
-/** Nightly recap (ticket 0040): the day's verdicts, editorially framed. */
-const DB_PATH = `/tmp/aix-recap-test-${process.pid}.db`;
-
-let getRecap: typeof import("./recap").getRecap;
-let latestRecapDate: typeof import("./recap").latestRecapDate;
-let recentRecapDates: typeof import("./recap").recentRecapDates;
-let db: ReturnType<typeof import("@aix/db").getDb>;
+/** Nightly recap (ticket 0040): the day's verdicts, grouped from the git corpus. */
 
 // Two UTC days of judgments. Noon UTC keeps them unambiguous across timezones.
 const DAY1 = Math.floor(Date.parse("2026-07-05T12:00:00Z") / 1000);
 const DAY2 = Math.floor(Date.parse("2026-07-06T12:00:00Z") / 1000);
 
-function insertItem(
-  o: {
-    id: string;
-    slug: string;
-    verdict: string;
-    score: number;
-    noise: number;
-    scoredAt: number | null;
-    status?: string;
-  },
-  extra: Record<string, unknown> = {},
-) {
-  const { items } = require("@aix/db");
-  db.insert(items)
-    .values({
-      id: o.id,
-      slug: o.slug,
-      kind: "github_repo",
-      externalId: `x/${o.slug}`,
-      url: `https://github.com/x/${o.slug}`,
-      title: o.slug.toUpperCase(),
-      tagline: `${o.slug} tagline`,
-      category: "cli-tool",
-      integration: "standalone-app",
-      verdict: o.verdict,
-      overallScore: o.score,
-      noiseScore: o.noise,
-      evaluationJson: "{}",
-      published: true,
-      scoreStatus: o.status ?? "scored",
-      scoredAt: o.scoredAt,
-      createdAt: o.scoredAt ?? DAY2,
-      ...extra,
-    })
-    .run();
+function item(o: {
+  slug: string;
+  verdict: string;
+  score: number;
+  noise: number;
+  scoredAt: number | null;
+}): Item {
+  return {
+    id: o.slug,
+    slug: o.slug,
+    kind: "github_repo",
+    externalId: `x/${o.slug}`,
+    url: `https://github.com/x/${o.slug}`,
+    title: o.slug.toUpperCase(),
+    category: "cli-tool",
+    integration: "standalone-app",
+    verdict: o.verdict,
+    primaryAudience: null,
+    aiEngineerFit: null,
+    vibeCoderFit: null,
+    overallScore: o.score,
+    noiseScore: o.noise,
+    tagline: `${o.slug} tagline`,
+    tagsJson: "[]",
+    evaluationJson: "{}",
+    mediaJson: "[]",
+    coverImageUrl: null,
+    readmeMd: null,
+    evaluatedBy: "ai",
+    model: null,
+    published: true,
+    scoreStatus: "scored",
+    scoredAt: o.scoredAt,
+    dailyPickAt: null,
+    score: 0,
+    upvotes: 0,
+    commentCount: 0,
+    createdAt: o.scoredAt ?? DAY2,
+  } as Item;
 }
 
-beforeAll(async () => {
-  for (const suffix of ["", "-wal", "-shm"]) rmSync(DB_PATH + suffix, { force: true });
-  process.env.AIX_DB_PATH = DB_PATH;
-
-  const { runMigrations } = await import("./migrate");
-  const schema = await import("@aix/db");
-  ({ getRecap, latestRecapDate, recentRecapDates } = await import("./recap"));
-  runMigrations();
-  db = schema.getDb();
-
-  // DAY2: three judged tools — one essential (the lead), one trap (highest noise), one niche.
-  insertItem({
-    id: "d2_ess",
-    slug: "aces",
-    verdict: "essential",
-    score: 91,
-    noise: 5,
-    scoredAt: DAY2,
-  });
-  insertItem({
-    id: "d2_trap",
+const corpus: Item[] = [
+  // DAY2: three judged tools — one essential (lead), one trap (noisiest), one niche.
+  item({ slug: "aces", verdict: "essential", score: 91, noise: 5, scoredAt: DAY2 }),
+  item({
     slug: "trapzilla",
     verdict: "complexity-trap",
     score: 38,
     noise: 84,
     scoredAt: DAY2 + 100,
-  });
-  insertItem({
-    id: "d2_niche",
-    slug: "nichey",
-    verdict: "niche",
-    score: 60,
-    noise: 30,
-    scoredAt: DAY2 + 200,
-  });
-  // A pending submission created on DAY2 but NOT yet judged — must not appear.
-  insertItem({
-    id: "d2_pend",
-    slug: "waiting",
-    verdict: "niche",
-    score: 0,
-    noise: 0,
-    scoredAt: null,
-    status: "pending",
-  });
-  // DAY1: one tool, judged the previous day — separate recap.
-  insertItem({
-    id: "d1_wor",
-    slug: "yesterday",
-    verdict: "worthwhile",
-    score: 72,
-    noise: 20,
-    scoredAt: DAY1,
-  });
-});
+  }),
+  item({ slug: "nichey", verdict: "niche", score: 60, noise: 30, scoredAt: DAY2 + 200 }),
+  // An item with no scoredAt must not appear in any recap.
+  item({ slug: "unscored", verdict: "niche", score: 0, noise: 0, scoredAt: null }),
+  // DAY1: one tool, judged the previous day — a separate recap.
+  item({ slug: "yesterday", verdict: "worthwhile", score: 72, noise: 20, scoredAt: DAY1 }),
+];
 
-test("getRecap groups a UTC day's JUDGED items only (no pending, no other days)", () => {
-  const r = getRecap("2026-07-06");
+test("getRecap groups a UTC day's judged items only (no unscored, no other days)", () => {
+  const r = getRecap("2026-07-06", corpus)!;
   expect(r).not.toBeNull();
-  expect(r!.date).toBe("2026-07-06");
-  expect(r!.items.map((i) => i.slug).sort()).toEqual(["aces", "nichey", "trapzilla"]);
-  expect(r!.total).toBe(3);
+  expect(r.date).toBe("2026-07-06");
+  expect(r.items.map((i) => i.slug).sort()).toEqual(["aces", "nichey", "trapzilla"]);
+  expect(r.total).toBe(3);
 });
 
 test("verdict counts summarize the night", () => {
-  const r = getRecap("2026-07-06")!;
+  const r = getRecap("2026-07-06", corpus)!;
   expect(r.verdictCounts.essential).toBe(1);
   expect(r.verdictCounts["complexity-trap"]).toBe(1);
   expect(r.verdictCounts.niche).toBe(1);
@@ -123,20 +83,18 @@ test("verdict counts summarize the night", () => {
 });
 
 test("the lead pick is the highest-scoring tool of the day", () => {
-  const r = getRecap("2026-07-06")!;
-  expect(r.leadPick?.slug).toBe("aces");
+  expect(getRecap("2026-07-06", corpus)!.leadPick?.slug).toBe("aces");
 });
 
 test("the complexity trap of the night is the noisiest trap/redundant verdict", () => {
-  const r = getRecap("2026-07-06")!;
-  expect(r.complexityTrap?.slug).toBe("trapzilla");
+  expect(getRecap("2026-07-06", corpus)!.complexityTrap?.slug).toBe("trapzilla");
 });
 
-test("empty day returns null (no recap to send)", () => {
-  expect(getRecap("2026-07-04")).toBeNull();
+test("empty day returns null (no recap)", () => {
+  expect(getRecap("2026-07-04", corpus)).toBeNull();
 });
 
-test("latestRecapDate + recentRecapDates reflect the judged days, newest first", () => {
-  expect(latestRecapDate()).toBe("2026-07-06");
-  expect(recentRecapDates(10)).toEqual(["2026-07-06", "2026-07-05"]);
+test("latestRecapDate + recentRecapDates reflect judged days, newest first", () => {
+  expect(latestRecapDate(corpus)).toBe("2026-07-06");
+  expect(recentRecapDates(10, corpus)).toEqual(["2026-07-06", "2026-07-05"]);
 });
