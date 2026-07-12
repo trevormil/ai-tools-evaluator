@@ -10,8 +10,9 @@ import {
 import { createAnthropicModel, createOpenRouterModel, evaluateItem } from "./evaluate";
 import { rankCandidates } from "./rank";
 import { buildMedia, coverImageUrl } from "./media";
-import { createInternalClient, type InternalClient } from "./client";
+import { createGitStore, type GitStore } from "./store";
 import { writeArtifact } from "./artifact";
+import { postDigest } from "./discord";
 import type { Discovered, TrendingSource } from "./types";
 
 /**
@@ -19,13 +20,14 @@ import type { Discovered, TrendingSource } from "./types";
  * with fakes (no network, no model, no filesystem).
  */
 export type RunDeps = {
-  client: InternalClient;
+  /** Local git-corpus store (dedup reads, queue drain, artifact existence). */
+  store: GitStore;
   /** Trending sources (GitHub, ProductHunt, …), each with its own budget + rank. */
   trendingSources: TrendingSource[];
   resolveSubmission: (url: string) => Promise<Discovered | null>;
   evaluate: (d: Discovered) => Promise<Evaluation>;
   writeArtifact: (e: Evaluation) => Promise<unknown>;
-  /** Local daily cap (AIX_DAILY_CAP); the real bound is min(this, server remaining). */
+  /** Per-run cap on queued submissions drained (Actions runs daily → per-run ≈ daily). */
   cap: number;
   /** Master cap on total trending published per scan (AIX_TRENDING_PICKS; 0 = off). */
   trendingCap: number;
@@ -38,169 +40,127 @@ export type RunResult = {
   discovered: number;
   published: number;
   skippedDuplicate: number;
+  /** Highest-scored item published this run (queue + trending), for the Discord digest. */
+  pick?: Evaluation;
 };
 
 /**
- * One scan pass (architecture.md §4):
- *   1. drain the suggestion queue FIRST (oldest queued submissions),
- *   2. trending discovery fills the remainder,
- *   3. dedup is server-side (`publish` idempotent → treat `duplicate` as skip),
- *   4. cap total published at min(server remaining, local cap),
- *   5. export each published item as a strict `.md` artifact.
+ * One scan pass (architecture.md §4, git-native / ADR-0004):
+ *   1. drain the suggestion queue FIRST (oldest queued submissions), capped at `cap`,
+ *   2. trending discovery fills the remainder, capped at `trendingCap`,
+ *   3. dedup is local — an item whose `source.externalId` is already in the corpus
+ *      (or was published earlier this run) is skipped,
+ *   4. each published item is written as a strict `.md` artifact,
+ *   5. the highest-scored published item is returned as `pick` (the digest).
  * Dry-run discovers + evaluates but never publishes or writes — it prints.
  */
 export async function run(deps: RunDeps): Promise<RunResult> {
   if (deps.dryRun) return runDry(deps);
 
-  const { client, resolveSubmission, evaluate, log } = deps;
-  const runId = await client.openScanRun("scanner");
+  const { store, resolveSubmission, evaluate, log } = deps;
 
   let discovered = 0;
   let published = 0;
   let skippedDuplicate = 0;
+  let pick: Evaluation | undefined;
 
-  try {
-    const capInfo = await client.getCap();
-    // Two INDEPENDENT budgets so trending never starves submissions (and vice
-    // versa): the queue drains against the submission cap (bounded per-run by
-    // deps.cap, the circuit breaker); the trending pick draws from DAILY_CAP.
-    const subRemaining = capInfo.submissions?.remaining ?? capInfo.remaining;
-    const queueBudget = Math.max(0, Math.min(deps.cap, subRemaining));
-    // Total trending is bounded by the master cap (0 = queue-only) AND the
-    // server's remaining daily budget; per-source budgets divide it up below.
-    const totalCap = Math.max(0, Math.min(deps.trendingCap, capInfo.remaining));
+  // Dedup set: every externalId already in the corpus. Each new publish is added
+  // so intra-run duplicates (a queued item that also trends, or a repeat across
+  // two trending sources) are caught within the same pass.
+  const known = store.knownExternalIds();
+
+  const consider = (e: Evaluation): void => {
+    if (!pick || e.overallScore > pick.overallScore) pick = e;
+  };
+
+  // 1) DRAIN THE QUEUE (bounded by the per-run circuit breaker `deps.cap`).
+  const subs = store.listQueued(deps.cap);
+  log.info(`draining ${subs.length} queued submission(s)`);
+  for (const sub of subs) {
+    discovered++;
+    const d = await resolveSubmission(sub.url);
+    if (!d) {
+      log.warn(`could not resolve ${sub.url} — dropping from queue`);
+      store.removeQueued(sub.file);
+      continue;
+    }
+    let evaluation: Evaluation;
+    try {
+      evaluation = await evaluate(d);
+    } catch (err) {
+      // A single failed evaluation must not abort the whole scan.
+      log.warn(`eval failed for ${sub.url}, dropping: ${String(err)}`);
+      store.removeQueued(sub.file);
+      continue;
+    }
+    if (known.has(evaluation.source.externalId)) {
+      skippedDuplicate++;
+      store.removeQueued(sub.file);
+      log.info(`skip duplicate (queue) ${evaluation.source.externalId}`);
+      continue;
+    }
+    await deps.writeArtifact(evaluation);
+    known.add(evaluation.source.externalId);
+    store.removeQueued(sub.file);
+    published++;
+    consider(evaluation);
     log.info(
-      `cap: trending=${capInfo.remaining} submissions=${subRemaining} queueBudget=${queueBudget} totalCap=${totalCap}`,
+      `published (queue) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
     );
+  }
 
-    // 1) DRAIN THE QUEUE (bounded by the submission budget).
-    let queuePublished = 0;
-    if (queueBudget > 0) {
-      const subs = await client.listQueuedSubmissions(queueBudget);
-      log.info(`draining ${subs.length} queued submission(s)`);
-      for (const sub of subs) {
-        if (queuePublished >= queueBudget) break;
+  // 2) TRENDING (multi-source): each source (GitHub, ProductHunt, …) grades up to
+  //    its own budget, bounded in total by `trendingCap`. Dedup is the local
+  //    `known` set (already-graded + published-this-run). All graded items publish;
+  //    the digest below features only the single highest-scored across the run.
+  const totalCap = Math.max(0, deps.trendingCap);
+  if (totalCap > 0) {
+    const graded: Evaluation[] = [];
+    let capLeft = totalCap;
+    for (const src of deps.trendingSources) {
+      if (capLeft <= 0) break;
+      const want = Math.min(src.budget, capLeft);
+      if (want <= 0) continue;
+      const pool = await src.discover(20);
+      const fresh = pool.filter((d) => !known.has(d.source.externalId));
+      const ranked = src.rank(fresh, deps.now());
+      log.info(
+        `trending[${src.name}]: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) grading top ${want}`,
+      );
+      // Grade up to `want` from this source. A malformed eval is skipped, not fatal.
+      let gradedFromSrc = 0;
+      for (const d of ranked) {
+        if (gradedFromSrc >= want) break;
+        // A duplicate can slip in between discover and grade (a repeat in the
+        // pool, or an id another source already claimed this run).
+        if (known.has(d.source.externalId)) continue;
         discovered++;
-        await client.patchSubmission(sub.id, { status: "processing" });
-        const d = await resolveSubmission(sub.url);
-        if (!d) {
-          await client.patchSubmission(sub.id, {
-            status: "failed",
-            reason: "could not resolve url",
-          });
-          continue;
-        }
         let evaluation: Evaluation;
         try {
           evaluation = await evaluate(d);
         } catch (err) {
-          // A single failed evaluation must not abort the whole scan.
-          log.warn(`eval failed for submission ${sub.id}, skipping: ${String(err)}`);
-          await client.patchSubmission(sub.id, { status: "failed", reason: "evaluation failed" });
+          log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
           continue;
         }
-        const res = await client.publishItem(evaluation, String(sub.id), d.readme);
-        if (res.duplicate) {
-          skippedDuplicate++;
-          const itemId = res.item?.["id"];
-          await client.patchSubmission(sub.id, {
-            status: "duplicate",
-            itemId: itemId != null ? String(itemId) : undefined,
-          });
-          continue;
-        }
-        published++;
-        queuePublished++;
-        await deps.writeArtifact(evaluation);
-        log.info(
-          `published (queue) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
-        );
+        gradedFromSrc++;
+        known.add(evaluation.source.externalId);
+        graded.push(evaluation);
       }
+      capLeft -= gradedFromSrc;
     }
 
-    // 2) TRENDING (multi-source): each source (GitHub, ProductHunt, …) grades up
-    //    to its own budget, bounded in total by `totalCap`. All graded items
-    //    publish; only the single highest-scored across ALL sources is stamped
-    //    the featured daily pick (the rest are runners-up), so the directory
-    //    grows ~10/day while Discord still posts exactly one (the digest picks
-    //    the top score in its window, guarded once per UTC day).
-    if (totalCap > 0) {
-      const graded: { d: Discovered; evaluation: Evaluation }[] = [];
-      let capLeft = totalCap;
-      for (const src of deps.trendingSources) {
-        if (capLeft <= 0) break;
-        const want = Math.min(src.budget, capLeft);
-        if (want <= 0) continue;
-        const pool = await src.discover(20);
-        const known = await client.filterKnown(
-          pool.map((d) => ({ kind: d.source.kind, externalId: d.source.externalId })),
-        );
-        const fresh = pool.filter((d) => !known.has(d.source.externalId));
-        const ranked = src.rank(fresh, deps.now());
-        log.info(
-          `trending[${src.name}]: pool=${pool.length} fresh=${fresh.length} (dropped ${pool.length - fresh.length} known) grading top ${want}`,
-        );
-        // Grade up to `want` from this source. A malformed eval is skipped, not fatal.
-        let gradedFromSrc = 0;
-        for (const d of ranked) {
-          if (gradedFromSrc >= want) break;
-          discovered++;
-          try {
-            graded.push({ d, evaluation: await evaluate(d) });
-            gradedFromSrc++;
-          } catch (err) {
-            log.warn(`eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
-          }
-        }
-        capLeft -= gradedFromSrc;
-      }
-
-      // Exactly ONE featured daily pick — the highest-scored across ALL sources
-      // (agreeing with the digest/home, which choose by score). The rest publish
-      // as runners-up so the directory grows without extra Discord posts.
-      const pickSlug = graded.reduce<{ slug: string; score: number } | null>((best, g) => {
-        if (!best || g.evaluation.overallScore > best.score) {
-          return { slug: g.evaluation.slug, score: g.evaluation.overallScore };
-        }
-        return best;
-      }, null)?.slug;
-
-      for (const { d, evaluation } of graded) {
-        const isPick = evaluation.slug === pickSlug;
-        const res = await client.publishItem(evaluation, undefined, d.readme, {
-          dailyPick: isPick,
-        });
-        if (res.duplicate) {
-          skippedDuplicate++;
-          continue;
-        }
-        published++;
-        await deps.writeArtifact(evaluation);
-        log.info(
-          `published (${isPick ? "pick" : "runner-up"}) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
-        );
-      }
+    for (const evaluation of graded) {
+      await deps.writeArtifact(evaluation);
+      published++;
+      consider(evaluation);
+      log.info(
+        `published (trending) ${evaluation.slug} [${evaluation.verdict} ${evaluation.overallScore}]`,
+      );
     }
-
-    await client.closeScanRun(runId, {
-      status: "success",
-      discovered,
-      published,
-      skippedDuplicate,
-    });
-    return { discovered, published, skippedDuplicate };
-  } catch (err) {
-    await client
-      .closeScanRun(runId, {
-        status: "error",
-        discovered,
-        published,
-        skippedDuplicate,
-        error: String(err),
-      })
-      .catch(() => {});
-    throw err;
   }
+
+  log.info(`pick: ${pick ? `${pick.slug} [${pick.overallScore}]` : "none"}`);
+  return { discovered, published, skippedDuplicate, pick };
 }
 
 async function runDry(deps: RunDeps): Promise<RunResult> {
@@ -292,13 +252,10 @@ async function main(): Promise<void> {
   const resolveSubmission = async (url: string): Promise<Discovered | null> =>
     (await github.resolveUrl(url)) ?? (await arxiv.resolveUrl(url));
 
-  const client = createInternalClient({
-    baseUrl: env.AIX_WEB_URL,
-    token: env.AIX_INTERNAL_TOKEN ?? "",
-  });
+  const store = createGitStore();
 
   const result = await run({
-    client,
+    store,
     trendingSources,
     resolveSubmission,
     evaluate,
@@ -310,7 +267,14 @@ async function main(): Promise<void> {
     log,
   });
 
-  log.info(`done: ${JSON.stringify(result)}`);
+  log.info(`done: ${JSON.stringify({ ...result, pick: result.pick?.slug })}`);
+
+  // Exactly one Discord digest per run — only when a webhook is configured and
+  // the run actually published something. Dev/local runs without the secret post
+  // nothing; a webhook failure is swallowed inside postDigest.
+  if (!env.AIX_DRY_RUN && env.DISCORD_WEBHOOK_URL && result.pick) {
+    await postDigest(env.DISCORD_WEBHOOK_URL, result.pick);
+  }
 }
 
 if (import.meta.main) {

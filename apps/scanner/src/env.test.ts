@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { loadEnv, requireLiveSecrets } from "./env";
 
-const base = { GITHUB_TOKEN: "g", AIX_INTERNAL_TOKEN: "t" };
+const base = { GITHUB_TOKEN: "g" };
 
 describe("requireLiveSecrets — model provider", () => {
   test("accepts OPENROUTER_API_KEY as the model provider", () => {
@@ -53,5 +53,31 @@ describe("trending budgets", () => {
   test("PRODUCTHUNT_API_TOKEN is optional (absent → PH disabled, GitHub-only)", () => {
     expect(loadEnv({ ...base }).PRODUCTHUNT_API_TOKEN).toBeUndefined();
     expect(loadEnv({ ...base, PRODUCTHUNT_API_TOKEN: "tok" }).PRODUCTHUNT_API_TOKEN).toBe("tok");
+  });
+});
+
+describe("DISCORD_WEBHOOK_URL", () => {
+  test("is optional (absent → no digest posted)", () => {
+    expect(loadEnv({ ...base }).DISCORD_WEBHOOK_URL).toBeUndefined();
+  });
+
+  test('empty string reads as absent (Actions injects unset secrets as "")', () => {
+    expect(loadEnv({ ...base, DISCORD_WEBHOOK_URL: "" }).DISCORD_WEBHOOK_URL).toBeUndefined();
+  });
+
+  test("a valid webhook URL is kept", () => {
+    const url = "https://discord.com/api/webhooks/123/abc";
+    expect(loadEnv({ ...base, DISCORD_WEBHOOK_URL: url }).DISCORD_WEBHOOK_URL).toBe(url);
+  });
+
+  test("rejects a non-URL value", () => {
+    expect(() => loadEnv({ ...base, DISCORD_WEBHOOK_URL: "not-a-url" })).toThrow();
+  });
+});
+
+describe("requireLiveSecrets no longer needs an internal token", () => {
+  test("a live run needs only GitHub + a model provider", () => {
+    const env = loadEnv({ ...base, OPENROUTER_API_KEY: "o" });
+    expect(() => requireLiveSecrets(env)).not.toThrow();
   });
 });

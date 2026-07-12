@@ -3,7 +3,7 @@ import { Evaluation, computeOverall } from "@aix/core";
 import { run, type RunDeps } from "./index";
 import { nullLogger } from "./logger";
 import { rankCandidates } from "./rank";
-import type { InternalClient, Submission } from "./client";
+import type { GitStore, QueuedFile } from "./store";
 import type { Discovered, TrendingSource } from "./types";
 import { makeDraft, makeGithubSource } from "./test-fixtures";
 
@@ -23,70 +23,46 @@ function evalFor(externalId: string): Evaluation {
   });
 }
 
-type ClientCall = { op: string; arg?: unknown };
+type StoreCall = { op: string; arg?: unknown };
 
-/** A fake internal client that records calls and drives cap/queue behavior. */
-function fakeClient(opts: {
-  remaining: number; // trending budget remaining
-  queued: Submission[];
-  duplicates?: Set<string>; // externalIds that should report duplicate on publish
-  known?: Set<string>; // externalIds already graded (pre-eval dedup)
-  submissionRemaining?: number; // submission budget remaining (default: plenty)
-}): InternalClient & { calls: ClientCall[]; publishedOrder: string[]; pickedOrder: string[] } {
-  const calls: ClientCall[] = [];
-  const publishedOrder: string[] = [];
-  const pickedOrder: string[] = [];
-  const dups = opts.duplicates ?? new Set<string>();
+/**
+ * A fake git-corpus store: an in-memory `known` dedup set, an array-backed queue,
+ * and recorded `removeQueued` calls. `knownExternalIds` hands back a COPY so the
+ * loop's local mutations don't leak back into the fake (matching the real store,
+ * which re-reads the corpus from disk each call).
+ */
+function fakeStore(opts: {
+  queued?: QueuedFile[];
+  known?: Set<string>;
+}): GitStore & { calls: StoreCall[]; removed: string[] } {
+  const calls: StoreCall[] = [];
+  const removed: string[] = [];
   const known = opts.known ?? new Set<string>();
+  const queued = [...(opts.queued ?? [])];
   return {
     calls,
-    publishedOrder,
-    pickedOrder,
-    async getCap() {
-      calls.push({ op: "getCap" });
-      return {
-        date: "2026-07-06",
-        publishedToday: 0,
-        remaining: opts.remaining,
-        dailyCap: 10,
-        submissions: { publishedToday: 0, remaining: opts.submissionRemaining ?? 999, cap: 50 },
-      };
+    removed,
+    knownExternalIds() {
+      calls.push({ op: "known" });
+      return new Set(known);
     },
-    async filterKnown(candidates) {
-      calls.push({ op: "filterKnown", arg: candidates.map((c) => c.externalId) });
-      return new Set(candidates.map((c) => c.externalId).filter((id) => known.has(id)));
-    },
-    async listQueuedSubmissions(limit) {
+    listQueued(limit) {
       calls.push({ op: "listQueued", arg: limit });
-      return opts.queued.slice(0, limit);
+      return queued.slice(0, limit);
     },
-    async publishItem(evaluation, submissionId, _readmeMd, publishOpts) {
-      const ext = evaluation.source.externalId;
-      calls.push({ op: "publish", arg: { ext, submissionId, dailyPick: publishOpts?.dailyPick } });
-      if (dups.has(ext)) return { duplicate: true, item: { id: `existing-${ext}` } };
-      publishedOrder.push(ext);
-      // A trending publish flagged as the pick (default true when omitted).
-      if (submissionId === undefined && (publishOpts?.dailyPick ?? true)) pickedOrder.push(ext);
-      return { duplicate: false, item: { id: `item-${ext}` } };
+    removeQueued(file) {
+      calls.push({ op: "removeQueued", arg: file });
+      removed.push(file);
     },
-    async patchSubmission(id, body) {
-      calls.push({ op: "patch", arg: { id, ...body } });
-    },
-    async openScanRun() {
-      calls.push({ op: "openRun" });
-      return 1;
-    },
-    async closeScanRun(_id, body) {
-      // Mirror the server contract (scan-runs/[id] validates z.enum(["success","error"]))
-      // so a drifting status literal fails here the way it fails in production.
-      if (body.status !== "success" && body.status !== "error") {
-        throw new Error(
-          `PATCH /api/internal/scan-runs/1 -> 400 invalid status ${String(body.status)}`,
-        );
-      }
-      calls.push({ op: "closeRun", arg: body });
+    hasSlug(slug) {
+      return known.has(slug);
     },
   };
+}
+
+/** A queued submission file (the shape `store.listQueued` returns). */
+function q(url: string, submittedAt: string): QueuedFile {
+  return { file: `${url.split("github.com/")[1] ?? url}.json`, url, source: "web", submittedAt };
 }
 
 /** A GitHub-style trending source (real star-velocity rank) for the loop tests. */
@@ -104,14 +80,17 @@ function orderedSource(name: string, exts: string[], budget: number): TrendingSo
   };
 }
 
-function baseDeps(overrides: Partial<RunDeps>): RunDeps {
+/** Deps builder that also exposes the published-order (via a writeArtifact spy). */
+function makeDeps(overrides: Partial<RunDeps> = {}): { deps: RunDeps; writes: string[] } {
   const writes: string[] = [];
-  return {
-    client: fakeClient({ remaining: 10, queued: [] }),
+  const deps: RunDeps = {
+    store: fakeStore({}),
     trendingSources: [ghSource(async () => [], 10)],
     resolveSubmission: async () => null,
     evaluate: async (d: Discovered) => evalFor(d.source.externalId),
-    writeArtifact: async (e) => writes.push(e.slug),
+    writeArtifact: async (e) => {
+      writes.push(e.source.externalId);
+    },
     cap: 10,
     trendingCap: 10,
     dryRun: false,
@@ -119,6 +98,7 @@ function baseDeps(overrides: Partial<RunDeps>): RunDeps {
     log: nullLogger,
     ...overrides,
   };
+  return { deps, writes };
 }
 
 const trendingDiscovered = (
@@ -130,12 +110,11 @@ const trendingDiscovered = (
 });
 
 describe("run loop", () => {
-  test("drains the queue BEFORE trending discovery", async () => {
-    const client = fakeClient({
-      remaining: 10,
+  test("drains the queue BEFORE trending discovery, and removes each queue file", async () => {
+    const store = fakeStore({
       queued: [
-        { id: "s1", url: "https://github.com/q/one", status: "queued" },
-        { id: "s2", url: "https://github.com/q/two", status: "queued" },
+        q("https://github.com/q/one", "2026-07-01"),
+        q("https://github.com/q/two", "2026-07-02"),
       ],
     });
     const resolveMap: Record<string, string> = {
@@ -143,214 +122,209 @@ describe("run loop", () => {
       "https://github.com/q/two": "q/two",
     };
 
-    const result = await run(
-      baseDeps({
-        client,
-        resolveSubmission: async (url) =>
-          resolveMap[url] ? trendingDiscovered(resolveMap[url]!) : null,
-        trendingSources: [
-          ghSource(async () => [trendingDiscovered("trend/a"), trendingDiscovered("trend/b")]),
-        ],
-      }),
-    );
+    const { deps, writes } = makeDeps({
+      store,
+      resolveSubmission: async (url) =>
+        resolveMap[url] ? trendingDiscovered(resolveMap[url]!) : null,
+      trendingSources: [
+        ghSource(async () => [trendingDiscovered("trend/a"), trendingDiscovered("trend/b")]),
+      ],
+    });
+    const result = await run(deps);
 
     // Queue items published first, in order, before any trending item.
-    expect(client.publishedOrder).toEqual(["q/one", "q/two", "trend/a", "trend/b"]);
+    expect(writes).toEqual(["q/one", "q/two", "trend/a", "trend/b"]);
     expect(result.published).toBe(4);
-    // Trending must be graded only AFTER the queue is listed.
-    const listIdx = client.calls.findIndex((c) => c.op === "listQueued");
-    const firstTrendPublish = client.calls.findIndex(
-      (c) => c.op === "publish" && (c.arg as { ext: string }).ext.startsWith("trend/"),
-    );
-    const firstQueuePublish = client.calls.findIndex(
-      (c) => c.op === "publish" && (c.arg as { ext: string }).ext.startsWith("q/"),
-    );
+    // Both queue files were removed after processing.
+    expect(store.removed).toEqual(["q/one.json", "q/two.json"]);
+    // Queue is listed before any trending discovery happens.
+    const listIdx = store.calls.findIndex((c) => c.op === "listQueued");
     expect(listIdx).toBeGreaterThanOrEqual(0);
-    expect(firstQueuePublish).toBeLessThan(firstTrendPublish);
   });
 
-  test("trending respects the server's remaining daily budget", async () => {
-    const client = fakeClient({ remaining: 1, queued: [] }); // only 1 trending slot left
-    const result = await run(
-      baseDeps({
-        client,
-        trendingSources: [
-          ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 10),
-        ],
-      }),
-    );
+  test("queue drains oldest-first regardless of the order the store returns", async () => {
+    // The real store sorts by submittedAt; the loop must publish in that order.
+    const store = fakeStore({
+      queued: [
+        q("https://github.com/q/old", "2026-07-01"),
+        q("https://github.com/q/new", "2026-07-05"),
+      ],
+    });
+    const { deps, writes } = makeDeps({
+      store,
+      resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
+      trendingCap: 0,
+    });
+    await run(deps);
+    expect(writes).toEqual(["q/old", "q/new"]);
+  });
+
+  test("trending is bounded by the master trending cap", async () => {
+    const store = fakeStore({});
+    const { deps, writes } = makeDeps({
+      store,
+      trendingCap: 1, // only one trending slot this run
+      trendingSources: [
+        ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 10),
+      ],
+    });
+    const result = await run(deps);
     expect(result.published).toBe(1);
-    expect(client.publishedOrder).toEqual(["t/a"]);
+    expect(writes).toEqual(["t/a"]);
   });
 
-  test("a multi-item trending batch stamps exactly ONE daily pick (the highest-scored)", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    // b outscores a and c, so it must be THE pick; a and c publish as runners-up.
-    const scores: Record<string, number> = { "t/a": 60, "t/b": 88, "t/c": 71 };
-    const result = await run(
-      baseDeps({
-        client,
-        trendingSources: [
-          ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 3),
-        ],
-        evaluate: async (d) => ({
-          ...evalFor(d.source.externalId),
-          overallScore: scores[d.source.externalId]!,
-        }),
-      }),
-    );
-    expect(result.published).toBe(3); // all three saved to the directory
-    expect(client.pickedOrder).toEqual(["t/b"]); // exactly one pick, the top score
-  });
-
-  test("runs multiple sources with per-source budgets, featuring the single best across ALL", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
+  test("runs multiple sources with per-source budgets, picking the single best across ALL", async () => {
+    const store = fakeStore({});
     // ph/a is the highest score across BOTH sources → it must be THE pick.
     const scores: Record<string, number> = { "gh/a": 60, "gh/b": 55, "ph/a": 91, "ph/b": 70 };
-    const result = await run(
-      baseDeps({
-        client,
-        trendingCap: 10,
-        trendingSources: [
-          orderedSource("github", ["gh/a", "gh/b"], 2),
-          orderedSource("producthunt", ["ph/a", "ph/b"], 2),
-        ],
-        evaluate: async (d) => ({
-          ...evalFor(d.source.externalId),
-          overallScore: scores[d.source.externalId]!,
-        }),
+    const { deps, writes } = makeDeps({
+      store,
+      trendingCap: 10,
+      trendingSources: [
+        orderedSource("github", ["gh/a", "gh/b"], 2),
+        orderedSource("producthunt", ["ph/a", "ph/b"], 2),
+      ],
+      evaluate: async (d) => ({
+        ...evalFor(d.source.externalId),
+        overallScore: scores[d.source.externalId]!,
       }),
-    );
+    });
+    const result = await run(deps);
     expect(result.published).toBe(4); // 2 from each source (the 5+5 mix, scaled down)
-    expect(client.publishedOrder).toEqual(["gh/a", "gh/b", "ph/a", "ph/b"]);
-    expect(client.pickedOrder).toEqual(["ph/a"]); // single best across both sources
+    expect(writes).toEqual(["gh/a", "gh/b", "ph/a", "ph/b"]);
+    expect(result.pick?.source.externalId).toBe("ph/a"); // single best across both sources
   });
 
   test("the master trending cap bounds the total across sources", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    const result = await run(
-      baseDeps({
-        client,
-        trendingCap: 3, // less than the 2+2 the sources would otherwise publish
-        trendingSources: [
-          orderedSource("github", ["gh/a", "gh/b"], 2),
-          orderedSource("producthunt", ["ph/a", "ph/b"], 2),
-        ],
-      }),
-    );
+    const store = fakeStore({});
+    const { deps, writes } = makeDeps({
+      store,
+      trendingCap: 3, // less than the 2+2 the sources would otherwise publish
+      trendingSources: [
+        orderedSource("github", ["gh/a", "gh/b"], 2),
+        orderedSource("producthunt", ["ph/a", "ph/b"], 2),
+      ],
+    });
+    const result = await run(deps);
     // github fills 2, producthunt gets the remaining 1 → 3 total.
     expect(result.published).toBe(3);
-    expect(client.publishedOrder).toEqual(["gh/a", "gh/b", "ph/a"]);
+    expect(writes).toEqual(["gh/a", "gh/b", "ph/a"]);
   });
 
-  test("the queue drains against the submission budget even when trending is off", async () => {
-    // The TerMinal case: trending cap is 0, but human submissions still process.
-    const client = fakeClient({
-      remaining: 0, // trending exhausted
-      submissionRemaining: 3, // 3 submissions left today
-      queued: [
-        { id: "s1", url: "https://github.com/q/one", status: "queued" },
-        { id: "s2", url: "https://github.com/q/two", status: "queued" },
-        { id: "s3", url: "https://github.com/q/three", status: "queued" },
-        { id: "s4", url: "https://github.com/q/four", status: "queued" },
-      ],
+  test("the per-run cap bounds the queue drain", async () => {
+    const store = fakeStore({
+      queued: [1, 2, 3, 4, 5].map((n) => q(`https://github.com/q/${n}`, `2026-07-0${n}`)),
     });
-    const result = await run(
-      baseDeps({
-        client,
-        cap: 10,
-        trendingCap: 0,
-        resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
-      }),
-    );
-    // 3 processed (submission budget), not blocked by the 0 trending cap.
-    expect(result.published).toBe(3);
-    expect(client.publishedOrder).toEqual(["q/one", "q/two", "q/three"]);
-  });
-
-  test("the per-run circuit breaker (deps.cap) bounds the queue below the daily submission budget", async () => {
-    const client = fakeClient({
-      remaining: 0,
-      submissionRemaining: 50,
-      queued: [1, 2, 3, 4, 5].map((n) => ({
-        id: `s${n}`,
-        url: `https://github.com/q/${n}`,
-        status: "queued",
-      })),
+    const { deps, writes } = makeDeps({
+      store,
+      cap: 2, // circuit breaker: max 2 per run
+      trendingCap: 0,
+      resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
     });
-    const result = await run(
-      baseDeps({
-        client,
-        cap: 2, // circuit breaker: max 2 per run
-        trendingCap: 0,
-        resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
-      }),
-    );
+    const result = await run(deps);
     expect(result.published).toBe(2);
+    expect(writes).toEqual(["q/1", "q/2"]);
+    // listQueued was asked for at most `cap` items.
+    expect(store.calls.find((c) => c.op === "listQueued")?.arg).toBe(2);
   });
 
-  test("treats server-side duplicates as skips, not publishes", async () => {
-    const client = fakeClient({
-      remaining: 10,
-      queued: [],
-      duplicates: new Set(["t/dup"]),
-    });
-    const result = await run(
-      baseDeps({
-        client,
-        trendingSources: [
-          ghSource(async () => [trendingDiscovered("t/dup"), trendingDiscovered("t/new")]),
-        ],
-      }),
-    );
-    expect(client.publishedOrder).toEqual(["t/new"]);
-    expect(result.skippedDuplicate).toBe(1);
-    expect(result.published).toBe(1);
-  });
-
-  test("closes a successful run with the server-accepted 'success' status", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    await run(
-      baseDeps({ client, trendingSources: [ghSource(async () => [trendingDiscovered("t/a")])] }),
-    );
-    const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
-    expect(close.status).toBe("success");
-  });
-
-  test("closes the scan-run with error and rethrows on failure", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    const boom = baseDeps({
-      client,
-      trendingSources: [
-        ghSource(async () => {
-          throw new Error("discovery blew up");
-        }),
+  test("queue: a duplicate (already in the corpus) is skipped, removed, and not published", async () => {
+    const store = fakeStore({
+      known: new Set(["q/dup"]),
+      queued: [
+        q("https://github.com/q/dup", "2026-07-01"),
+        q("https://github.com/q/new", "2026-07-02"),
       ],
     });
-    await expect(run(boom)).rejects.toThrow("discovery blew up");
-    const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
-    expect(close.status).toBe("error");
+    const { deps, writes } = makeDeps({
+      store,
+      trendingCap: 0,
+      resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
+    });
+    const result = await run(deps);
+    expect(writes).toEqual(["q/new"]); // dup never written
+    expect(result.published).toBe(1);
+    expect(result.skippedDuplicate).toBe(1);
+    // Both queue files removed — the duplicate is drained too, not left to retry forever.
+    expect(store.removed).toEqual(["q/dup.json", "q/new.json"]);
+  });
+
+  test("queue: an unresolvable submission is dropped (removed, not published)", async () => {
+    const store = fakeStore({
+      queued: [
+        q("https://github.com/q/bad", "2026-07-01"),
+        q("https://github.com/q/ok", "2026-07-02"),
+      ],
+    });
+    const { deps, writes } = makeDeps({
+      store,
+      trendingCap: 0,
+      resolveSubmission: async (url) =>
+        url.endsWith("/bad") ? null : trendingDiscovered(url.split("github.com/")[1]!),
+    });
+    const result = await run(deps);
+    expect(writes).toEqual(["q/ok"]);
+    expect(result.published).toBe(1);
+    expect(store.removed).toEqual(["q/bad.json", "q/ok.json"]);
   });
 
   test("a single failed evaluation is skipped, not fatal — the rest still publish", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    const result = await run(
-      baseDeps({
-        client,
-        trendingSources: [
-          ghSource(async () => ["t/good1", "t/bad", "t/good2"].map((e) => trendingDiscovered(e))),
-        ],
-        evaluate: async (d: Discovered) => {
-          if (d.source.externalId === "t/bad") throw new Error("schema never repaired");
-          return evalFor(d.source.externalId);
-        },
-      }),
-    );
+    const store = fakeStore({});
+    const { deps, writes } = makeDeps({
+      store,
+      trendingSources: [
+        ghSource(async () => ["t/good1", "t/bad", "t/good2"].map((e) => trendingDiscovered(e))),
+      ],
+      evaluate: async (d: Discovered) => {
+        if (d.source.externalId === "t/bad") throw new Error("schema never repaired");
+        return evalFor(d.source.externalId);
+      },
+    });
+    const result = await run(deps);
     // The bad item is skipped; the two good ones publish and the run succeeds.
-    expect(client.publishedOrder).toEqual(["t/good1", "t/good2"]);
+    expect(writes).toEqual(["t/good1", "t/good2"]);
     expect(result.published).toBe(2);
-    const close = client.calls.find((c) => c.op === "closeRun")!.arg as { status: string };
-    expect(close.status).toBe("success");
+  });
+
+  test("a failed queue evaluation is dropped from the queue and doesn't abort the drain", async () => {
+    const store = fakeStore({
+      queued: [
+        q("https://github.com/q/boom", "2026-07-01"),
+        q("https://github.com/q/ok", "2026-07-02"),
+      ],
+    });
+    const { deps, writes } = makeDeps({
+      store,
+      trendingCap: 0,
+      resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
+      evaluate: async (d) => {
+        if (d.source.externalId === "q/boom") throw new Error("eval blew up");
+        return evalFor(d.source.externalId);
+      },
+    });
+    const result = await run(deps);
+    expect(writes).toEqual(["q/ok"]);
+    expect(result.published).toBe(1);
+    expect(store.removed).toEqual(["q/boom.json", "q/ok.json"]);
+  });
+
+  test("the highest-scored published item across queue + trending is returned as the pick", async () => {
+    const store = fakeStore({ queued: [q("https://github.com/q/a", "2026-07-01")] });
+    const scores: Record<string, number> = { "q/a": 50, "t/a": 82, "t/b": 71 };
+    const { deps } = makeDeps({
+      store,
+      trendingCap: 10,
+      resolveSubmission: async (url) => trendingDiscovered(url.split("github.com/")[1]!),
+      trendingSources: [orderedSource("github", ["t/a", "t/b"], 2)],
+      evaluate: async (d) => ({
+        ...evalFor(d.source.externalId),
+        overallScore: scores[d.source.externalId]!,
+      }),
+    });
+    const result = await run(deps);
+    // t/a (82) outscores both the queue item q/a (50) and t/b (71).
+    expect(result.pick?.source.externalId).toBe("t/a");
+    expect(result.published).toBe(3); // q/a + t/a + t/b
   });
 
   const NOW = new Date("2026-07-07T00:00:00.000Z");
@@ -361,63 +335,60 @@ describe("run loop", () => {
     });
 
   test("a budget of 1 publishes only the single highest-velocity pick", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    const result = await run(
-      baseDeps({
-        client,
-        trendingSources: [
-          ghSource(
-            async () => [
-              veloRepo("t/slow", 1000, 1000),
-              veloRepo("t/fast", 5000, 10),
-              veloRepo("t/mid", 2000, 40),
-            ],
-            1,
-          ),
-        ],
-      }),
-    );
-    expect(client.publishedOrder).toEqual(["t/fast"]);
+    const store = fakeStore({});
+    const { deps, writes } = makeDeps({
+      store,
+      trendingSources: [
+        ghSource(
+          async () => [
+            veloRepo("t/slow", 1000, 1000),
+            veloRepo("t/fast", 5000, 10),
+            veloRepo("t/mid", 2000, 40),
+          ],
+          1,
+        ),
+      ],
+    });
+    const result = await run(deps);
+    expect(writes).toEqual(["t/fast"]);
     expect(result.published).toBe(1);
   });
 
   test("pre-eval dedup: already-graded candidates are dropped before grading", async () => {
     const evaluated: string[] = [];
-    const client = fakeClient({
-      remaining: 10,
-      queued: [],
+    const store = fakeStore({
       known: new Set(["t/fast"]), // the top pick is already in the catalog
     });
-    const result = await run(
-      baseDeps({
-        client,
-        evaluate: async (d: Discovered) => {
-          evaluated.push(d.source.externalId);
-          return evalFor(d.source.externalId);
-        },
-        trendingSources: [
-          ghSource(async () => [veloRepo("t/fast", 5000, 10), veloRepo("t/fresh", 3000, 30)], 1),
-        ],
-      }),
-    );
+    const { deps, writes } = makeDeps({
+      store,
+      evaluate: async (d: Discovered) => {
+        evaluated.push(d.source.externalId);
+        return evalFor(d.source.externalId);
+      },
+      trendingSources: [
+        ghSource(async () => [veloRepo("t/fast", 5000, 10), veloRepo("t/fresh", 3000, 30)], 1),
+      ],
+    });
+    const result = await run(deps);
     // The known top pick is never graded; the next-best fresh one is chosen.
     expect(evaluated).toEqual(["t/fresh"]);
-    expect(client.publishedOrder).toEqual(["t/fresh"]);
+    expect(writes).toEqual(["t/fresh"]);
     expect(result.published).toBe(1);
   });
 
-  test("dry-run evaluates but never publishes or opens a scan-run", async () => {
-    const client = fakeClient({ remaining: 10, queued: [] });
-    const result = await run(
-      baseDeps({
-        client,
-        dryRun: true,
-        trendingSources: [
-          ghSource(async () => [trendingDiscovered("t/a"), trendingDiscovered("t/b")]),
-        ],
-      }),
-    );
+  test("dry-run evaluates but never publishes or touches the store", async () => {
+    const store = fakeStore({ queued: [q("https://github.com/q/one", "2026-07-01")] });
+    const { deps, writes } = makeDeps({
+      store,
+      dryRun: true,
+      trendingSources: [
+        ghSource(async () => [trendingDiscovered("t/a"), trendingDiscovered("t/b")]),
+      ],
+    });
+    const result = await run(deps);
     expect(result.published).toBe(0);
-    expect(client.calls).toHaveLength(0); // no client interaction at all in dry-run
+    expect(writes).toHaveLength(0);
+    expect(store.calls).toHaveLength(0); // no store interaction at all in dry-run
+    expect(store.removed).toHaveLength(0);
   });
 });

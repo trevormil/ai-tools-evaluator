@@ -14,16 +14,21 @@ const optionalSecret = z.preprocess(
   z.string().min(1).optional(),
 );
 
+/** Optional URL secret — like `optionalSecret`, but validates a real URL when set.
+ *  GitHub Actions injects an unset secret as `""`, which must read as absent
+ *  (an empty string would otherwise fail `.url()` and crash the run). */
+const optionalUrl = z.preprocess((v) => (v === "" ? undefined : v), z.string().url().optional());
+
 const EnvSchema = z.object({
   GITHUB_TOKEN: optionalSecret,
   ANTHROPIC_API_KEY: optionalSecret,
   /** OpenRouter (OpenAI-compatible) key — preferred when set, for cheap inference. */
   OPENROUTER_API_KEY: optionalSecret,
-  AIX_INTERNAL_TOKEN: optionalSecret,
   /** ProductHunt developer token. When absent, the PH trending source is
    *  disabled and the scan runs GitHub-only (no failure). */
   PRODUCTHUNT_API_TOKEN: optionalSecret,
-  AIX_WEB_URL: z.string().url().default("http://localhost:3000"),
+  /** Discord webhook for the once-per-run digest of the top pick. Absent → no post. */
+  DISCORD_WEBHOOK_URL: optionalUrl,
   /**
    * Evaluator model. Defaults to the cheapest OpenRouter model that reliably
    * produces the strict nested scorecard (each metric = {score, rationale}).
@@ -65,10 +70,10 @@ export function loadEnv(source: NodeJS.ProcessEnv = process.env): ScannerEnv {
 }
 
 /**
- * Fail fast if the secrets a *live* run needs are missing. Dry-run still needs
- * GitHub + a model provider (it discovers and evaluates for real), but not the
- * internal token (it never touches the web app). Exactly one model provider key
- * is required — OPENROUTER_API_KEY (preferred, cheap) or ANTHROPIC_API_KEY.
+ * Fail fast if the secrets a run needs are missing. The scanner writes the git
+ * corpus directly (no web app), so it needs GitHub + a model provider — for both
+ * live and dry runs (both discover and evaluate for real). Exactly one model
+ * provider key is required — OPENROUTER_API_KEY (preferred, cheap) or ANTHROPIC_API_KEY.
  */
 export function requireLiveSecrets(env: ScannerEnv): void {
   const missing: string[] = [];
@@ -76,7 +81,6 @@ export function requireLiveSecrets(env: ScannerEnv): void {
   if (!env.OPENROUTER_API_KEY && !env.ANTHROPIC_API_KEY) {
     missing.push("OPENROUTER_API_KEY or ANTHROPIC_API_KEY");
   }
-  if (!env.AIX_DRY_RUN && !env.AIX_INTERNAL_TOKEN) missing.push("AIX_INTERNAL_TOKEN");
   if (missing.length) {
     throw new Error(`missing required env: ${missing.join(", ")}`);
   }

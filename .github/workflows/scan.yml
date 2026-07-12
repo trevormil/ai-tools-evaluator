@@ -1,0 +1,59 @@
+# Daily corpus scan (ADR-0004, Phase 5). Runs the scanner against the git corpus:
+# it drains content/queue/*.json (human submissions), grades trending GitHub +
+# ProductHunt items, writes new content/items/*.md artifacts, posts ONE Discord
+# digest of the top pick, then commits + pushes the changes. No web app, no DB.
+#
+# Required repo secrets (Settings → Secrets and variables → Actions):
+#   ANTHROPIC_API_KEY     — model provider (optional if OPENROUTER_API_KEY is set)
+#   OPENROUTER_API_KEY    — preferred cheap model provider (optional if ANTHROPIC set)
+#   PRODUCTHUNT_API_TOKEN — optional; absent → GitHub-only trending
+#   DISCORD_WEBHOOK_URL   — optional; absent → no digest posted
+# GITHUB_TOKEN is provided automatically by Actions (used for discovery + push).
+#
+# The per-run caps default in apps/scanner/src/env.ts (AIX_DAILY_CAP=10, the 5+5
+# GitHub/ProductHunt trending mix). To override, add e.g.
+# `AIX_DAILY_CAP: ${{ vars.AIX_DAILY_CAP }}` under the Run scanner `env:` AND set
+# the repo variable — an unset variable injects "" and would fail numeric parsing,
+# so only wire the ones you actually set.
+name: scan
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # daily at 09:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.0"
+
+      - run: bun install --frozen-lockfile
+
+      - name: Run scanner
+        run: bun apps/scanner/src/index.ts
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          PRODUCTHUNT_API_TOKEN: ${{ secrets.PRODUCTHUNT_API_TOKEN }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+
+      - name: Commit corpus changes
+        run: |
+          git config user.name "aix-scanner[bot]"
+          git config user.email "aix-scanner[bot]@users.noreply.github.com"
+          git add content
+          git diff --staged --quiet || git commit -m "chore(scan): daily corpus update [skip ci]"
+          git push
