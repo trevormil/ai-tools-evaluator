@@ -1,14 +1,19 @@
 ---
 anchor: ADR-0002
-status: accepted
+status: superseded
 date: 2026-07-06
+superseded-by: ADR-0004
 ---
 
 # ADR-0002: AIx stack, storage, and topology
 
 ## Status
 
-Accepted.
+Superseded by [ADR-0004](./0004-aix-static-git-native.md) (2026-07-12) — AIx
+drops the social surface and moves to a static, git-native directory with no
+server. The SQLite/single-writer and k8s topology decisions below no longer
+hold; the strict `@aix/core` schema and git `.md` archive do (now the source of
+truth). Retained for history.
 
 ## Context
 
