@@ -21,17 +21,6 @@ export function topRated(limit = 12): Item[] {
   );
 }
 
-/** Most comments — where the arguments are actually happening. */
-export function mostDiscussed(limit = 12): Item[] {
-  return getDb()
-    .select()
-    .from(items)
-    .where(eq(items.published, true))
-    .orderBy(desc(items.commentCount), desc(items.upvotes))
-    .limit(limit)
-    .all();
-}
-
 /**
  * The Hall of Shame: things judged `complexity-trap` or `redundant`, worst
  * (noisiest) first. The site's whole point is to name these out loud.

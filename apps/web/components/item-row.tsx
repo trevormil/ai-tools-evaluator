@@ -7,10 +7,10 @@ import { SegMeter } from "./seg-meter";
 
 /**
  * Directory row — the bench log line. Dense and scannable: logo, name +
- * verdict stamp, tagline, then the readout column (meter + score, uses,
- * comments). Pending submissions show their queue state instead of numbers.
+ * verdict stamp, tagline, then the readout column (meter + score). Pending
+ * submissions show their queue state instead of numbers.
  */
-export function ItemRow({ item, uses = 0 }: { item: Item; uses?: number }) {
+export function ItemRow({ item }: { item: Item }) {
   const pending = item.scoreStatus === "pending";
   return (
     <Link href={`/item/${item.slug}`} className="card card-hover flex items-center gap-4 px-4 py-3">
@@ -36,12 +36,6 @@ export function ItemRow({ item, uses = 0 }: { item: Item; uses?: number }) {
               {CATEGORY_LABELS[item.category as Category] ?? item.category}
             </span>
           )}
-          {uses > 0 && (
-            <span className="data">
-              {uses} {uses === 1 ? "engineer uses" : "engineers use"} this
-            </span>
-          )}
-          {item.commentCount > 0 && <span className="data">{item.commentCount} comments</span>}
         </div>
       </div>
 

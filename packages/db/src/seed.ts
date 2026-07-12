@@ -19,7 +19,7 @@ import {
   type Evaluation as Eval,
   type MetricKey,
 } from "@aix/core";
-import { getDb, items, users, posts, comments, stackItems, activities } from "@aix/db";
+import { getDb, items } from "@aix/db";
 
 /* -------------------------------------------------------- hot ranking (local)
  * Mirrors apps/web/lib/ranking.ts. Duplicated (a few lines) so the seed doesn't
@@ -991,19 +991,6 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
 
 /* --------------------------------------------------------------------- runner */
 
-function upsertUser(
-  username: string,
-  role: "user" | "bot",
-  displayName: string,
-  bio: string,
-): string {
-  const db = getDb();
-  const existing = db.select().from(users).where(eq(users.username, username)).get();
-  if (existing) return existing.id;
-  const row = db.insert(users).values({ username, role, displayName, bio }).returning().get();
-  return row.id;
-}
-
 function contentDir(): string {
   const here = dirname(fileURLToPath(import.meta.url));
   return join(here, "..", "..", "..", "content", "items");
@@ -1011,14 +998,6 @@ function contentDir(): string {
 
 function seed() {
   const db = getDb();
-
-  const botId = upsertUser(
-    "aixbot",
-    "bot",
-    "AIx",
-    "The resident skeptic. I distill trending repos, tools, and papers into a harsh verdict.",
-  );
-  const demoId = upsertUser("aixdemo", "user", "Dana (demo)", "Kicking the tires on AIx.");
 
   const dir = contentDir();
   mkdirSync(dir, { recursive: true });
@@ -1069,7 +1048,6 @@ function seed() {
         coverImageUrl: cover ? (cover.cachedUrl ?? cover.url) : null,
         evaluatedBy: e.evaluatedBy,
         model: e.model ?? null,
-        postedById: botId,
         published: true,
         score: hotScore(entry.upvotes, createdAt),
         upvotes: entry.upvotes,
@@ -1124,124 +1102,9 @@ rg 'fn run' --type rust
       .run();
   }
 
-  // --- Social feed: only seed once (idempotent on the demo user having no posts).
-  const hasPosts = db.select().from(posts).where(eq(posts.authorId, demoId)).get();
-  let socialInserted = 0;
-  if (!hasPosts) {
-    const langchain = db.select().from(items).where(eq(items.slug, "langchain")).get();
-    const ripgrep = db.select().from(items).where(eq(items.slug, "ripgrep")).get();
-
-    const p1 = db
-      .insert(posts)
-      .values({
-        authorId: demoId,
-        itemId: langchain?.id ?? null,
-        body: "The LangChain 'complexity-trap' verdict is exactly right. Started a project on it, ripped it out three weeks later, shipped 200 fewer lines. What's everyone's replacement — just the raw SDK + a loop?",
-        upvotes: 34,
-        commentCount: 2,
-        createdAt: nowSec - 2 * DAY,
-      })
-      .returning()
-      .get();
-
-    const p2 = db
-      .insert(posts)
-      .values({
-        authorId: demoId,
-        itemId: ripgrep?.id ?? null,
-        body: "Underrated take: half of 'agent tooling' is just giving the model ripgrep and getting out of the way. Boring infra beats clever frameworks.",
-        upvotes: 27,
-        commentCount: 1,
-        createdAt: nowSec - 1 * DAY,
-      })
-      .returning()
-      .get();
-
-    db.insert(comments)
-      .values([
-        {
-          authorId: botId,
-          postId: p1.id,
-          body: "The pattern we keep seeing: teams describe their architecture as 'we started with LangChain and then ripped it out.' The raw SDK plus a well-scoped loop is more code you actually understand.",
-          upvotes: 12,
-          createdAt: nowSec - 2 * DAY + 3600,
-        },
-        {
-          authorId: demoId,
-          postId: p1.id,
-          body: "Yeah — LangGraph is a more honest attempt at real orchestration, but for most apps the loop is the whole framework.",
-          upvotes: 6,
-          createdAt: nowSec - 2 * DAY + 7200,
-        },
-        {
-          authorId: botId,
-          postId: p2.id,
-          body: "gitignore-aware search changes agent behavior more than most 'MCP servers' do. Cheap, invisible, load-bearing.",
-          upvotes: 9,
-          createdAt: nowSec - 1 * DAY + 1800,
-        },
-      ])
-      .run();
-
-    socialInserted = 2;
-
-    // Takes — the social primitive (ticket 0036): honest blurbs on tools the
-    // demo users run, plus feed activities so the home pulse rail is alive.
-    const zod = db.select().from(items).where(eq(items.slug, "zod")).get();
-    const takeSeeds = [
-      {
-        userId: demoId,
-        item: ripgrep,
-        status: "using",
-        rating: 5,
-        take: "In every repo I touch. The agent finds the right code on the first try instead of grepping node_modules for a minute.",
-        at: nowSec - 1 * DAY + 4000,
-      },
-      {
-        userId: demoId,
-        item: zod,
-        status: "using",
-        rating: 4,
-        take: "Every LLM tool-call boundary in our stack goes through a zod schema. Malformed model output stopped being a production incident.",
-        at: nowSec - 3600 * 5,
-      },
-      {
-        userId: botId,
-        item: langchain,
-        status: "dropped",
-        rating: 2,
-        take: "Ran it for two quarters. The abstractions aged worse than the code they replaced — back to the raw SDK.",
-        at: nowSec - 3600 * 2,
-      },
-    ] as const;
-    for (const t of takeSeeds) {
-      if (!t.item) continue;
-      db.insert(stackItems)
-        .values({
-          userId: t.userId,
-          itemId: t.item.id,
-          status: t.status,
-          rating: t.rating,
-          take: t.take,
-          createdAt: t.at,
-          updatedAt: t.at,
-        })
-        .run();
-      db.insert(activities)
-        .values({
-          actorId: t.userId,
-          verb: "stack_added",
-          objectType: "item",
-          objectId: t.item.id,
-          createdAt: t.at,
-        })
-        .run();
-    }
-  }
-
   console.log(
     `seed complete: ${inserted} items inserted, ${skipped} skipped (already present); ` +
-      `${socialInserted} posts seeded; artifacts written to ${dir}`,
+      `artifacts written to ${dir}`,
   );
 }
 

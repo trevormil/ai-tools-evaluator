@@ -1,12 +1,11 @@
 import { TrendRow } from "@/components/trend-row";
-import { topRated, mostDiscussed, hallOfShame } from "@/lib/leaderboard";
+import { topRated, hallOfShame } from "@/lib/leaderboard";
 import type { Item } from "@aix/db";
 
 export const dynamic = "force-dynamic";
 
 export default async function LeaderboardPage() {
   const rated = topRated(10);
-  const discussed = mostDiscussed(10);
   const shame = hallOfShame(10);
 
   return (
@@ -17,7 +16,7 @@ export default async function LeaderboardPage() {
           Credit where it&apos;s due.
         </h1>
         <p className="mt-1 text-sm text-muted">
-          The best, the most argued-over, and the ones that got what they deserved.
+          The best, and the ones that got exactly what they deserved.
         </p>
       </div>
 
@@ -26,12 +25,6 @@ export default async function LeaderboardPage() {
         blurb="Highest weighted score across the 10-metric card — the tools actually worth adopting."
         items={rated}
         metric={(item) => ({ value: item.overallScore, label: "/100" })}
-      />
-      <Section
-        title="Most discussed"
-        blurb="Where the arguments are happening. Ranked by comment count."
-        items={discussed}
-        metric={(item) => ({ value: item.commentCount, label: "comments" })}
       />
       <Section
         title="Complexity Trap Hall of Shame"

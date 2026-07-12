@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** Desktop header links with a real active state (polish pass). */
-export function NavLinks({ signedIn }: { signedIn: boolean }) {
+/** Desktop header links with a real active state. */
+export function NavLinks() {
   const pathname = usePathname();
 
-  // Two surfaces: the Feed (today's pick + activity, home) and the searchable
-  // Directory. `signedIn` no longer changes the nav.
-  void signedIn;
   const links: { href: string; label: string; active: boolean }[] = [
-    { href: "/", label: "Feed", active: pathname === "/" || pathname.startsWith("/item") },
-    { href: "/directory", label: "Directory", active: pathname.startsWith("/directory") },
-    { href: "/submit", label: "Submit", active: pathname.startsWith("/submit") },
+    {
+      href: "/",
+      label: "Directory",
+      active: pathname === "/" || pathname.startsWith("/item"),
+    },
+    { href: "/leaderboard", label: "Leaderboard", active: pathname.startsWith("/leaderboard") },
+    { href: "/recap", label: "Recap", active: pathname.startsWith("/recap") },
   ];
 
   return (

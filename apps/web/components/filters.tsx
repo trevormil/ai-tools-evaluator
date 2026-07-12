@@ -28,7 +28,7 @@ export function Filters() {
       if (value) next.set(key, value);
       else next.delete(key);
       next.delete("page");
-      router.push(`/directory?${next.toString()}`);
+      router.push(`/?${next.toString()}`);
     },
     [params, router],
   );
@@ -131,7 +131,7 @@ export function Filters() {
         {hasFilters && (
           <button
             className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted hover:text-ink"
-            onClick={() => router.push("/directory")}
+            onClick={() => router.push("/")}
           >
             Reset
           </button>

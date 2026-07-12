@@ -137,32 +137,10 @@ export function RecapView({ recap, prev, next }: { recap: Recap; prev?: string; 
         <p className="eyebrow">Every verdict tonight</p>
         <div className="flex flex-col gap-2">
           {recap.items.map((item) => (
-            <ItemRow key={item.id} item={item} uses={item.uses} />
+            <ItemRow key={item.id} item={item} />
           ))}
         </div>
       </section>
-
-      {/* What engineers are running. */}
-      {recap.topAdopted.length > 0 && (
-        <section className="flex flex-col gap-3">
-          <p className="eyebrow">What engineers are running</p>
-          <div className="card flex flex-col divide-y" style={{ borderColor: "var(--border)" }}>
-            {recap.topAdopted.map((item) => (
-              <Link
-                key={item.id}
-                href={`/item/${item.slug}`}
-                className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:text-brand"
-                style={{ borderColor: "var(--border)" }}
-              >
-                <span className="truncate font-medium">{item.title}</span>
-                <span className="data shrink-0 text-xs text-faint">
-                  {item.uses} {item.uses === 1 ? "engineer" : "engineers"}
-                </span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       <div className="flex items-center justify-between text-xs">
         <Link href="/recap/archive" className="data text-muted hover:text-brand">

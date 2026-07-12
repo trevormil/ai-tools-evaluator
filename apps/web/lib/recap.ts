@@ -1,6 +1,5 @@
 import { and, desc, eq, gte, isNotNull, lt, sql } from "drizzle-orm";
 import { getDb, items, type Item } from "@aix/db";
-import { useCountsFor } from "./item-social";
 
 /**
  * The nightly recap (ticket 0040): the tools JUDGED on one UTC calendar day,
@@ -8,7 +7,7 @@ import { useCountsFor } from "./item-social";
  * email are both rendered from getRecap().
  */
 
-export type RecapItem = Item & { uses: number };
+export type RecapItem = Item;
 
 export type Recap = {
   /** UTC calendar day, "YYYY-MM-DD". */
@@ -21,8 +20,6 @@ export type Recap = {
   leadPick: RecapItem | null;
   /** The harsh callout — noisiest complexity-trap / redundant verdict, if any. */
   complexityTrap: RecapItem | null;
-  /** What engineers are actually running, by active-user count (uses > 0). */
-  topAdopted: RecapItem[];
 };
 
 /** [startSec, endSec) bounds of a UTC "YYYY-MM-DD" day. Returns null if malformed. */
@@ -54,8 +51,7 @@ export function getRecap(date: string): Recap | null {
     .all();
   if (rows.length === 0) return null;
 
-  const uses = useCountsFor(rows.map((r) => r.id));
-  const items_: RecapItem[] = rows.map((r) => ({ ...r, uses: uses[r.id] ?? 0 }));
+  const items_: RecapItem[] = rows;
 
   const verdictCounts: Record<string, number> = {};
   for (const i of items_) verdictCounts[i.verdict] = (verdictCounts[i.verdict] ?? 0) + 1;
@@ -64,11 +60,6 @@ export function getRecap(date: string): Recap | null {
     .filter((i) => i.verdict === "complexity-trap" || i.verdict === "redundant")
     .sort((a, b) => b.noiseScore - a.noiseScore);
 
-  const topAdopted = items_
-    .filter((i) => i.uses > 0)
-    .sort((a, b) => b.uses - a.uses)
-    .slice(0, 3);
-
   return {
     date,
     items: items_,
@@ -76,7 +67,6 @@ export function getRecap(date: string): Recap | null {
     verdictCounts,
     leadPick: items_[0] ?? null, // already sorted by score desc
     complexityTrap: traps[0] ?? null,
-    topAdopted,
   };
 }
 

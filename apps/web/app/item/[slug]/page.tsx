@@ -1,26 +1,13 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import Link from "next/link";
 import { CATEGORY_LABELS, LENS_DEFS, LENS_SECTIONS, lensFor, type Category } from "@aix/core";
-import { getCurrentUser } from "@/lib/auth";
-import { getItemBySlug, parseEvaluation, getItemComments, userVotes } from "@/lib/queries";
-import { listItemTakes, getMyStackEntryForItem } from "@/lib/takes";
-import { itemStackSummary } from "@/lib/item-social";
-import { repostCount, hasReposted } from "@/lib/reposts";
-import { toCommentViews } from "@/lib/comment-view";
+import { getItemBySlug, parseEvaluation } from "@/lib/queries";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { Scorecard } from "@/components/scorecard";
 import { AudienceFit } from "@/components/audience-fit";
 import { MediaGallery } from "@/components/media-gallery";
 import { CoverImage } from "@/components/cover-image";
-import { VoteButtons } from "@/components/vote-buttons";
-import { RepostButton } from "@/components/repost-button";
 import { ShareButton } from "@/components/share-button";
-import { UseThisButton } from "@/components/use-this-button";
-import { TakeComposer } from "@/components/take-composer";
-import { TakeCard } from "@/components/take-card";
-import { CommentForm } from "@/components/comment-form";
-import { CommentThread } from "@/components/comment-thread";
 import { ReadmeSection } from "@/components/readme-section";
 import { SegMeter } from "@/components/seg-meter";
 import { CopyButton } from "@/components/copy-button";
@@ -31,7 +18,6 @@ import { renderMarkdown } from "@/lib/markdown";
 import { shareBlurb, shareSummary } from "@/lib/share";
 import { absoluteUrl } from "@/lib/public-api";
 import { timeAgo } from "@/lib/format";
-import type { StackStatus } from "@/lib/stack-types";
 
 export const dynamic = "force-dynamic";
 
@@ -73,19 +59,6 @@ export default async function ItemPage({
 
   const pending = item.scoreStatus === "pending";
   const evaluation = pending ? null : parseEvaluation(item);
-  const user = await getCurrentUser();
-  const commentNodes = getItemComments(item.id);
-  const myItemVote = user ? (userVotes(user.id, "item")[item.id] ?? 0) : 0;
-  const myCommentVotes = user ? userVotes(user.id, "comment") : {};
-  const comments = toCommentViews(commentNodes, myCommentVotes);
-
-  // Takes are the social spine (ticket 0036); usage count powers I-use-this (0033).
-  const takes = listItemTakes(item.id, user?.id);
-  const myEntry = user ? getMyStackEntryForItem(user.id, item.id) : undefined;
-  const stack = itemStackSummary(item.id);
-  const usingCount = (stack.byStatus["using"] ?? 0) + (stack.byStatus["trying"] ?? 0);
-  const itemReposts = repostCount("item", item.id);
-  const iReposted = user ? hasReposted(user.id, "item", item.id) : false;
 
   // Share surface: link unfurls to the OG card; summary carries the scorecard.
   const shareUrl = absoluteUrl(`/item/${item.slug}`);
@@ -116,8 +89,7 @@ export default async function ItemPage({
           <section className="card border-dashed p-6 text-sm text-muted">
             <p className="eyebrow mb-2 !text-amber-600 dark:!text-amber-400">In the queue</p>
             This tool was submitted by the community and is awaiting its ten-metric evaluation. The
-            scorecard, verdict, and full write-up land on the next scanner run — takes, comments,
-            and votes are already live.
+            scorecard, verdict, and full write-up land on the next scanner run.
           </section>
         ),
       });
@@ -168,130 +140,48 @@ export default async function ItemPage({
       tabs.push({ key: "readme", label: "README", content: <ReadmeSection html={readmeHtml} /> });
     }
 
-    tabs.push({
-      key: "takes",
-      label: takes.length > 0 ? `Takes · ${takes.length}` : "Takes",
-      content: (
-        <section className="flex flex-col gap-4">
-          <p className="eyebrow">From the people running it</p>
-          <TakeComposer
-            itemId={item.id}
-            initialTake={myEntry?.take ?? null}
-            initialStatus={(myEntry?.status as StackStatus | undefined) ?? null}
-            initialRating={myEntry?.rating ?? null}
-            signedIn={!!user}
-          />
-          {takes.length === 0 ? (
-            <p className="text-sm text-muted">
-              No takes yet — be the first to say how it holds up.
-            </p>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {takes.map((t) => (
-                <TakeCard
-                  key={t.id}
-                  username={t.username}
-                  avatarUrl={t.user.avatarUrl}
-                  status={t.status}
-                  rating={t.rating}
-                  take={t.take}
-                  updatedAt={t.updatedAt}
-                  followedByViewer={t.followedByViewer}
-                />
-              ))}
-            </div>
-          )}
-        </section>
-      ),
-    });
-
-    tabs.push({
-      key: "discussion",
-      label: item.commentCount > 0 ? `Discussion · ${item.commentCount}` : "Discussion",
-      content: (
-        <section className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <p className="eyebrow">The thread</p>
-            <Link href={`/`} className="data text-[11px] text-muted hover:text-brand">
-              ← Directory
-            </Link>
-          </div>
-          <div className="card p-4">
-            <CommentForm itemId={item.id} signedIn={!!user} />
-          </div>
-          <CommentThread comments={comments} itemId={item.id} signedIn={!!user} />
-        </section>
-      ),
-    });
-
     return tabs;
   };
 
   return (
     <article className="flex flex-col gap-8">
       {/* Bench header: identity + one-line judgment, actions on the same line. */}
-      <header className="flex gap-4">
-        <VoteButtons
-          targetType="item"
-          targetId={item.id}
-          initialNet={item.upvotes}
-          initialVote={myItemVote}
-          signedIn={!!user}
-        />
-        <div className="min-w-0 flex-1">
-          <div className="flex items-start gap-4">
-            <CoverImage item={item} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <h1 className="font-display text-2xl font-black tracking-tight sm:text-3xl">
-                  {item.title}
-                </h1>
-                {pending ? (
-                  <span className="chip !border-amber-500 font-semibold !text-amber-600 dark:!text-amber-400">
-                    Awaiting score…
-                  </span>
-                ) : (
-                  <>
-                    <VerdictBadge verdict={item.verdict} />
-                    {/* Badge the frame only for non-default lenses; agent-tool
-                        (the common case) stays visually unchanged. */}
-                    {lens !== "agent-tool" && (
-                      <span className="chip text-xs">{LENS_DEFS[lens].label}</span>
-                    )}
-                  </>
-                )}
-              </div>
-              <p className="mt-1.5 text-muted">{item.tagline}</p>
-              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
-                <UseThisButton
-                  itemId={item.id}
-                  initialUsing={myEntry?.status === "using" || myEntry?.status === "trying"}
-                  initialEntryId={myEntry?.id ?? null}
-                  initialHasTake={!!myEntry?.take}
-                  initialCount={usingCount}
-                  signedIn={!!user}
-                />
-                <a
-                  href={item.url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="link-brand font-medium"
-                >
-                  {sourceLinkLabel}
-                </a>
-                <span className="text-xs">
-                  <RepostButton
-                    targetType="item"
-                    targetId={item.id}
-                    initialCount={itemReposts}
-                    initialReposted={iReposted}
-                    signedIn={!!user}
-                  />
+      <header className="min-w-0">
+        <div className="flex items-start gap-4">
+          <CoverImage item={item} className="h-16 w-16 shrink-0 rounded-xl object-cover" />
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="font-display text-2xl font-black tracking-tight sm:text-3xl">
+                {item.title}
+              </h1>
+              {pending ? (
+                <span className="chip !border-amber-500 font-semibold !text-amber-600 dark:!text-amber-400">
+                  Awaiting score…
                 </span>
-                <span className="text-xs">
-                  <ShareButton url={shareUrl} blurb={shareText} summary={shareBlob} />
-                </span>
-              </div>
+              ) : (
+                <>
+                  <VerdictBadge verdict={item.verdict} />
+                  {/* Badge the frame only for non-default lenses; agent-tool
+                      (the common case) stays visually unchanged. */}
+                  {lens !== "agent-tool" && (
+                    <span className="chip text-xs">{LENS_DEFS[lens].label}</span>
+                  )}
+                </>
+              )}
+            </div>
+            <p className="mt-1.5 text-muted">{item.tagline}</p>
+            <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+              <a
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="link-brand font-medium"
+              >
+                {sourceLinkLabel}
+              </a>
+              <span className="text-xs">
+                <ShareButton url={shareUrl} blurb={shareText} summary={shareBlob} />
+              </span>
             </div>
           </div>
         </div>
@@ -299,7 +189,7 @@ export default async function ItemPage({
 
       <div className="grid items-start gap-8 lg:grid-cols-[1fr_300px]">
         {/* Main column: tabbed so the page reads one thing at a time
-            (Evaluation · Scorecard · README · Takes · Discussion). */}
+            (Evaluation · Scorecard · README). */}
         <div className="min-w-0">
           <ContentTabs initialTab={initialTab} tabs={buildTabs()} />
         </div>
@@ -464,19 +354,6 @@ export default async function ItemPage({
               <IntegrationDiagram integration={item.integration} title={item.title} />
             </div>
           )}
-
-          <div className="card flex flex-col gap-1.5 p-4 text-sm">
-            <p className="eyebrow mb-1">In the field</p>
-            <SpecRow label="use it daily">
-              <span className="data">{usingCount}</span>
-            </SpecRow>
-            <SpecRow label="takes">
-              <span className="data">{takes.length}</span>
-            </SpecRow>
-            <SpecRow label="comments">
-              <span className="data">{item.commentCount}</span>
-            </SpecRow>
-          </div>
         </aside>
       </div>
     </article>

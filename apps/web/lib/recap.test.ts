@@ -60,10 +60,6 @@ beforeAll(async () => {
   runMigrations();
   db = schema.getDb();
 
-  const { users, stackItems } = schema;
-  db.insert(users).values({ id: "rc_u1", username: "recap-one" }).run();
-  db.insert(users).values({ id: "rc_u2", username: "recap-two" }).run();
-
   // DAY2: three judged tools — one essential (the lead), one trap (highest noise), one niche.
   insertItem({
     id: "d2_ess",
@@ -108,17 +104,6 @@ beforeAll(async () => {
     noise: 20,
     scoredAt: DAY1,
   });
-
-  // Two engineers run the essential tool — it's the top-adopted of DAY2.
-  db.insert(stackItems)
-    .values({ id: "rc_s1", userId: "rc_u1", itemId: "d2_ess", status: "using" })
-    .run();
-  db.insert(stackItems)
-    .values({ id: "rc_s2", userId: "rc_u2", itemId: "d2_ess", status: "using" })
-    .run();
-  db.insert(stackItems)
-    .values({ id: "rc_s3", userId: "rc_u1", itemId: "d2_niche", status: "trying" })
-    .run();
 });
 
 test("getRecap groups a UTC day's JUDGED items only (no pending, no other days)", () => {
@@ -145,12 +130,6 @@ test("the lead pick is the highest-scoring tool of the day", () => {
 test("the complexity trap of the night is the noisiest trap/redundant verdict", () => {
   const r = getRecap("2026-07-06")!;
   expect(r.complexityTrap?.slug).toBe("trapzilla");
-});
-
-test("top-adopted ranks by active-user count within the day", () => {
-  const r = getRecap("2026-07-06")!;
-  expect(r.topAdopted[0]?.slug).toBe("aces");
-  expect(r.topAdopted[0]?.uses).toBe(2);
 });
 
 test("empty day returns null (no recap to send)", () => {

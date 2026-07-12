@@ -4,9 +4,8 @@ import { getDb, items, type Item } from "@aix/db";
 
 /**
  * Instant submissions (ticket 0035): a submitted URL becomes a VISIBLE
- * directory item immediately, in scoreStatus="pending" — social from second
- * one, scored by the evaluation queue later (the scanner upgrades the same
- * row in place, so comments/takes/votes survive).
+ * directory item immediately, in scoreStatus="pending", scored by the
+ * evaluation queue later (the scanner upgrades the same row in place).
  */
 
 export type DerivedSource = {
@@ -73,10 +72,7 @@ function slugify(s: string): string {
  * Create the pending item for a submitted URL, or return the existing item
  * (pending OR scored) covering the same source.
  */
-export function createPendingItem(
-  url: string,
-  submittedById: string | null,
-): { item: Item; existed: boolean } {
+export function createPendingItem(url: string): { item: Item; existed: boolean } {
   const db = getDb();
   const src = deriveSource(url);
 
@@ -113,7 +109,6 @@ export function createPendingItem(
       evaluationJson: "{}",
       coverImageUrl: src.coverImageUrl,
       evaluatedBy: "pending",
-      postedById: submittedById,
       published: true,
       scoreStatus: "pending",
     })

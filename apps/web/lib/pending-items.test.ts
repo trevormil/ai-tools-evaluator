@@ -18,7 +18,6 @@ beforeAll(async () => {
   ({ deriveSource, createPendingItem } = await import("./pending-items"));
   runMigrations();
   db = schema.getDb();
-  db.insert(schema.users).values({ id: "pend_u", username: "pending-user" }).run();
 });
 
 test("deriveSource classifies github / arxiv / external urls", () => {
@@ -41,24 +40,23 @@ test("deriveSource classifies github / arxiv / external urls", () => {
 });
 
 test("createPendingItem inserts a visible 'pending' item with an instant logo", () => {
-  const { item, existed } = createPendingItem("https://github.com/acme/supertool", "pend_u");
+  const { item, existed } = createPendingItem("https://github.com/acme/supertool");
   expect(existed).toBe(false);
   expect(item.scoreStatus).toBe("pending");
   expect(item.published).toBe(true);
   expect(item.slug).toBe("supertool");
   expect(item.coverImageUrl).toContain("opengraph.githubassets.com/");
   expect(item.coverImageUrl).toContain("acme/supertool");
-  expect(item.postedById).toBe("pend_u");
 });
 
 test("createPendingItem dedups against an existing item (pending or scored)", () => {
-  const again = createPendingItem("https://github.com/acme/supertool", "pend_u");
+  const again = createPendingItem("https://github.com/acme/supertool");
   expect(again.existed).toBe(true);
   expect(again.item.slug).toBe("supertool");
 });
 
 test("slug collisions get a suffix instead of failing", () => {
-  const other = createPendingItem("https://github.com/other-org/supertool", "pend_u");
+  const other = createPendingItem("https://github.com/other-org/supertool");
   expect(other.existed).toBe(false);
   expect(other.item.slug).not.toBe("supertool");
   expect(other.item.slug.startsWith("supertool")).toBe(true);

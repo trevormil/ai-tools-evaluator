@@ -26,7 +26,6 @@ function fakeItem(overrides: Partial<Item> = {}): Item {
     coverImageUrl: null,
     evaluatedBy: "ai",
     model: null,
-    postedById: null,
     published: true,
     score: 0,
     upvotes: 0,

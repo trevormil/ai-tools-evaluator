@@ -3,7 +3,6 @@ import { Archivo, Instrument_Sans, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import { Nav } from "@/components/nav";
 import { MobileNav } from "@/components/mobile-nav";
-import { getCurrentUser } from "@/lib/auth";
 import { baseUrl } from "@/lib/public-api";
 
 /**
@@ -42,8 +41,7 @@ const themeScript = `(() => {
   } catch (e) {}
 })();`;
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const user = await getCurrentUser();
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
@@ -62,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             AIx · <span className="text-brand">signal</span> over noise
           </p>
         </footer>
-        <MobileNav username={user?.username ?? null} />
+        <MobileNav />
       </body>
     </html>
   );

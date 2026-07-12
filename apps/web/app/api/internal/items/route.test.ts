@@ -82,18 +82,12 @@ beforeAll(async () => {
   runMigrations();
   db = schema.getDb();
 
-  db.insert(schema.users).values({ id: "up_u", username: "upgrade-user" }).run();
-  const { item } = createPendingItem("https://github.com/up/tool", "up_u");
+  const { item } = createPendingItem("https://github.com/up/tool");
   pendingId = item.id;
   pendingSlug = item.slug;
-
-  // Social data that must survive the upgrade.
-  db.insert(schema.comments)
-    .values({ id: "up_c1", authorId: "up_u", itemId: pendingId, body: "hyped for the score" })
-    .run();
 });
 
-test("publishing upgrades the pending item in place (same id + slug, comments intact)", async () => {
+test("publishing upgrades the pending item in place (same id + slug)", async () => {
   const res = await post({ evaluation: validEvaluation(), readmeMd: "# Up Tool\n\nTheir words." });
   expect(res.status).toBe(200);
   const data = (await res.json()) as { item: { id: string; slug: string; scoreStatus: string } };
@@ -102,7 +96,7 @@ test("publishing upgrades the pending item in place (same id + slug, comments in
   expect(data.item.scoreStatus).toBe("scored");
 });
 
-test("the upgraded item keeps its social data and scores render real values", async () => {
+test("the upgraded item's scores render real values", async () => {
   const { eq } = await import("drizzle-orm");
   const item = db.select().from(schema.items).where(eq(schema.items.id, pendingId)).get()!;
   expect(item.scoreStatus).toBe("scored");
@@ -110,12 +104,6 @@ test("the upgraded item keeps its social data and scores render real values", as
   expect(item.verdict).toBe("worthwhile");
   expect(item.readmeMd).toContain("Their words"); // README persisted at publish
   expect(item.scoredAt).toBeGreaterThan(0); // judged-at stamped on the upgrade (0040)
-  const comments = db
-    .select()
-    .from(schema.comments)
-    .where(eq(schema.comments.itemId, pendingId))
-    .all();
-  expect(comments).toHaveLength(1);
 });
 
 test("a second publish for the same source is a plain duplicate (no second upgrade)", async () => {

@@ -4,33 +4,26 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 /**
- * Fixed bottom tab bar for phones (ticket 0030) — thumb-reach navigation for
- * the feed-first mobile experience. Hidden ≥sm, where the header nav shows.
+ * Fixed bottom tab bar for phones — thumb-reach navigation for the
+ * directory-first mobile experience. Hidden ≥sm, where the header nav shows.
  */
-export function MobileNav({ username }: { username: string | null }) {
+export function MobileNav() {
   const pathname = usePathname();
 
-  // Feed · Directory · Submit · Profile.
   const tabs: { href: string; label: string; icon: string; active: boolean }[] = [
     {
       href: "/",
-      label: "Feed",
-      icon: "≋",
+      label: "Directory",
+      icon: "▤",
       active: pathname === "/" || pathname.startsWith("/item"),
     },
     {
-      href: "/directory",
-      label: "Directory",
-      icon: "▤",
-      active: pathname.startsWith("/directory"),
+      href: "/leaderboard",
+      label: "Leaderboard",
+      icon: "≜",
+      active: pathname.startsWith("/leaderboard"),
     },
-    { href: "/submit", label: "Submit", icon: "＋", active: pathname.startsWith("/submit") },
-    {
-      href: username ? `/u/${username}` : "/api/auth/github",
-      label: username ? "Profile" : "Sign in",
-      icon: "◉",
-      active: username ? pathname.startsWith(`/u/${username}`) : false,
-    },
+    { href: "/recap", label: "Recap", icon: "≋", active: pathname.startsWith("/recap") },
   ];
 
   return (

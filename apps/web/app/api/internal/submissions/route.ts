@@ -65,9 +65,8 @@ export async function POST(req: Request) {
 
   const db = getDb();
 
-  // A visible, linkable pending item appears immediately (no web account needed
-  // for Discord/API drops — postedById is null).
-  const { item } = createPendingItem(url, null);
+  // A visible, linkable pending item appears immediately.
+  const { item } = createPendingItem(url);
   const itemInfo = { slug: item.slug, title: item.title };
 
   const existing = db
