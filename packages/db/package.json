@@ -17,9 +17,11 @@
   },
   "dependencies": {
     "@aix/core": "workspace:*",
+    "better-sqlite3": "12.11.1",
     "drizzle-orm": "0.38.3"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "7.6.13",
     "drizzle-kit": "0.30.1"
   }
 }

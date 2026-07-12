@@ -1,4 +1,4 @@
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { getDb } from "./index";

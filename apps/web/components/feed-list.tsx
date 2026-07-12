@@ -6,7 +6,7 @@ import { PostCard } from "./post-card";
 import { ItemFeedCard } from "./item-feed-card";
 import { ActivityCard } from "./activity-card";
 
-/** Client copy of lib/home-feed's feedEntryKey — the lib itself is server-only (bun:sqlite). */
+/** Client copy of lib/home-feed's feedEntryKey — the lib itself is server-only (better-sqlite3). */
 function keyOf(e: FeedEntry): string {
   if (e.kind === "post") return `post:${e.post.id}`;
   if (e.kind === "item") return `item:${e.item.id}`;
