@@ -23,6 +23,9 @@ spec:
         - name: web
           image: ghcr.io/trevormil/aix-web:latest
           imagePullPolicy: Always
+          # Runs on the Node runtime (see Dockerfile.web): better-sqlite3 replaced
+          # bun:sqlite to end the Next-on-Bun RSS leak. Migrations apply at boot via
+          # instrumentation.ts; the start command lives in the image CMD.
           ports:
             - containerPort: 3000
               name: http
@@ -52,13 +55,13 @@ spec:
           resources:
             requests:
               cpu: 100m
-              # bun + Next.js 15 steady-state RSS sits above 256Mi; give the
-              # single writer real headroom so the scheduler reserves for it.
-              memory: 512Mi
+              # Fits the whole workload on ONE node (autoscaler min=1).
+              memory: 256Mi
             limits:
               cpu: "1"
-              # 1Gi still OOMKilled under production load; keep headroom for Next.js spikes.
-              memory: 2Gi
+              # Node+Next+better-sqlite3 steady-state is ~250-400Mi; 768Mi is a
+              # safety ceiling (the leak that once needed 2Gi is gone).
+              memory: 768Mi
           volumeMounts:
             - name: db
               mountPath: /data

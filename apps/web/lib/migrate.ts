@@ -1,4 +1,4 @@
-import { migrate } from "drizzle-orm/bun-sqlite/migrator";
+import { migrate } from "drizzle-orm/better-sqlite3/migrator";
 import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { getDb } from "@aix/db";
