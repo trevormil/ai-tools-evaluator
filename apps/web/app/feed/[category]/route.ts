@@ -2,9 +2,14 @@ import { CATEGORIES, CATEGORY_LABELS, type Category } from "@aix/core";
 import { listItems } from "@/lib/queries";
 import { renderAtomFeed } from "@/lib/feed";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 type Params = { params: Promise<{ category: string }> };
+
+/** Prerender one feed per known category. */
+export function generateStaticParams() {
+  return CATEGORIES.map((category) => ({ category }));
+}
 
 /** Atom feed filtered to a single category. 404s on an unknown category. */
 export async function GET(_req: Request, { params }: Params) {

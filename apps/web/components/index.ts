@@ -10,7 +10,7 @@ export { TrendRow } from "./trend-row";
 export { MobileNav } from "./mobile-nav";
 export { ReadmeSection } from "./readme-section";
 export { NavLinks } from "./nav-links";
-export { ItemRow } from "./item-row";
+export { ItemRow, type DirectoryItem } from "./item-row";
 export { SegMeter } from "./seg-meter";
 export { CopyButton } from "./copy-button";
 export { ShareButton } from "./share-button";

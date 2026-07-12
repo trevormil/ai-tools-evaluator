@@ -1,8 +1,6 @@
 import Link from "next/link";
 import { recentRecapDates, getRecap, recapDateLabel, verdictSummary } from "@/lib/recap";
 
-export const dynamic = "force-dynamic";
-
 export const metadata = {
   title: "Recap archive — AIx",
   description: "Every nightly recap: the tools judged, night by night.",

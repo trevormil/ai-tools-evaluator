@@ -2,8 +2,6 @@ import { TrendRow } from "@/components/trend-row";
 import { topRated, hallOfShame } from "@/lib/leaderboard";
 import type { Item } from "@aix/db";
 
-export const dynamic = "force-dynamic";
-
 export default async function LeaderboardPage() {
   const rated = topRated(10);
   const shame = hallOfShame(10);

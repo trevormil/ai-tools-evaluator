@@ -1,18 +1,27 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 export type ContentTab = { key: string; label: string; content: ReactNode };
 
 /**
  * Horizontal content tabs over server-rendered panes — used by profiles and
  * item pages so long surfaces don't stack into one endless scroll. Deep-
- * linkable: `initialTab` comes from the page's ?tab= param and switching
- * updates the URL via replaceState, so any tab is shareable.
+ * linkable: the initial tab is read from the ?tab= param client-side (after
+ * hydration, so static export stays valid) and switching updates the URL via
+ * replaceState, so any tab is shareable.
  */
-export function ContentTabs({ tabs, initialTab }: { tabs: ContentTab[]; initialTab?: string }) {
-  const valid = tabs.some((t) => t.key === initialTab);
-  const [active, setActive] = useState(valid ? initialTab : tabs[0]?.key);
+export function ContentTabs({ tabs }: { tabs: ContentTab[] }) {
+  const [active, setActive] = useState(tabs[0]?.key);
+
+  // Read ?tab= on mount so a shared deep link opens the right pane. Runs after
+  // the static HTML hydrates (first render matches the server), so no mismatch.
+  useEffect(() => {
+    const key = new URL(window.location.href).searchParams.get("tab");
+    if (key && tabs.some((t) => t.key === key)) setActive(key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const current = tabs.find((t) => t.key === active) ?? tabs[0];
 
   function select(key: string) {

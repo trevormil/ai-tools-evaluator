@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { getItemBySlug, parseEvaluation } from "@/lib/queries";
+import { loadCorpus } from "@/lib/corpus";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 const CORS = { "access-control-allow-origin": "*" } as const;
 
 type Params = { params: Promise<{ slug: string }> };
+
+/** Prerender one JSON endpoint per item in the corpus. */
+export function generateStaticParams() {
+  return loadCorpus().map((i) => ({ slug: i.slug }));
+}
 
 /** Public, read-only full evaluation for one item. 404 if missing/unpublished. */
 export async function GET(_req: Request, { params }: Params) {
@@ -25,15 +31,4 @@ export async function GET(_req: Request, { params }: Params) {
       },
     },
   );
-}
-
-export function OPTIONS() {
-  return new Response(null, {
-    status: 204,
-    headers: {
-      ...CORS,
-      "access-control-allow-methods": "GET, OPTIONS",
-      "access-control-allow-headers": "Content-Type",
-    },
-  });
 }

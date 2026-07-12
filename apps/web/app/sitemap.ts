@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { listItems } from "@/lib/queries";
 import { absoluteUrl } from "@/lib/public-api";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 /** Static top-level pages plus every published item URL. */
 export default function sitemap(): MetadataRoute.Sitemap {

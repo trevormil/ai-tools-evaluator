@@ -1,8 +1,6 @@
 import { latestRecapDate, getRecap, recentRecapDates } from "@/lib/recap";
 import { RecapView } from "@/components/recap-view";
 
-export const dynamic = "force-dynamic";
-
 /** /recap → the latest nightly recap. */
 export default async function LatestRecapPage() {
   const date = latestRecapDate();

@@ -6,11 +6,37 @@ import { CoverImage } from "./cover-image";
 import { SegMeter } from "./seg-meter";
 
 /**
+ * The slim item projection the directory renders — every field a row (and its
+ * cover-image cascade) needs, and nothing heavy like the full evaluation JSON.
+ * Static export (ADR-0004) serializes the whole catalog into the client bundle,
+ * so keeping this lean matters.
+ */
+export type DirectoryItem = Pick<
+  Item,
+  | "id"
+  | "slug"
+  | "title"
+  | "tagline"
+  | "verdict"
+  | "category"
+  | "integration"
+  | "primaryAudience"
+  | "overallScore"
+  | "noiseScore"
+  | "coverImageUrl"
+  | "scoreStatus"
+  | "tagsJson"
+  | "createdAt"
+  | "externalId"
+  | "kind"
+>;
+
+/**
  * Directory row — the bench log line. Dense and scannable: logo, name +
  * verdict stamp, tagline, then the readout column (meter + score). Pending
  * submissions show their queue state instead of numbers.
  */
-export function ItemRow({ item }: { item: Item }) {
+export function ItemRow({ item }: { item: DirectoryItem }) {
   const pending = item.scoreStatus === "pending";
   return (
     <Link href={`/item/${item.slug}`} className="card card-hover flex items-center gap-4 px-4 py-3">

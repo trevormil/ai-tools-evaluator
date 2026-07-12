@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { absoluteUrl } from "@/lib/public-api";
 
+export const dynamic = "force-static";
+
 /** Allow all crawlers; advertise the sitemap and Atom feed. */
 export default function robots(): MetadataRoute.Robots {
   return {

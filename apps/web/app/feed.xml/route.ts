@@ -1,7 +1,7 @@
 import { listItems } from "@/lib/queries";
 import { renderAtomFeed } from "@/lib/feed";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
 /** Atom feed of the latest ~50 published items across all categories. */
 export function GET() {

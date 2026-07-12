@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { CATEGORY_LABELS, LENS_DEFS, LENS_SECTIONS, lensFor, type Category } from "@aix/core";
 import { getItemBySlug, parseEvaluation } from "@/lib/queries";
+import { loadCorpus } from "@/lib/corpus";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { Scorecard } from "@/components/scorecard";
 import { AudienceFit } from "@/components/audience-fit";
@@ -19,10 +20,12 @@ import { shareBlurb, shareSummary } from "@/lib/share";
 import { absoluteUrl } from "@/lib/public-api";
 import { timeAgo } from "@/lib/format";
 
-export const dynamic = "force-dynamic";
-
 type Params = Promise<{ slug: string }>;
-type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+/** Prerender a page for every item in the corpus. */
+export function generateStaticParams() {
+  return loadCorpus().map((i) => ({ slug: i.slug }));
+}
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { slug } = await params;
@@ -44,16 +47,8 @@ export async function generateMetadata({ params }: { params: Params }): Promise<
   };
 }
 
-export default async function ItemPage({
-  params,
-  searchParams,
-}: {
-  params: Params;
-  searchParams: SearchParams;
-}) {
+export default async function ItemPage({ params }: { params: Params }) {
   const { slug } = await params;
-  const sp = await searchParams;
-  const initialTab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const item = getItemBySlug(slug);
   if (!item) notFound();
 
@@ -191,7 +186,7 @@ export default async function ItemPage({
         {/* Main column: tabbed so the page reads one thing at a time
             (Evaluation · Scorecard · README). */}
         <div className="min-w-0">
-          <ContentTabs initialTab={initialTab} tabs={buildTabs()} />
+          <ContentTabs tabs={buildTabs()} />
         </div>
 
         {/* Spec rail: the instrument readout, pinned while you read. */}

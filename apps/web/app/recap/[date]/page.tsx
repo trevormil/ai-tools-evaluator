@@ -3,9 +3,12 @@ import type { Metadata } from "next";
 import { getRecap, recentRecapDates, recapDateLabel, verdictSummary } from "@/lib/recap";
 import { RecapView } from "@/components/recap-view";
 
-export const dynamic = "force-dynamic";
-
 type Params = Promise<{ date: string }>;
+
+/** Prerender every day that has at least one judged item. */
+export function generateStaticParams() {
+  return recentRecapDates(365).map((date) => ({ date }));
+}
 
 export async function generateMetadata({ params }: { params: Params }): Promise<Metadata> {
   const { date } = await params;

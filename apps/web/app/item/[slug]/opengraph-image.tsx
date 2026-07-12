@@ -1,10 +1,17 @@
 import { ImageResponse } from "next/og";
 import { CATEGORY_LABELS, type Category } from "@aix/core";
 import { getItemBySlug } from "@/lib/queries";
+import { loadCorpus } from "@/lib/corpus";
 
+export const dynamic = "force-static";
 export const alt = "AIx item evaluation";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+
+/** Prerender the per-item OG card for every item in the corpus. */
+export function generateStaticParams() {
+  return loadCorpus().map((i) => ({ slug: i.slug }));
+}
 
 const VERDICT_COLOR: Record<string, string> = {
   essential: "#16a34a",
