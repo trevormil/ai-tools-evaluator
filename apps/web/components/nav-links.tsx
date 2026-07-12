@@ -15,6 +15,7 @@ export function NavLinks() {
     },
     { href: "/leaderboard", label: "Leaderboard", active: pathname.startsWith("/leaderboard") },
     { href: "/recap", label: "Recap", active: pathname.startsWith("/recap") },
+    { href: "/submit", label: "Submit", active: pathname.startsWith("/submit") },
   ];
 
   return (

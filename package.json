@@ -5,7 +5,8 @@
   "description": "AIx — discover trending GitHub tools and discuss them. A dual directory + social site.",
   "workspaces": [
     "packages/*",
-    "apps/*"
+    "apps/*",
+    "workers/*"
   ],
   "scripts": {
     "web": "cd apps/web && bun run dev",

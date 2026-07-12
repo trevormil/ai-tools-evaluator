@@ -18,3 +18,4 @@ export { IntegrationDiagram } from "./integration-diagram";
 export { ContentTabs, type ContentTab } from "./content-tabs";
 export { RecapView } from "./recap-view";
 export { QueueStrip } from "./queue-strip";
+export { SubmitForm } from "./submit-form";

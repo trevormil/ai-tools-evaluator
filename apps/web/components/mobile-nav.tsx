@@ -24,6 +24,7 @@ export function MobileNav() {
       active: pathname.startsWith("/leaderboard"),
     },
     { href: "/recap", label: "Recap", icon: "≋", active: pathname.startsWith("/recap") },
+    { href: "/submit", label: "Submit", icon: "＋", active: pathname.startsWith("/submit") },
   ];
 
   return (
