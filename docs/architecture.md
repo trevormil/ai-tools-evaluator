@@ -4,88 +4,96 @@ anchor: ARCH
 
 # AIx — Architecture
 
-**AIx** (`aix.trevormil.com`) is a dual product:
+**AIx** (`aix.trevormil.com`) is a **static, git-native directory** of trending
+GitHub repos, tools, MCPs, libraries, and research papers — each distilled into a
+strict, harshly-honest evaluation that leads with _"is this actually worth it, or
+complexity for its own sake?"_ There is no social layer and no database: the site
+is a static export, the data lives in git, and the only moving parts are a daily
+scanner and a tiny submission Worker.
 
-1. **A directory** of trending GitHub repos, tools, MCPs, libraries, skills, and
-   research papers — each distilled into a strict, harshly-honest evaluation
-   artifact that leads with _"is this actually worth it, or complexity for its
-   own sake?"_
-2. **The takes around them** — per-tool practitioner blurbs (`@user's take`,
-   status, ★rating), a one-tap "I use this" count, comments, votes, follows,
-   DMs. Directory-first: the home page IS the directory; the timeline is a
-   secondary surface at `/activity`. There is no generic post composer
-   (legacy posts still render).
-
-A scanner auto-scans multiple sources daily (capped at 10 new items/day,
-dedup-aware) and publishes evaluations. Anyone can submit a URL: the tool
-appears in the directory INSTANTLY as a pending item (`scoreStatus="pending"`,
-"Awaiting score…", socially live) and the scanner upgrades the same row in
-place when the evaluation lands — comments/takes/votes survive.
+See [ADR-0004](./decisions/0004-aix-static-git-native.md) — the pivot that
+established this architecture (superseding the original k8s + SQLite + social
+design in [ADR-0002](./decisions/0002-aix-stack.md)).
 
 ## [1] Topology
 
-- Ingress (nginx + cert-manager) terminates TLS for `aix.trevormil.com`.
-- `web` Deployment (Next.js, **replicas: 1**) owns the SQLite file on a PVC.
-- `scanner` CronJob (daily) and `bot` Deployment never touch the DB file — they
-  call `web`'s authenticated internal API (`/api/internal/*`, shared secret).
+```
+  GitHub Actions (daily cron)        git repo (source of truth)      Cloudflare Pages
+  ┌────────────────────────┐  commit ┌──────────────────────┐  push  ┌──────────────────┐
+  │ drain content/queue/ → │ ──────► │ content/items/*.md   │ ─────► │ static site      │
+  │ discover trending →    │  + push │ content/queue/*.json │  build │ /api/v1/*.json   │
+  │ Claude eval → .md      │         └──────────────────────┘        └──────────────────┘
+  │ POST 1 Discord webhook │                   ▲                      served free by CDN
+  └────────────────────────┘                   │ writes queue file
+                                      ┌───────────────────────┐
+                                      │ Cloudflare Worker      │ ◄── "submit a URL" from the site
+                                      │ (workers/submit)       │
+                                      └───────────────────────┘
+```
 
-**Single-writer rule.** SQLite lives on a `ReadWriteOnce` PVC mounted only by the
-`web` pod. This sidesteps multi-writer SQLite corruption while keeping the "just
-SQLite" simplicity.
+- **No server, no database, nothing always-on.** The site is a static export
+  served by Cloudflare Pages' edge. Reads happen at build time from the git
+  corpus; the browser filters/searches client-side.
+- **Git is the source of truth.** Each evaluation is a `content/items/<slug>.md`
+  artifact with an embedded canonical JSON block (the `@aix/core` `Evaluation`).
+- **The scanner is a GitHub Actions cron** — it writes `.md` files, commits, and
+  pushes; the push triggers the Pages rebuild + deploy.
+- **Submissions** flow through a free Cloudflare Worker that appends a
+  `content/queue/*.json` file via the GitHub API; the scanner drains it next run.
 
 ## [2] Packages & apps (bun workspaces)
 
 | Path | Role |
 | --- | --- |
-| `packages/core` | Strict `Evaluation` schema, 10-metric scorecard, verdict enum, categories, markdown (de)serializer, evaluator prompt. **The shared contract.** |
-| `packages/db` | Drizzle + `bun:sqlite` schema + migrator. |
-| `apps/web` | Next.js 15 (App Router) — directory-first home (search + filters incl. audience), item pages (scorecard + **takes** + "I use this" + comments + repo README), `/activity` timeline, `/recap` nightly recap, **profiles** (Takes · My Stack · Activity), GitHub OAuth (+ gated dev login), instant submissions, public API v1 + internal API. |
-| `apps/scanner` | Multi-source discovery (GitHub, arXiv) + queue drain -> Claude evaluation -> publish. k8s CronJob. |
-| `apps/bot` | Discord bot — daily + weekly digests, `/submit`, `/eval`, `/leaderboard`. |
-| `ios` | Native SwiftUI iOS client reading the public API v1 (directory, item detail, leaderboard). |
-| `k8s` | Namespace, web Deployment/Service/Ingress, PVC, scanner + rank CronJobs, bot Deployment, secrets. |
-
-Social/content tables (`packages/db`): `posts`, `comments`, `votes` (likes),
-`reposts`, `messages` (DMs), `activities` (feed events), `notifications`,
-`follows`, `stack_items` (My Stack), `articles` (long-form + My Workflow),
-`subscribers` (newsletter).
+| `packages/core` | Strict `Evaluation` schema, 10-metric scorecard, verdict enum, per-type lenses (ADR-0003), markdown (de)serializer (`toMarkdown`/`parseArtifact`), evaluator prompt, submission validator. **The shared contract.** |
+| `packages/db` | Drizzle schema — retained for the `Item` **type** and the local `seed` that authors example `.md` artifacts. Not used at runtime. |
+| `apps/web` | Next.js 15 **static export** (`output: "export"`) — directory-first home (client-side search over the prebuilt corpus), item pages (scorecard + README), `/recap`, `/leaderboard`, `/submit`, static public API v1 (`/api/v1/*.json`). No server, no DB. |
+| `apps/scanner` | Daily discovery (GitHub, arXiv, ProductHunt) + queue drain → Claude evaluation → writes `.md` → commits + pushes → one Discord webhook digest. Runs as a **GitHub Actions cron** (`.github/workflows/scan.yml`). |
+| `workers/submit` | Cloudflare Worker — turns a "submit a URL" POST into a `content/queue/*.json` file via the GitHub Contents API. The one piece of server-side code. |
+| `ios` | Native SwiftUI client reading the static public API v1. |
 
 ## [3] Data model
 
-SQLite is the **source of truth**. Each published evaluation is _also_ exported
-as a strict `.md` artifact (`@aix/core` `toMarkdown`) into `content/items/` for a
-git-native archive — human-readable with an embedded canonical JSON block so it
-round-trips. Tables in `packages/db/src/schema.ts`.
+Git is the source of truth. Each published evaluation is a strict `.md` artifact
+in `content/items/` — human-readable body plus an embedded canonical JSON block
+(`@aix/core` `toMarkdown`) that round-trips via `parseArtifact`. The web app
+parses the corpus at build (`apps/web/lib/corpus.ts` → `Item[]`); the scanner
+reads it for dedup (`apps/scanner/src/store.ts`).
+
+Pending submissions live as `content/queue/*.json` (`{ url, note?, source,
+submittedAt }`) until the scanner evaluates them; a lightweight "in the queue"
+strip surfaces them in the meantime.
 
 The evaluation (`packages/core/src/schema.ts`) is the strict document: closed-enum
 category + integration, forced `verdict`, 10-metric scorecard with per-metric
-rationale + weighted `overallScore`, `noiseScore`, and five required plaintext
-sections — `whatItIs`, `vsVanilla`, `surfaceArea`, `devilsAdvocate`, optional
-`steelman`.
+rationale + weighted `overallScore`, `noiseScore`, and the per-lens plaintext
+sections.
 
-## [4] The scan pipeline (daily cap = 10)
+## [4] The scan pipeline (daily, in CI)
 
-1. **Drain the suggestion queue first** — `submissions` with `status=queued`,
-   oldest first, up to the daily budget.
-2. **Trending discovery** fills the remainder — GitHub search (recently-created +
-   fast-rising stars), arXiv recent listings.
-3. **Dedup** — skip anything already in `items` (`kind`+`externalId` unique).
+1. **Drain the queue first** — read `content/queue/*.json` oldest-first, up to the
+   daily cap; resolve + evaluate each, write its `.md`, delete the queue file.
+2. **Trending discovery** fills the remainder — GitHub (recently-created +
+   fast-rising) and ProductHunt; arXiv resolves explicit paper submissions.
+3. **Dedup** — skip anything whose `source.externalId` already has a `.md`.
 4. **Evaluate** — fetch README/abstract, call Claude with the skeptic prompt,
-   validate against `EvaluationDraft`, recompute `overallScore`.
-5. **Attach media** — repo social-preview / screenshots / README images; fall
-   back to a generated cover.
-6. **Publish** — insert `items`, write `.md` artifact, post to the bot channel,
-   mark the originating `submission` as `published`.
-
-Every run is recorded in `scan_runs` for cap accounting and observability.
+   validate against the schema, recompute `overallScore`.
+5. **Publish** — write `content/items/<slug>.md`; the highest-scored item of the
+   run is the featured pick.
+6. **Notify + deploy** — POST one Discord webhook digest (the pick), then commit +
+   push; the push triggers the Cloudflare Pages rebuild.
 
 ## [5] Rate-limit resilience
 
-GitHub is the tight constraint. The scanner uses an authenticated Octokit token,
+GitHub is the tight constraint. The scanner uses an authenticated token,
 conditional requests + ETags, exponential backoff on secondary limits, and caps
-per-run API calls. Discovery is windowed (rotating search facets). arXiv is
-polled politely (<=1 req/3s).
+per-run API calls. Discovery is windowed (rotating search facets). arXiv is polled
+politely (≤1 req/3s).
 
 ## [6] Related decisions
 
-- [ADR-0002](./decisions/0002-aix-stack.md) — stack, storage, and topology.
+- [ADR-0004](./decisions/0004-aix-static-git-native.md) — static git-native
+  directory (current architecture).
+- [ADR-0003](./decisions/0003-evaluation-lenses.md) — per-type evaluation lenses.
+- [ADR-0002](./decisions/0002-aix-stack.md) — original k8s + SQLite + social
+  stack (**superseded** by 0004).

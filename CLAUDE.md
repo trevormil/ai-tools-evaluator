@@ -3,17 +3,18 @@
 <!-- Project-specific guidance, loaded on top of global ~/.claude/CLAUDE.md.
      Don't restate global rules — reference as "global §N". Keep lean. -->
 
-AIx (`aix.trevormil.com`) — a dual **directory + social site** for trending
+AIx (`aix.trevormil.com`) — a **static, git-native directory** of trending
 GitHub tools/MCPs/libraries/skills and research papers. Each item gets a strict,
 harshly-honest AI evaluation (10-metric scorecard, forced verdict, "is this just
-complexity?" devil's-advocate). A daily bot scans multiple sources (cap 10/day,
-dedup) and a link-drop queue lets anyone suggest items. See [`README.md`](./README.md)
-and [`docs/architecture.md`](./docs/architecture.md).
+complexity?" devil's-advocate). A daily GitHub Actions scanner writes `.md`
+artifacts and a Cloudflare Worker queues community submissions. See
+[`README.md`](./README.md) and [`docs/architecture.md`](./docs/architecture.md).
 
-**Status:** building (vibe mode). Foundation (`@aix/core` strict schema +
-`@aix/db` SQLite) tested green; web / scanner / bot / k8s under construction.
-Stack + storage decisions in [ADR-0002](./docs/decisions/0002-aix-stack.md);
-internal API contract in [`docs/internal-api.md`](./docs/internal-api.md).
+**Status:** the v2 pivot (ADR-0004) — no socials, no server, no DB: git
+`content/items/*.md` is the source of truth, the web app is a static export on
+Cloudflare Pages, and the scanner runs as an Actions cron. Architecture +
+rationale in [ADR-0004](./docs/decisions/0004-aix-static-git-native.md)
+(supersedes [ADR-0002](./docs/decisions/0002-aix-stack.md)).
 
 ## [1] Operating principles
 

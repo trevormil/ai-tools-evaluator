@@ -1,38 +1,32 @@
 # AIx
 
-**Every dev tool, on the record — harshly scored, honestly used.**
+**Every dev tool, on the record — harshly scored.**
 
-AIx (`aix.trevormil.com`) is a **directory** of trending dev tools — GitHub
-repos, MCP servers, libraries, skills, *and research papers* — where two kinds
-of judgment meet on every tool page:
+AIx (`aix.trevormil.com`) is a **static, git-native directory** of trending dev
+tools — GitHub repos, MCP servers, libraries, skills, *and research papers* —
+where every tool page carries one thing: a strict, deliberately harsh AI
+evaluation. A 10-metric scorecard, a forced one-word verdict (`essential` →
+`complexity-trap`), and a devil's-advocate section that asks the only question
+that matters — **is this genuinely worth it, or just complexity for its own
+sake?** Most repos are thin optimizations over what a capable base agent already
+does; the site says so, out loud.
 
-1. **The evaluation.** A strict, deliberately harsh AI write-up: a 10-metric
-   scorecard, a forced one-word verdict (`essential` → `complexity-trap`), and
-   a devil's-advocate section that asks the only question that matters — **is
-   this genuinely worth it, or just complexity for its own sake?** Most repos
-   are thin optimizations over what a capable base agent already does; the
-   site says so, out loud.
-2. **The takes.** Real practitioners' blurbs on how they actually use it —
-   `@user's take`, a status (`using` / `trying` / `dropped`), an optional
-   ★rating, and a one-tap **"I use this"** count. Takes from people you follow
-   sort first.
-
-The loop: **submit a tool → it's live instantly ("Awaiting score…") → like it,
-comment, add your take → the evaluation queue fills in the scorecard** on the
-same page, with every comment and take intact. A scanner discovers trending
-tools daily (capped at **10 new items/day**, dedup-aware) and drains the
-community queue first. A Discord bot mirrors it all.
+The loop: a daily scanner discovers trending tools (capped at **10 new items/day**,
+dedup-aware), drains the community submission queue first, evaluates each with
+Claude, and writes a `content/items/<slug>.md` artifact. That commit rebuilds the
+static site. **No server, no database, no social layer** — git is the source of
+truth (see [ADR-0004](./docs/decisions/0004-aix-static-git-native.md)).
 
 ## The surfaces
 
-| Surface        | What it is                                                              |
-| -------------- | ----------------------------------------------------------------------- |
-| `/`            | The directory: search-first browsing, filters, honest counts, pulse rail |
-| `/item/<slug>` | The tool page: evaluation + takes + comments + votes + "I use this"      |
-| `/activity`    | New tools + new takes, Everything/Following tabs, cursor pagination      |
-| `/leaderboard` | Top rated · Most discussed · the Complexity Trap Hall of Shame           |
-| `/submit`      | Drop a URL → live item immediately, evaluation queued                    |
-| `/u/<name>`    | Profiles: Takes · My Stack · My Workflow · Articles · Activity           |
+| Surface        | What it is                                                          |
+| -------------- | ------------------------------------------------------------------- |
+| `/`            | The directory: client-side search, filters, honest counts          |
+| `/item/<slug>` | The tool page: evaluation, scorecard, README, spec rail             |
+| `/leaderboard` | Top rated · the Complexity Trap Hall of Shame                       |
+| `/recap`       | The nightly recap — the day's verdicts, editorially framed          |
+| `/submit`      | Drop a GitHub URL → queued for the next scan                        |
+| `/api/v1/*.json` | Static public API (item list, per-item, full dump) for the iOS app |
 
 ## Every evaluation answers
 
@@ -49,37 +43,38 @@ community queue first. A Discord bot mirrors it all.
 ## Repo layout (bun workspaces)
 
 ```
-packages/core   strict Evaluation schema + scorecard + verdict + md serializer + eval prompt
-packages/db     Drizzle + bun:sqlite schema (users, items, takes/stack, submissions, comments, votes, ...)
-apps/web        Next.js 15 — directory, takes, profiles, auth, submission queue, internal + public API
-apps/scanner    GitHub + arXiv discovery -> Claude evaluation -> publish/upgrade (k8s CronJob, 10/day cap)
-apps/bot        Discord bot — daily digest, /submit, /eval
+packages/core   strict Evaluation schema + scorecard + verdict + md (de)serializer + eval prompt
+packages/db     Drizzle schema — the Item type + the local seed (authors example .md); not used at runtime
+apps/web        Next.js 15 STATIC export — directory (client search), item pages, recap, public API v1
+apps/scanner    GitHub/arXiv/ProductHunt discovery -> Claude eval -> writes .md -> commits (Actions cron)
+workers/submit  Cloudflare Worker — "submit a URL" -> content/queue/*.json via the GitHub API
+content/items   the git-native .md corpus — SOURCE OF TRUTH (each an evaluation + canonical JSON block)
+content/queue   pending submissions awaiting the next scan
 e2e             Playwright suite against a real, seeded production build
-k8s             namespace, web Deployment + PVC + Ingress, scanner/rank/newsletter CronJobs, bot
-content/items   git-native .md archive of every published evaluation (derived from the DB)
 ```
 
 ## Develop
 
 ```bash
 bun install
-bun test packages apps        # unit suites (core, db-backed web libs, scanner, bot)
-bun run test:e2e              # Playwright against a seeded production build
-bun run typecheck             # tsc across the monorepo
-bun run format:check          # prettier gate (CI runs this)
+bun test packages apps workers   # unit suites (core, web libs, scanner, worker)
+bun run typecheck                # tsc across the monorepo
+bun run format:check             # prettier gate (CI runs this)
 
-# run it locally with demo data + mock sign-in
-export AIX_DB_PATH=/tmp/aix-dev.db AIX_DEV_LOGIN=1
-bun packages/db/src/migrate.ts && bun run seed
-bun run web                   # :3000
-open "http://localhost:3000/api/auth/dev?u=you"   # instant session, no OAuth
+# author the example corpus, then run the static site locally
+bun run seed                     # writes content/items/*.md
+bun run web                      # :3000 (reads the corpus)
 ```
 
-`AIX_DEV_LOGIN=1` enables a dev-only mock sign-in (404s in production —
-never set it there). Any `?u=<name>` gets a real session, so multi-user flows
-(follows, DMs, takes) are testable across browser profiles.
+## Deploy (all free tier)
+
+- **Site** — Cloudflare Pages, build `cd apps/web && bun run build`, output `apps/web/out`.
+- **Scanner** — GitHub Actions cron (`.github/workflows/scan.yml`); set the
+  `ANTHROPIC_API_KEY` / `OPENROUTER_API_KEY` (+ optional `PRODUCTHUNT_API_TOKEN`,
+  `DISCORD_WEBHOOK_URL`) repo secrets.
+- **Submissions** — `cd workers/submit && wrangler deploy`; `wrangler secret put
+  GITHUB_TOKEN`; point `NEXT_PUBLIC_SUBMIT_URL` at the Worker.
 
 Architecture: [`docs/architecture.md`](./docs/architecture.md). Decisions:
-[`docs/decisions/`](./docs/decisions/). Internal API contract:
-[`docs/internal-api.md`](./docs/internal-api.md). Backlog:
+[`docs/decisions/`](./docs/decisions/). Backlog:
 [`.TerMinal/backlog/`](./.TerMinal/backlog/).
