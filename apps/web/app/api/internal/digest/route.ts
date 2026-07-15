@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { getDb, items } from "@aix/db";
+import { pickScore } from "@aix/core";
 import { isInternalAuthorized } from "@/lib/internal-auth";
 
 export const dynamic = "force-dynamic";
@@ -69,21 +70,44 @@ export async function GET(req: Request) {
     let adoptIf: string[] = [];
     let skipIf: string[] = [];
     let summary: string | undefined;
+    // Broad-appeal pick score (audience fit + utility + traction + ease); the
+    // bot features the highest, NOT the highest overallScore. Fall back to
+    // overallScore for older items missing the audience/metric fields.
+    let pick = rest.overallScore;
     try {
       const ev = JSON.parse(evaluationJson) as {
         quickstart?: { install?: string };
         decision?: { adoptIf?: string[]; skipIf?: string[] };
         body?: { whatItIs?: string };
+        audience?: { aiEngineerFit?: number };
+        scores?: Record<string, { score?: number }>;
       };
       install = ev.quickstart?.install;
       if (Array.isArray(ev.decision?.adoptIf)) adoptIf = ev.decision!.adoptIf;
       if (Array.isArray(ev.decision?.skipIf)) skipIf = ev.decision!.skipIf;
       // Plainspoken "what it is" — posted as the Discord message text.
       summary = ev.body?.whatItIs;
+      const fit = ev.audience?.aiEngineerFit;
+      const s = ev.scores;
+      if (
+        typeof fit === "number" &&
+        typeof s?.utility?.score === "number" &&
+        typeof s?.traction?.score === "number" &&
+        typeof s?.easeOfAdoption?.score === "number" &&
+        typeof s?.composability?.score === "number"
+      ) {
+        pick = pickScore({
+          aiEngineerFit: fit,
+          utility: s.utility.score,
+          traction: s.traction.score,
+          easeOfAdoption: s.easeOfAdoption.score,
+          composability: s.composability.score,
+        });
+      }
     } catch {
       // Older items may predate the decision layer — degrade gracefully.
     }
-    return { ...rest, install, adoptIf, skipIf, summary };
+    return { ...rest, install, adoptIf, skipIf, summary, pickScore: pick };
   });
 
   return NextResponse.json({ items: enriched });

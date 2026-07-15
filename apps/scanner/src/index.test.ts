@@ -183,30 +183,36 @@ describe("run loop", () => {
     expect(client.publishedOrder).toEqual(["t/a"]);
   });
 
-  test("a multi-item trending batch stamps exactly ONE daily pick (the highest-scored)", async () => {
+  // The featured daily pick is by broad-appeal pickScore (dominated by
+  // aiEngineerFit), NOT overallScore, and only essential/worthwhile verdicts are
+  // eligible — so we vary aiEngineerFit and keep verdicts eligible.
+  const eligible = (e: Evaluation, fit: number): Evaluation => ({
+    ...e,
+    verdict: "worthwhile",
+    audience: { ...e.audience, aiEngineerFit: fit },
+  });
+
+  test("a multi-item trending batch stamps exactly ONE daily pick (the broadest-appeal)", async () => {
     const client = fakeClient({ remaining: 10, queued: [] });
-    // b outscores a and c, so it must be THE pick; a and c publish as runners-up.
-    const scores: Record<string, number> = { "t/a": 60, "t/b": 88, "t/c": 71 };
+    // b has the widest AI-engineer appeal → it must be THE pick; a and c are runners-up.
+    const fit: Record<string, number> = { "t/a": 60, "t/b": 88, "t/c": 71 };
     const result = await run(
       baseDeps({
         client,
         trendingSources: [
           ghSource(async () => ["t/a", "t/b", "t/c"].map((e) => trendingDiscovered(e)), 3),
         ],
-        evaluate: async (d) => ({
-          ...evalFor(d.source.externalId),
-          overallScore: scores[d.source.externalId]!,
-        }),
+        evaluate: async (d) => eligible(evalFor(d.source.externalId), fit[d.source.externalId]!),
       }),
     );
     expect(result.published).toBe(3); // all three saved to the directory
-    expect(client.pickedOrder).toEqual(["t/b"]); // exactly one pick, the top score
+    expect(client.pickedOrder).toEqual(["t/b"]); // exactly one pick, the broadest appeal
   });
 
   test("runs multiple sources with per-source budgets, featuring the single best across ALL", async () => {
     const client = fakeClient({ remaining: 10, queued: [] });
-    // ph/a is the highest score across BOTH sources → it must be THE pick.
-    const scores: Record<string, number> = { "gh/a": 60, "gh/b": 55, "ph/a": 91, "ph/b": 70 };
+    // ph/a has the widest appeal across BOTH sources → it must be THE pick.
+    const fit: Record<string, number> = { "gh/a": 60, "gh/b": 55, "ph/a": 91, "ph/b": 70 };
     const result = await run(
       baseDeps({
         client,
@@ -215,15 +221,33 @@ describe("run loop", () => {
           orderedSource("github", ["gh/a", "gh/b"], 2),
           orderedSource("producthunt", ["ph/a", "ph/b"], 2),
         ],
-        evaluate: async (d) => ({
-          ...evalFor(d.source.externalId),
-          overallScore: scores[d.source.externalId]!,
-        }),
+        evaluate: async (d) => eligible(evalFor(d.source.externalId), fit[d.source.externalId]!),
       }),
     );
     expect(result.published).toBe(4); // 2 from each source (the 5+5 mix, scaled down)
     expect(client.publishedOrder).toEqual(["gh/a", "gh/b", "ph/a", "ph/b"]);
     expect(client.pickedOrder).toEqual(["ph/a"]); // single best across both sources
+  });
+
+  test("a niche-verdict repo is never the daily pick, even with the top pickScore signal", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    const result = await run(
+      baseDeps({
+        client,
+        trendingSources: [
+          ghSource(async () => ["t/niche", "t/broad"].map((e) => trendingDiscovered(e)), 2),
+        ],
+        evaluate: async (d) => {
+          const e = evalFor(d.source.externalId);
+          // The niche repo has the HIGHER fit, but a niche verdict → ineligible.
+          if (d.source.externalId === "t/niche")
+            return { ...e, verdict: "niche", audience: { ...e.audience, aiEngineerFit: 99 } };
+          return { ...e, verdict: "worthwhile", audience: { ...e.audience, aiEngineerFit: 70 } };
+        },
+      }),
+    );
+    expect(result.published).toBe(2);
+    expect(client.pickedOrder).toEqual(["t/broad"]); // niche excluded despite higher fit
   });
 
   test("the master trending cap bounds the total across sources", async () => {

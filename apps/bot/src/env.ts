@@ -20,6 +20,12 @@ export const EnvSchema = z.object({
   AIX_PUBLIC_URL: z.string().url().default("https://aix.trevormil.com"),
   /** Directory for durable digest state (PVC-backed in prod). Defaults to cwd. */
   AIX_BOT_STATE_DIR: z.string().optional(),
+  /**
+   * Earliest UTC hour the daily pick may post (0–23). Default 13 (13:00 UTC ≈
+   * 9am EDT / 8am EST) — just after the 13:00 UTC scan. Set 14 for ~9am EST in
+   * winter. Blocks the 00:00-UTC (≈8pm ET) boundary post after a bot restart.
+   */
+  AIX_DIGEST_UTC_HOUR: z.coerce.number().int().min(0).max(23).default(13),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
