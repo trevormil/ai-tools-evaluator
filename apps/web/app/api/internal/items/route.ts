@@ -5,6 +5,7 @@ import { Evaluation, computeOverall } from "@aix/core";
 import { getDb, items, submissions } from "@aix/db";
 import { isInternalAuthorized } from "@/lib/internal-auth";
 import { hotScore } from "@/lib/ranking";
+import { rescoreState } from "@/lib/rescore";
 
 export const dynamic = "force-dynamic";
 
@@ -47,15 +48,20 @@ export async function POST(req: Request) {
   // Idempotency: an already-SCORED duplicate returns the existing item, no
   // insert. A PENDING item (instant community submission, ticket 0035) is
   // upgraded in place — same row id and slug, so its comments/takes/votes
-  // survive the evaluation landing.
+  // survive the evaluation landing. A scored item with a PENDING RESCORE
+  // request (rescoreRequestedAt newer than scoredAt) is likewise re-evaluated
+  // in place below instead of being treated as a duplicate.
   const existing = db
     .select()
     .from(items)
     .where(and(eq(items.kind, kind), eq(items.externalId, externalId)))
     .get();
   if (existing && existing.scoreStatus !== "pending") {
-    if (submissionId) markSubmissionPublished(submissionId, existing.id);
-    return NextResponse.json({ duplicate: true, item: existing }, { status: 200 });
+    const rescorePending = rescoreState(existing, Math.floor(Date.now() / 1000)).pending;
+    if (!rescorePending) {
+      if (submissionId) markSubmissionPublished(submissionId, existing.id);
+      return NextResponse.json({ duplicate: true, item: existing }, { status: 200 });
+    }
   }
 
   const overallScore = computeOverall(evaluation.scores);
