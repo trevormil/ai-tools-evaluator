@@ -1,3 +1,4 @@
+import { isPickEligible } from "@aix/core";
 import type { DigestItem, InternalClient } from "./client";
 import { buildItemEmbed } from "./embeds";
 import {
@@ -59,6 +60,13 @@ export type DigestDeps = {
   siteBaseUrl?: string;
   /** Max items to post per run — the daily pick. Default 1. */
   maxPerRun?: number;
+  /**
+   * Earliest UTC hour the daily pick may post (0–23, default 13 ≈ 9am ET). The
+   * scan runs at 13:00 UTC; this gate stops the pick from posting at the
+   * 00:00-UTC once-per-day boundary (≈8pm ET) that a bot restart / lost state
+   * could otherwise trigger via the 24h lookback.
+   */
+  postAfterUtcHour?: number;
 };
 
 /**
@@ -68,6 +76,12 @@ export type DigestDeps = {
  */
 export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
   const now = (deps.now ?? (() => new Date()))();
+
+  // Time-of-day gate: never post before the target UTC hour. This is what pins
+  // the daily pick to the morning-ET window and blocks the 00:00-UTC boundary
+  // post. Returns without touching state, so the pick still lands once the hour
+  // arrives (the scan at 13:00 UTC has published by then).
+  if (now.getUTCHours() < (deps.postAfterUtcHour ?? 13)) return [];
 
   // Once-per-day guard: a pick posts at most once per UTC calendar day. The
   // marker is set only after a real post (below), so an earlier *empty* poll —
@@ -88,10 +102,16 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
     return [];
   }
 
-  // Post at most `maxPerRun` (default 1) — the highest-scored item in the window
-  // is the "pick of the day". The rest stay on the site.
+  // Post at most `maxPerRun` (default 1) — the "pick of the day". Featured by
+  // broad-appeal `pickScore` (audience fit + utility + traction + ease), NOT raw
+  // overallScore, so a clever-but-niche repo never headlines. Only essential/
+  // worthwhile verdicts are eligible; fall back to all if a thin day has none.
   const max = deps.maxPerRun ?? 1;
-  const picks = [...items].sort((a, b) => b.overallScore - a.overallScore).slice(0, max);
+  const eligible = items.filter((i) => isPickEligible(i.verdict));
+  const pool = eligible.length > 0 ? eligible : items;
+  const picks = [...pool]
+    .sort((a, b) => (b.pickScore ?? b.overallScore) - (a.pickScore ?? a.overallScore))
+    .slice(0, max);
 
   // Resolve the channel first, so an unreachable channel fails fast *before* we
   // consume the day — a transient fetch failure must not burn the daily pick.

@@ -46,7 +46,7 @@ describe("runDigest", () => {
       item({ slug: "top", overallScore: 90 }),
     ]);
     const sent: unknown[] = [];
-    const now = new Date("2026-07-06T00:00:00.000Z");
+    const now = new Date("2026-07-06T13:05:00.000Z");
 
     const posted = await runDigest({
       client,
@@ -78,7 +78,7 @@ describe("runDigest", () => {
     await runDigest({
       client,
       statePath,
-      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      now: () => new Date("2026-07-06T13:05:00.000Z"),
       getChannel: async () => ({
         send: async (p) => {
           payload = p as typeof payload;
@@ -96,7 +96,7 @@ describe("runDigest", () => {
     await runDigest({
       client,
       statePath,
-      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      now: () => new Date("2026-07-06T13:05:00.000Z"),
       getChannel: async () => ({
         send: async (p) => {
           payload = p as typeof payload;
@@ -117,7 +117,7 @@ describe("runDigest", () => {
       client,
       statePath,
       maxPerRun: 5,
-      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      now: () => new Date("2026-07-06T13:05:00.000Z"),
       getChannel: async () => ({
         send: async () => {
           sends++;
@@ -131,7 +131,7 @@ describe("runDigest", () => {
 
   it("uses the stored watermark as `since` on the next run", async () => {
     const first = fakeClient([item()]);
-    const t1 = new Date("2026-07-05T00:00:00.000Z");
+    const t1 = new Date("2026-07-05T13:05:00.000Z");
     await runDigest({
       client: first.client,
       statePath,
@@ -143,7 +143,7 @@ describe("runDigest", () => {
     await runDigest({
       client: second.client,
       statePath,
-      now: () => new Date("2026-07-06T00:00:00.000Z"),
+      now: () => new Date("2026-07-06T13:05:00.000Z"),
       getChannel: async () => ({ send: async () => null }),
     });
     expect(second.sinceSeen[0]).toBe(t1.toISOString());
@@ -152,7 +152,7 @@ describe("runDigest", () => {
   it("posts nothing but advances the watermark when there are no items", async () => {
     const { client } = fakeClient([]);
     let sends = 0;
-    const now = new Date("2026-07-06T00:00:00.000Z");
+    const now = new Date("2026-07-06T13:05:00.000Z");
     await runDigest({
       client,
       statePath,
@@ -306,11 +306,83 @@ describe("runDigest once-per-day guard", () => {
   });
 });
 
+describe("runDigest post-time gate", () => {
+  it("posts nothing before the target UTC hour and leaves state untouched", async () => {
+    const sent: unknown[] = [];
+    const { client, sinceSeen } = fakeClient([
+      item({ slug: "x", verdict: "essential", overallScore: 90 }),
+    ]);
+    const posted = await runDigest({
+      client,
+      statePath,
+      // 04:00 UTC ≈ midnight ET — well before the 13:00 gate.
+      now: () => new Date("2026-07-08T04:00:00.000Z"),
+      getChannel: async () => ({
+        send: async (p) => {
+          sent.push(p);
+          return null;
+        },
+      }),
+    });
+    expect(posted).toEqual([]);
+    expect(sent).toHaveLength(0);
+    // Gated before fetch/state — so the real morning post is never pre-empted.
+    expect(sinceSeen).toHaveLength(0);
+    expect(await readLastPickDate(statePath)).toBeNull();
+  });
+
+  it("honors a custom postAfterUtcHour", async () => {
+    const { client } = fakeClient([item({ slug: "x", verdict: "essential", overallScore: 90 })]);
+    const posted = await runDigest({
+      client,
+      statePath,
+      postAfterUtcHour: 15,
+      now: () => new Date("2026-07-08T14:00:00.000Z"), // past 13, before 15
+      getChannel: async () => ({ send: async () => null }),
+    });
+    expect(posted).toEqual([]);
+  });
+});
+
+describe("runDigest featured pick", () => {
+  const morning = () => new Date("2026-07-08T13:05:00.000Z");
+
+  it("features the broad-appeal pickScore, not the top overallScore, and never a niche verdict", async () => {
+    const { client } = fakeClient([
+      // Clever-but-niche: HIGHEST overallScore, but niche verdict + low pickScore.
+      item({ slug: "niche-star", verdict: "niche", overallScore: 95, pickScore: 40 }),
+      // Broadly useful: lower overallScore, worthwhile, high pickScore.
+      item({ slug: "broad", verdict: "worthwhile", overallScore: 78, pickScore: 82 }),
+    ]);
+    const posted = await runDigest({
+      client,
+      statePath,
+      now: morning,
+      getChannel: async () => ({ send: async () => null }),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["broad"]);
+  });
+
+  it("falls back to all items on a thin day with no essential/worthwhile verdict", async () => {
+    const { client } = fakeClient([
+      item({ slug: "a", verdict: "niche", overallScore: 60, pickScore: 55 }),
+      item({ slug: "b", verdict: "marginal", overallScore: 50, pickScore: 70 }),
+    ]);
+    const posted = await runDigest({
+      client,
+      statePath,
+      now: morning,
+      getChannel: async () => ({ send: async () => null }),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["b"]); // highest pickScore of the fallback
+  });
+});
+
 describe("runSubmissionDigest", () => {
   it("auto-posts each scored Discord submission and advances the submission watermark", async () => {
     const { client, sinceSeen } = fakeClient([item({ slug: "dropped", overallScore: 70 })]);
     const sent: Array<{ content?: string; embeds?: unknown[] }> = [];
-    const now = new Date("2026-07-06T00:00:00.000Z");
+    const now = new Date("2026-07-06T13:05:00.000Z");
     const posted = await runSubmissionDigest({
       client,
       statePath,
@@ -332,7 +404,7 @@ describe("runSubmissionDigest", () => {
   it("posts nothing but advances the watermark when there are no new scored submissions", async () => {
     const { client } = fakeClient([]);
     let sends = 0;
-    const now = new Date("2026-07-06T00:00:00.000Z");
+    const now = new Date("2026-07-06T13:05:00.000Z");
     await runSubmissionDigest({
       client,
       statePath,

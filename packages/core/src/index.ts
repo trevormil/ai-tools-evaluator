@@ -3,6 +3,7 @@ export * from "./categories";
 export * from "./audience";
 export * from "./lenses";
 export * from "./metrics";
+export * from "./pick";
 export * from "./schema";
 export * from "./sanitize";
 export * from "./markdown";

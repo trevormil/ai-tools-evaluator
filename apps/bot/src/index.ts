@@ -55,6 +55,7 @@ async function main(): Promise<void> {
       getChannel,
       siteBaseUrl: env.AIX_PUBLIC_URL,
       maxPerRun: 1,
+      postAfterUtcHour: env.AIX_DIGEST_UTC_HOUR,
     });
     // Echo each scored Discord submission back to the channel (every 5 min).
     startSubmissionDigestScheduler({

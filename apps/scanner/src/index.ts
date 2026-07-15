@@ -1,4 +1,4 @@
-import type { Evaluation } from "@aix/core";
+import { pickScoreOf, isPickEligible, type Evaluation } from "@aix/core";
 import { loadEnv, requireLiveSecrets, type ScannerEnv } from "./env";
 import { createLogger, type Logger } from "./logger";
 import {
@@ -155,14 +155,16 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         capLeft -= gradedFromSrc;
       }
 
-      // Exactly ONE featured daily pick — the highest-scored across ALL sources
-      // (agreeing with the digest/home, which choose by score). The rest publish
-      // as runners-up so the directory grows without extra Discord posts.
-      const pickSlug = graded.reduce<{ slug: string; score: number } | null>((best, g) => {
-        if (!best || g.evaluation.overallScore > best.score) {
-          return { slug: g.evaluation.slug, score: g.evaluation.overallScore };
-        }
-        return best;
+      // Exactly ONE featured daily pick — the broadest-appeal item across ALL
+      // sources by `pickScore` (audience fit + utility + traction + ease), NOT
+      // raw overallScore, so a clever-but-niche repo never gets featured. Only
+      // essential/worthwhile verdicts are eligible; fall back to all graded if a
+      // thin day has none. The rest publish as runners-up.
+      const eligible = graded.filter((g) => isPickEligible(g.evaluation.verdict));
+      const pickPool = eligible.length > 0 ? eligible : graded;
+      const pickSlug = pickPool.reduce<{ slug: string; score: number } | null>((best, g) => {
+        const score = pickScoreOf(g.evaluation);
+        return !best || score > best.score ? { slug: g.evaluation.slug, score } : best;
       }, null)?.slug;
 
       for (const { d, evaluation } of graded) {
