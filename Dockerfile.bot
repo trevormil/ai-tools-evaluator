@@ -15,7 +15,10 @@ COPY packages/db/package.json   packages/db/package.json
 COPY apps/web/package.json       apps/web/package.json
 COPY apps/scanner/package.json   apps/scanner/package.json
 COPY apps/bot/package.json       apps/bot/package.json
-RUN bun install --frozen-lockfile
+# --ignore-scripts: the bot never opens SQLite, so skip better-sqlite3's native
+# postinstall (a workspace dep from packages/db). Without this it node-gyp-builds
+# and fails the image (it has no C++ toolchain, and doesn't need one).
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # ---- build: deps + full source (carries per-workspace node_modules) ----
 FROM deps AS build
