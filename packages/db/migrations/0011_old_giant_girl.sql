@@ -1,0 +1,1 @@
+ALTER TABLE `items` ADD `rescore_requested_at` integer;

@@ -16,6 +16,7 @@ import { CoverImage } from "@/components/cover-image";
 import { VoteButtons } from "@/components/vote-buttons";
 import { RepostButton } from "@/components/repost-button";
 import { ShareButton } from "@/components/share-button";
+import { RescoreButton } from "@/components/rescore-button";
 import { UseThisButton } from "@/components/use-this-button";
 import { TakeComposer } from "@/components/take-composer";
 import { TakeCard } from "@/components/take-card";
@@ -31,6 +32,7 @@ import { renderMarkdown } from "@/lib/markdown";
 import { shareBlurb, shareSummary } from "@/lib/share";
 import { absoluteUrl } from "@/lib/public-api";
 import { timeAgo } from "@/lib/format";
+import { rescoreState } from "@/lib/rescore";
 import type { StackStatus } from "@/lib/stack-types";
 
 export const dynamic = "force-dynamic";
@@ -73,6 +75,7 @@ export default async function ItemPage({
 
   const pending = item.scoreStatus === "pending";
   const evaluation = pending ? null : parseEvaluation(item);
+  const rescore = rescoreState(item, Math.floor(Date.now() / 1000));
   const user = await getCurrentUser();
   const commentNodes = getItemComments(item.id);
   const myItemVote = user ? (userVotes(user.id, "item")[item.id] ?? 0) : 0;
@@ -291,6 +294,17 @@ export default async function ItemPage({
                 <span className="text-xs">
                   <ShareButton url={shareUrl} blurb={shareText} summary={shareBlob} />
                 </span>
+                {!pending && (
+                  <span className="text-xs">
+                    <RescoreButton
+                      slug={item.slug}
+                      signedIn={!!user}
+                      pending={rescore.pending}
+                      eligible={rescore.eligible}
+                      nextEligibleAt={rescore.nextEligibleAt}
+                    />
+                  </span>
+                )}
               </div>
             </div>
           </div>

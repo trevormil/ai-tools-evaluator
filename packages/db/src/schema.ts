@@ -77,6 +77,11 @@ export const items = sqliteTable(
     // budget (count of picks today) and marks "already featured" so a repo is
     // never re-featured, while a prior runner-up can still win later.
     dailyPickAt: integer("daily_pick_at"),
+    // When a user last asked for this scored item to be re-evaluated (ticket:
+    // rescore). Gates a per-item weekly cooldown, and while it is GREATER than
+    // scoredAt a rescore is "pending" — the next scan overwrites the item in
+    // place (score/verdict/eval), bumping scoredAt past it so it won't loop.
+    rescoreRequestedAt: integer("rescore_requested_at"),
     score: real("score").notNull().default(0), // hot-ranking score, recomputed
     upvotes: integer("upvotes").notNull().default(0),
     commentCount: integer("comment_count").notNull().default(0),
