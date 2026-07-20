@@ -278,8 +278,14 @@ private struct TrendingModelRow: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(model.modelName).font(.headline).lineLimit(2)
                 Text(model.owner)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+                if let description = model.description, !description.isEmpty {
+                    Text(description)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(4)
+                }
                 HStack(spacing: 12) {
                     Label("\(model.likes)", systemImage: "heart.fill")
                         .font(.caption.weight(.semibold))

@@ -77,8 +77,8 @@ test("hackernews: quiet AI day tops up with unfiltered leaders instead of an emp
   expect(body.stories[0].title).toBe("An LLM thing"); // AI hits stay first
 });
 
-test("huggingface: trending models via the public hub API; window ignored (cached once)", async () => {
-  mockUpstream([
+test("huggingface: trending models with card-derived descriptions; window ignored", async () => {
+  const listJSON = JSON.stringify([
     {
       id: "acme/mega-model",
       likes: 512,
@@ -88,23 +88,48 @@ test("huggingface: trending models via the public hub API; window ignored (cache
       createdAt: "2026-07-15T00:00:00Z",
     },
   ]);
+  const card =
+    '---\nlicense: mit\n---\n# Mega Model\n\n<div align="center"><img src="hero.png"/></div>\n\nMega Model is a 7B instruction-tuned model that beats larger baselines on reasoning benchmarks.';
+  globalThis.fetch = (async (input: RequestInfo | URL) => {
+    const url = String(input);
+    fetchCalls.push(url);
+    if (url.includes("/api/models")) {
+      return new Response(listJSON, { status: 200 });
+    }
+    return new Response(card, { status: 200 }); // README fetches
+  }) as typeof fetch;
+
   const res = await source("huggingface", "daily");
   expect(res.status).toBe(200);
   const body = await res.json();
-  expect(body.models[0]).toEqual({
-    id: "acme/mega-model",
-    url: "https://huggingface.co/acme/mega-model",
-    likes: 512,
-    downloads: 90000,
-    pipelineTag: "text-generation",
-    tags: ["transformers", "en"], // namespaced tags (license:) dropped
-    createdAt: "2026-07-15T00:00:00Z",
-  });
-  expect(fetchCalls[0]).toContain("huggingface.co/api/models");
+  const model = body.models[0];
+  expect(model.id).toBe("acme/mega-model");
+  expect(model.tags).toEqual(["transformers", "en"]); // namespaced tags dropped
+  // Description = first prose line of the card (headings/images skipped).
+  expect(model.description).toContain("7B instruction-tuned model");
   expect(fetchCalls[0]).toContain("trendingScore");
 
+  const before = fetchCalls.length;
   await source("huggingface", "weekly"); // different window, same cache entry
-  expect(fetchCalls.length).toBe(1);
+  expect(fetchCalls.length).toBe(before);
+});
+
+test("model card normalizer: raw HTML becomes markdown, tags never leak", async () => {
+  const { normalizeModelCard, modelCardSummary } = await import("@/lib/trending");
+  const normalized = normalizeModelCard(
+    '<div align="center">\n<img src="banner.png" alt="Banner"/>\n<a href="https://x.io"><b>Site</b></a>\n</div>\n<p>Uses <code>bf16</code> weights.</p>',
+  );
+  expect(normalized).toContain("![Banner](banner.png)");
+  expect(normalized).toContain("[**Site**](https://x.io)");
+  expect(normalized).toContain("`bf16`");
+  expect(normalized).not.toContain("<");
+
+  expect(
+    modelCardSummary(
+      "# Title\n![badge](b.svg)\nA diffusion model for fast high-quality image generation.",
+    ),
+  ).toBe("A diffusion model for fast high-quality image generation.");
+  expect(modelCardSummary(null)).toBeNull();
 });
 
 test("huggingface model card: frontmatter stripped, rendered to HTML; malformed → 400", async () => {

@@ -449,6 +449,12 @@ struct TrendingModelDetailView: View {
                     Text(model.owner).font(.subheadline).foregroundStyle(.secondary)
                 }
 
+                if let description = model.description, !description.isEmpty {
+                    Text(description)
+                        .font(.body)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
                 HStack(spacing: 10) {
                     Label("\(model.likes)", systemImage: "heart.fill")
                         .foregroundStyle(.pink)

@@ -124,6 +124,8 @@ struct TrendingModel: Codable, Hashable, Identifiable {
     let pipelineTag: String?
     let tags: [String]
     let createdAt: String?
+    /// First prose line of the model card (nil from older servers).
+    let description: String?
 
     var pageURL: URL? { URL(string: url) }
     var owner: String { String(id.split(separator: "/").first ?? "") }
