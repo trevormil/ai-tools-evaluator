@@ -5,7 +5,7 @@ import { Evaluation, computeOverall } from "@aix/core";
 import { getDb, items, submissions } from "@aix/db";
 import { isInternalAuthorized } from "@/lib/internal-auth";
 import { hotScore } from "@/lib/ranking";
-import { sanitizeCoverUrl } from "@/lib/covers";
+import { pickCover } from "@/lib/covers";
 import { rescoreState } from "@/lib/rescore";
 
 export const dynamic = "force-dynamic";
@@ -67,10 +67,10 @@ export async function POST(req: Request) {
 
   const overallScore = computeOverall(evaluation.scores);
   const stored = { ...evaluation, overallScore };
-  const cover = evaluation.media.find((m) => m.type === "image");
-  // Personal-avatar / placeholder covers become null → clients render a
-  // clean monogram tile instead of someone's selfie (ticket 0073).
-  const coverUrl = cover ? await sanitizeCoverUrl(cover.cachedUrl ?? cover.url) : null;
+  // Best displayable image from the media set (personal avatars, social
+  // cards, placeholders and SVGs skipped) — null → monogram tile (0073).
+  const coverUrl = await pickCover(evaluation.media);
+  const cover = coverUrl != null;
   const nowSec = Math.floor(Date.now() / 1000);
   // Exactly ONE trending publish per day is the featured daily pick (dailyPickAt
   // set); the scanner's other batch publishes are runners-up (dailyPick=false →
@@ -99,7 +99,7 @@ export async function POST(req: Request) {
         tagsJson: JSON.stringify(evaluation.tags),
         evaluationJson: JSON.stringify(stored),
         mediaJson: JSON.stringify(evaluation.media),
-        coverImageUrl: cover ? coverUrl : existing.coverImageUrl,
+        coverImageUrl: coverUrl ?? existing.coverImageUrl,
         evaluatedBy: evaluation.evaluatedBy,
         readmeMd: readmeMd ?? existing.readmeMd,
         model: evaluation.model ?? null,
@@ -137,7 +137,7 @@ export async function POST(req: Request) {
       tagsJson: JSON.stringify(evaluation.tags),
       evaluationJson: JSON.stringify(stored),
       mediaJson: JSON.stringify(evaluation.media),
-      coverImageUrl: cover ? (cover.cachedUrl ?? cover.url) : null,
+      coverImageUrl: coverUrl,
       evaluatedBy: evaluation.evaluatedBy,
       readmeMd: readmeMd ?? null,
       model: evaluation.model ?? null,
