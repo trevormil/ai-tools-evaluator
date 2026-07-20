@@ -1,12 +1,17 @@
 ---
 id: 0049
 title: "k8s-health: add node memory headroom"
-status: open
+status: icebox
 priority: medium
-type: feature
+horizon: future
+hitl: true
+type: chore
 source: script
 created: 2026-07-09
-updated: 2026-07-09
+updated: 2026-07-20
+prs: []
+refs: []
+depends_on: []
 agent_id: k8s-health
 agent_scope: repo
 agent_kind: classic

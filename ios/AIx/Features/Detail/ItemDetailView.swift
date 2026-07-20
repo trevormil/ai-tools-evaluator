@@ -1,8 +1,18 @@
 import SwiftUI
 
+/// Which pane of the item page is showing (web ContentTabs parity, read-only).
+enum DetailTab: String, CaseIterable, Identifiable {
+    case evaluation = "Evaluation"
+    case scorecard = "Scorecard"
+    case readme = "README"
+    var id: String { rawValue }
+}
+
 struct ItemDetailView: View {
     let slug: String
     @State private var vm: DetailViewModel
+    @State private var tab: DetailTab = .evaluation
+    @EnvironmentObject private var favorites: FavoritesStore
 
     init(slug: String) {
         self.slug = slug
@@ -22,38 +32,77 @@ struct ItemDetailView: View {
                     message: message,
                     retry: { Task { await vm.load() } }
                 )
-            case .loaded(let eval):
-                loaded(eval)
+            case .loaded(let detail):
+                loaded(detail)
             }
         }
         .navigationTitle(navTitle)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if case .loaded(let detail) = vm.state {
+                    Button {
+                        favorites.toggle(FavoriteItem(evaluation: detail.evaluation))
+                    } label: {
+                        Image(systemName: favorites.isFavorite(slug: slug) ? "bookmark.fill" : "bookmark")
+                    }
+                    .accessibilityLabel(favorites.isFavorite(slug: slug) ? "Remove from favorites" : "Save to favorites")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                ShareLink(item: AppConfig.baseURL.appending(path: "item/\(slug)")) {
+                    Image(systemName: "square.and.arrow.up")
+                }
+                .accessibilityLabel("Share")
+            }
+        }
         .task { if case .idle = vm.state { await vm.load() } }
     }
 
     private var navTitle: String {
-        if case .loaded(let e) = vm.state { return e.source.title }
+        if case .loaded(let d) = vm.state { return d.evaluation.source.title }
         return "Evaluation"
     }
 
-    private func loaded(_ eval: Evaluation) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 20) {
+    private func loaded(_ detail: DetailResponse) -> some View {
+        let eval = detail.evaluation
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
                 cover(eval)
                 header(eval)
-                if eval.quickstart != nil || eval.decision != nil {
-                    Divider()
-                    makeTheCall(eval)
+
+                Picker("Section", selection: $tab) {
+                    ForEach(availableTabs(detail)) { t in
+                        Text(t.rawValue).tag(t)
+                    }
                 }
-                Divider()
-                bodySections(eval)
-                Divider()
-                scorecard(eval)
-                Divider()
-                audienceFit(eval)
-                sourceLink(eval)
+                .pickerStyle(.segmented)
+
+                switch tab {
+                case .evaluation:
+                    VStack(alignment: .leading, spacing: 20) {
+                        if eval.quickstart != nil || eval.decision != nil {
+                            makeTheCall(eval)
+                            Divider()
+                        }
+                        bodySections(eval)
+                        Divider()
+                        audienceFit(eval)
+                        sourceLink(eval)
+                    }
+                case .scorecard:
+                    scorecard(eval)
+                case .readme:
+                    ReadmePane(markdown: detail.readmeMd ?? "")
+                }
             }
             .padding()
+        }
+    }
+
+    private func availableTabs(_ detail: DetailResponse) -> [DetailTab] {
+        DetailTab.allCases.filter { tab in
+            tab != .readme || !(detail.readmeMd ?? "").isEmpty
         }
     }
 
@@ -107,6 +156,8 @@ struct ItemDetailView: View {
                 Label(eval.category.label, systemImage: "square.grid.2x2")
                 Text("·")
                 Text(eval.integration)
+                Text("·")
+                Text(eval.lens.label)
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -191,16 +242,29 @@ struct ItemDetailView: View {
         }
     }
 
-    // MARK: Five body sections
+    // MARK: Lens-aware body sections
+
+    private static let sectionIcons: [String: String] = [
+        "whatItIs": "doc.text",
+        "vsVanilla": "arrow.left.arrow.right",
+        "surfaceArea": "puzzlepiece.extension",
+        "vsAlternatives": "arrow.left.arrow.right",
+        "vsPriorWork": "clock.arrow.circlepath",
+        "reproducibility": "hammer",
+        "devilsAdvocate": "flame",
+        "whatWouldMakeItBetter": "arrow.up.forward",
+        "steelman": "shield",
+    ]
 
     private func bodySections(_ eval: Evaluation) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            section("What it is", eval.body.whatItIs, icon: "doc.text")
-            section("vs. Vanilla", eval.body.vsVanilla, icon: "arrow.left.arrow.right")
-            section("Skill / Plugin / Workflow", eval.body.surfaceArea, icon: "puzzlepiece.extension")
-            section("Devil's Advocate", eval.body.devilsAdvocate, icon: "flame", accent: .red)
-            if let steelman = eval.body.steelman, !steelman.isEmpty {
-                section("Steelman", steelman, icon: "shield", accent: .green)
+            ForEach(eval.bodySections, id: \.key) { row in
+                section(
+                    row.title,
+                    row.text,
+                    icon: Self.sectionIcons[row.key] ?? "doc.text",
+                    accent: row.key == "devilsAdvocate" ? .red : row.key == "steelman" ? .green : .accentColor
+                )
             }
         }
     }
@@ -267,5 +331,30 @@ struct ItemDetailView: View {
             }
             .padding(.top, 4)
         }
+    }
+}
+
+// MARK: - README
+
+struct ReadmePane: View {
+    let markdown: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("README").font(.title3.weight(.bold))
+            // Basic markdown: AttributedString handles inline styles; block
+            // structure is approximated by paragraph splitting.
+            ForEach(Array(markdown.components(separatedBy: "\n\n").enumerated()), id: \.offset) { _, block in
+                if let attributed = try? AttributedString(
+                    markdown: block,
+                    options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                ) {
+                    Text(attributed).font(.callout)
+                } else {
+                    Text(block).font(.callout)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

@@ -87,3 +87,30 @@ while :; do
   [ -z "$cursor" ] && break
 done
 ```
+
+## `GET /api/v1/recap` · `GET /api/v1/recap/{date}` · `GET /api/v1/recap/archive`
+
+The nightly recap: latest, by UTC date (`YYYY-MM-DD`, 404 when nothing was
+judged), and the archive of dates. A recap carries `items` (+ per-item `uses`),
+`leadPick`, `complexityTrap`, `topAdopted`, `verdictCounts`, and a `summary`
+line.
+
+## `GET /api/v1/trending/{github|producthunt}?window=daily|weekly`
+
+Live "what's rising" proxies (cached ~30 min server-side). `github` returns
+`{ repos: [{ fullName, url, description, stars, language, createdAt }] }` —
+young repos ranked by stars via the official search API (github.com/trending
+has no API). `producthunt` returns
+`{ products: [{ name, tagline, url, votes, topics }] }` via the PH GraphQL
+API; responds `503` when `PRODUCTHUNT_API_TOKEN` isn't configured.
+
+## `GET /api/v1/daily-pick`
+
+The current daily pick — the most recent published item stamped by the
+daily-pick job. `{ item: PublicItem & { upvotes, commentCount }, pickedAt }`;
+404 until the first pick lands.
+
+Note: `GET /api/v1/items/{slug}` also returns `readmeMd` (the repo's own
+README markdown, or null) alongside `evaluation`, and the anonymous
+`GET /api/feed` endpoint serves the home timeline (`?mode=all&cursor&limit`)
+for read-only clients like the iOS app.

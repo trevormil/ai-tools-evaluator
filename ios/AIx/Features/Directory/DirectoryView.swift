@@ -15,10 +15,15 @@ struct DirectoryView: View {
                 }
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        Picker("Sort", selection: $vm.sort) {
-                            ForEach(ItemSort.allCases) { s in Text(s.label).tag(s) }
+                        Menu {
+                            Picker("Sort", selection: $vm.sort) {
+                                ForEach(ItemSort.allCases) { s in Text(s.label).tag(s) }
+                            }
+                        } label: {
+                            Label(vm.sort.label, systemImage: "arrow.up.arrow.down")
+                                .labelStyle(.titleAndIcon)
+                                .font(.subheadline.weight(.semibold))
                         }
-                        .pickerStyle(.menu)
                         .onChange(of: vm.sort) { _, _ in vm.load() }
                     }
                     ToolbarItem(placement: .topBarTrailing) {

@@ -1,7 +1,7 @@
 import Foundation
 
 /// Typed error surface for the API layer.
-enum APIError: LocalizedError {
+enum APIError: LocalizedError, Equatable {
     case badURL
     case notFound
     case http(Int)
@@ -11,7 +11,7 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .badURL: return "Invalid request URL."
-        case .notFound: return "Item not found."
+        case .notFound: return "Not found."
         case .http(let code): return "Server returned HTTP \(code)."
         case .decoding(let msg): return "Couldn't read the response. \(msg)"
         case .transport(let msg): return msg
@@ -42,7 +42,7 @@ struct ItemQuery {
     }
 }
 
-/// Thin async/await URLSession client for the AIx public API.
+/// Thin async URLSession client for the AIx read-only public API.
 struct APIClient {
     var baseURL: URL
     private let session: URLSession
@@ -53,30 +53,85 @@ struct APIClient {
         self.session = session
     }
 
+    // MARK: Directory + evaluation
+
     /// GET /api/v1/items with filters.
     func fetchItems(_ query: ItemQuery) async throws -> [PublicItem] {
-        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
-            throw APIError.badURL
-        }
-        components.path = "/api/v1/items"
-        components.queryItems = query.queryItems
-        guard let url = components.url else { throw APIError.badURL }
-        let response: ItemsResponse = try await get(url)
+        let response: ItemsResponse = try await get(path: "/api/v1/items", query: query.queryItems)
         return response.items
     }
 
-    /// GET /api/v1/items/<slug> — the full evaluation.
-    func fetchEvaluation(slug: String) async throws -> Evaluation {
-        let url = baseURL
-            .appendingPathComponent("api")
-            .appendingPathComponent("v1")
-            .appendingPathComponent("items")
-            .appendingPathComponent(slug)
-        let response: DetailResponse = try await get(url)
-        return response.evaluation
+    /// GET /api/v1/items/<slug> — full evaluation + repo README.
+    func fetchItemDetail(slug: String) async throws -> DetailResponse {
+        try await get(path: "/api/v1/items/\(slug)")
     }
 
-    private func get<T: Decodable>(_ url: URL) async throws -> T {
+    func fetchEvaluation(slug: String) async throws -> Evaluation {
+        try await fetchItemDetail(slug: slug).evaluation
+    }
+
+    // MARK: Feed (anonymous, read-only)
+
+    /// GET /api/feed — the unified home timeline, cursor-paginated.
+    func fetchFeed(cursor: String?, limit: Int = 30) async throws -> FeedPage {
+        var query = [
+            URLQueryItem(name: "mode", value: "all"),
+            URLQueryItem(name: "limit", value: String(limit)),
+        ]
+        if let cursor { query.append(URLQueryItem(name: "cursor", value: cursor)) }
+        return try await get(path: "/api/feed", query: query)
+    }
+
+    // MARK: Recap + daily pick
+
+    func fetchLatestRecap() async throws -> Recap {
+        let response: RecapResponse = try await get(path: "/api/v1/recap")
+        return response.recap
+    }
+
+    func fetchRecap(date: String) async throws -> Recap {
+        let response: RecapResponse = try await get(path: "/api/v1/recap/\(date)")
+        return response.recap
+    }
+
+    func fetchRecapArchive() async throws -> [String] {
+        let response: RecapArchive = try await get(path: "/api/v1/recap/archive")
+        return response.dates
+    }
+
+    /// GET /api/v1/daily-pick — 404s (throws .notFound) until a pick exists.
+    func fetchDailyPick() async throws -> DailyPick {
+        try await get(path: "/api/v1/daily-pick")
+    }
+
+    // MARK: Live trending (server-proxied, ticket 0067)
+
+    func fetchGithubTrending(window: TrendingWindow) async throws -> [TrendingRepo] {
+        let response: GithubTrendingResponse = try await get(
+            path: "/api/v1/trending/github",
+            query: [URLQueryItem(name: "window", value: window.rawValue)]
+        )
+        return response.repos
+    }
+
+    func fetchProductHuntTrending(window: TrendingWindow) async throws -> [TrendingProduct] {
+        let response: ProductHuntTrendingResponse = try await get(
+            path: "/api/v1/trending/producthunt",
+            query: [URLQueryItem(name: "window", value: window.rawValue)]
+        )
+        return response.products
+    }
+
+    // MARK: Plumbing
+
+    private func get<T: Decodable>(path: String, query: [URLQueryItem] = []) async throws -> T {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            throw APIError.badURL
+        }
+        components.path = path
+        if !query.isEmpty { components.queryItems = query }
+        guard let url = components.url else { throw APIError.badURL }
+
         var request = URLRequest(url: url)
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.timeoutInterval = 20

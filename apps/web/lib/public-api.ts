@@ -63,6 +63,13 @@ export function toPublicItem(item: Item): PublicItem {
   };
 }
 
+/** PublicItem plus the social counters the ranked lists display. */
+export type RankedItem = PublicItem & { upvotes: number; commentCount: number };
+
+export function toRankedItem(item: Item): RankedItem {
+  return { ...toPublicItem(item), upvotes: item.upvotes, commentCount: item.commentCount };
+}
+
 /**
  * The full public projection for the bulk dump: everything a consumer needs to
  * mirror an item — the light `PublicItem` fields plus our official evaluation

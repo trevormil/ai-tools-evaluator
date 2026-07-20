@@ -14,6 +14,10 @@ const EnvSchema = z.object({
   AIX_PUBLIC_URL: z.string().optional(),
   // Opt-in dev-only login (/api/auth/dev). NEVER set in production.
   AIX_DEV_LOGIN: z.string().optional(),
+  // Trending proxies (ticket 0067). GitHub works unauthenticated (low rate
+  // limit); Product Hunt requires its developer token.
+  GITHUB_TOKEN: z.string().optional(),
+  PRODUCTHUNT_API_TOKEN: z.string().optional(),
 });
 
 export type Env = z.infer<typeof EnvSchema>;
