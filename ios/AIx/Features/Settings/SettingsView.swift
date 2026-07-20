@@ -60,7 +60,8 @@ struct SettingsView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-            .navigationTitle("Settings")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .alert("Saved", isPresented: $saved) {
                 Button("OK", role: .cancel) {}
             } message: {

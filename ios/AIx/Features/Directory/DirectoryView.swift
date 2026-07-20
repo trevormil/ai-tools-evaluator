@@ -7,7 +7,8 @@ struct DirectoryView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("Directory")
+                .navigationTitle("")
+                .navigationBarTitleDisplayMode(.inline)
                 .searchable(text: $vm.search, prompt: "Search tools & papers")
                 .onSubmit(of: .search) { vm.load() }
                 .onChange(of: vm.search) { _, newValue in

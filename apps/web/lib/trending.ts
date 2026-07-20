@@ -123,14 +123,19 @@ export async function githubTrending(window: TrendingWindow): Promise<TrendingRe
   });
 }
 
-/** Fetch a trending repo's README markdown (cached per repo). */
-export async function githubReadme(fullName: string): Promise<string | null> {
+/**
+ * Fetch a trending repo's README as GitHub-rendered HTML (cached per repo).
+ * The `html` media type gives exactly what github.com renders — full GFM
+ * (tables, code, task lists) with relative links resolved and GitHub's own
+ * sanitizer applied.
+ */
+export async function githubReadmeHtml(fullName: string): Promise<string | null> {
   if (!/^[\w.-]+\/[\w.-]+$/.test(fullName)) {
     throw new TrendingUnavailable("repo must look like owner/name");
   }
-  return cached(`readme:${fullName.toLowerCase()}`, async () => {
+  return cached(`readme-html:${fullName.toLowerCase()}`, async () => {
     const headers: Record<string, string> = {
-      accept: "application/vnd.github.raw+json",
+      accept: "application/vnd.github.html+json",
       "user-agent": "aix-web",
     };
     const token = getEnv().GITHUB_TOKEN;
@@ -139,8 +144,8 @@ export async function githubReadme(fullName: string): Promise<string | null> {
     const res = await fetch(`https://api.github.com/repos/${fullName}/readme`, { headers });
     if (res.status === 404) return null; // repo has no README — not an error
     if (!res.ok) throw new Error(`GitHub readme failed: HTTP ${res.status}`);
-    // Cap at ~200KB so a giant README can't balloon the cache or the client.
-    return (await res.text()).slice(0, 200_000);
+    // Cap at ~300KB so a giant README can't balloon the cache or the client.
+    return (await res.text()).slice(0, 300_000);
   });
 }
 

@@ -150,6 +150,12 @@ struct ItemsResponse: Codable {
 struct DetailResponse: Codable {
     let evaluation: Evaluation
     let readmeMd: String?
+    /// Server-rendered GFM (markdown-it, sanitized). Nil from older servers.
+    let readmeHtml: String?
+
+    var hasReadme: Bool {
+        !(readmeHtml ?? readmeMd ?? "").isEmpty
+    }
 }
 
 /// A single scorecard metric: a 0–100 score plus a one-line rationale.

@@ -25,7 +25,9 @@ struct FeedView: View {
                     feedList
                 }
             }
-            .navigationTitle("AIx")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
             .navigationDestination(for: String.self) { slug in
                 ItemDetailView(slug: slug)
             }

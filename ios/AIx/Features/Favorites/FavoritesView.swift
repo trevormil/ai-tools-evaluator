@@ -24,7 +24,8 @@ struct FavoritesView: View {
 
                 content
             }
-            .navigationTitle("Favorites")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: String.self) { slug in
                 ItemDetailView(slug: slug)
             }

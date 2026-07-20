@@ -1,20 +1,21 @@
 import { NextResponse } from "next/server";
-import { githubReadme, TrendingUnavailable } from "@/lib/trending";
+import { githubReadmeHtml, TrendingUnavailable } from "@/lib/trending";
 
 export const dynamic = "force-dynamic";
 
 const CORS = { "access-control-allow-origin": "*" } as const;
 
 /**
- * README markdown for a trending repo (ticket 0070) — lets the app show the
- * whole story in-app instead of bouncing to github.com.
- * `?repo=owner/name` → `{ repo, readmeMd }` (readmeMd null when absent).
+ * README for a trending repo (ticket 0070/0071) as GitHub-rendered HTML —
+ * full GFM exactly as github.com shows it, so the app renders the whole
+ * story in-app. `?repo=owner/name` → `{ repo, readmeHtml }` (null when the
+ * repo has no README).
  */
 export async function GET(req: Request) {
   const repo = new URL(req.url).searchParams.get("repo") ?? "";
   try {
-    const readmeMd = await githubReadme(repo);
-    return NextResponse.json({ repo, readmeMd }, { headers: CORS });
+    const readmeHtml = await githubReadmeHtml(repo);
+    return NextResponse.json({ repo, readmeHtml }, { headers: CORS });
   } catch (err) {
     if (err instanceof TrendingUnavailable) {
       return NextResponse.json({ error: err.message }, { status: 400, headers: CORS });

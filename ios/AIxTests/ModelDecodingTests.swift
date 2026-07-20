@@ -170,8 +170,8 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(products[0].mediaUrls.count, 1)
         XCTAssertEqual(products[0].description, "long story")
 
-        let readme = "{\"repo\":\"a/b\",\"readmeMd\":\"# Hi\"}"
-        XCTAssertEqual(try decoder.decode(TrendingReadme.self, from: Data(readme.utf8)).readmeMd, "# Hi")
+        let readme = "{\"repo\":\"a/b\",\"readmeHtml\":\"<h1>Hi</h1>\"}"
+        XCTAssertEqual(try decoder.decode(TrendingReadme.self, from: Data(readme.utf8)).readmeHtml, "<h1>Hi</h1>")
 
         // Pre-enrichment server payloads (no forks/topics/media keys) must
         // still decode — deploys and app updates aren't atomic.

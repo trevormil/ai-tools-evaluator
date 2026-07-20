@@ -38,7 +38,7 @@ beforeAll(async () => {
     .run();
 });
 
-test("returns the evaluation plus the repo README markdown", async () => {
+test("returns the evaluation plus the repo README as markdown AND rendered HTML", async () => {
   const res = await GET(new Request("https://x/api/v1/items/itemdetail-tool"), {
     params: Promise.resolve({ slug: "itemdetail-tool" }),
   });
@@ -46,4 +46,6 @@ test("returns the evaluation plus the repo README markdown", async () => {
   const body = await res.json();
   expect(body.evaluation.slug).toBe("itemdetail-tool");
   expect(body.readmeMd).toBe("# Hello readme");
+  // Rendered with the site's safe renderer (markdown-it, html:false).
+  expect(body.readmeHtml).toContain("<h1>Hello readme</h1>");
 });
