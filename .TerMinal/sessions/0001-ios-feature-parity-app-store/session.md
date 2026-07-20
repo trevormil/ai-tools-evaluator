@@ -3,9 +3,9 @@ id: 0001
 slug: ios-feature-parity-app-store
 anchor: SES-0001
 title: "iOS read-only browse app + App Store readiness"
-status: active
+status: ended
 started: 2026-07-20T09:34
-ended: null
+ended: 2026-07-20T13:30
 goal: "iOS app feature parity with web + App Store submission readiness (server mobile-auth + v1 social read APIs, SwiftUI social features, store assets)"
 tickets: ["058", "059", "060", "062", "063", "065", "067", "068"]
 branches: ["feat/ios-parity"]
@@ -59,7 +59,8 @@ accounts. App Store submission readiness still in scope.
 - [x] code-review agent to the merge bar — **approve**, 0 findings, 268/268
       tests (artifact: autopilot-harness prs/…/56/8418f27.md); 0069 filed
       from the reviewer's CI suggestion
-- [ ] human merges #56 → CI builds images → rollout restart aix-web → /merge-sync
+- [x] human merged #56 (and the follow-up UX/feature PRs #58–#66) → each
+      auto-deployed (CI image build + rollout restart) → merge-sync'd
 
 ## [4] Log
 
@@ -113,12 +114,47 @@ accounts. App Store submission readiness still in scope.
 
 ## [6] Outcomes
 
-_(session-end)_
+- **The AIx iOS app shipped end-to-end in one day**: read-only browse client
+  with a unified Browse tab (source chips AIx · GitHub · Product Hunt ·
+  Hacker News · 🤗), Directory, Favorites (device-local bookmarks + saved
+  links, Spotlight-indexed), Settings, and a daily-pick local notification.
+  In-app rich content everywhere: GFM READMEs (GitHub-rendered HTML), HF
+  model cards (normalized + rendered), HN post + comments, PH stories with
+  screenshots. Real brand badges (official Octocat mark), real cover
+  imagery (pickCover pipeline, 58/99 genuine + monogram tiles).
+- **Server**: public v1 read APIs (recap, daily-pick, trending ×4 sources
+  incl. README/model-card/HN-item proxies, all cached), cover-quality
+  pipeline + idempotent backfill. Zero auth surface (mobile-auth built then
+  reverted on rescope).
+- **App Store readiness**: icon from the real site logo, privacy manifest
+  (no data collected), store-ready Info.plist, archive verified, submission
+  runbook (docs/runbooks/ios-app-store-submission.md).
+- **Merged PRs**: #56 (review: approve, 0 findings, 268/268) then #57, #58,
+  #59, #60, #61, #62, #63, #64, #65, #66 (review waived by Trevor for UX
+  follow-ups). All deployed to aix.trevormil.com; app installed on Trevor's
+  iPhone 16 throughout via devicectl.
+- **Tests at close**: 148 server (bun) · 36 iOS (XCTest) · all green.
 
 ## [7] Follow-ups
 
-_(session-end)_
+- **HITL (open)**: Apple Developer Program enrollment + ASC API key →
+  unblocks TestFlight (archive already verified) and the share extension
+  (code + tests done, target parked in project.yml; App Groups need paid
+  provisioning). Runbook ready.
+- **0066 (open, high)**: seed schema drift breaks the Playwright e2e suite
+  on main — next real bug.
+- **0069 (future)**: iOS XCTest job in CI (macOS runner, paths-gated).
+- Icebox: 057 (mobile auth), 061 (submit/profiles), 064 (admin surface).
 
 ## [8] Retro
 
-_(session-end)_
+- The mid-session rescope (full social parity → read-only browser) was
+  caught early enough that the revert was clean; building the auth surface
+  first was wasted motion — a scope check on "feature parity" before
+  building would have saved ~40 min.
+- Merge-watch monitors + CI-image + rollout-restart made a tight
+  human-merge/agent-deploy loop (10 PRs shipped same-day).
+- Two misdiagnoses worth remembering: "placeholder faces" meant TWO things
+  (selfie covers on AIx items AND the repeated 🤗 source badge on HF rows)
+  — ask which screen before fixing; and ticket files must ride the SAME PR
+  as their code or they strand on squash-merged branches (0070 lesson).
