@@ -2,44 +2,56 @@
 
 A native SwiftUI client (iOS 17+) for the [AIx](https://aix.trevormil.com)
 directory of trending dev tools and papers — each with a harsh verdict and a
-ten-metric scorecard. It consumes the public read-only JSON API at
-`/api/v1/items` and `/api/v1/items/<slug>`.
+ten-metric scorecard. **Read-only by design**: the app browses; accounts and
+all social actions live on the website. It consumes the public JSON API
+(`/api/v1/*`) plus the anonymous `/api/feed` timeline.
 
 ## Features
 
+- **Feed** — the unified home timeline (fresh items, posts, community
+  activity with embeds), cursor-paginated with pull-to-refresh, topped by a
+  **Today's pick** card (`/api/v1/daily-pick`).
 - **Directory** — searchable, filterable list (category / verdict / audience,
-  sort by hot / new / top). Each row shows title, tagline, a color-coded
-  verdict badge, overall score, and category. Pull-to-refresh, async loading,
-  empty and error states.
-- **Item detail** — cover image (`AsyncImage`), verdict + overall + noise
-  score, tagline, the five body sections (What it is / vs. Vanilla /
-  Skill·Plugin·Workflow / Devil's Advocate / Steelman), the 10-metric scorecard
-  (bars + rationale), audience-fit meters (AI-engineer vs vibe-coder), tags,
-  and a "View source" link.
-- **Leaderboard** — top items by score (`sort=top`), plus a "Complexity Trap"
-  section (`verdict=complexity-trap`).
-- **Settings** — override the backend base URL at runtime (persisted).
+  sort by hot / new / top). Verdict badge, score chip, empty/error states.
+- **Item detail** — cover, verdict + overall + noise, "Make the call"
+  (quickstart install + adopt-if/skip-if), segmented tabs: **Evaluation**
+  (lens-aware body sections + audience-fit meters), **Scorecard** (10 metric
+  bars + rationale), **README** (repo's own markdown, when present). Share
+  sheet links to the website.
+- **Leaderboard** — the three web lists: Top Rated, Most Discussed, and the
+  Complexity Trap Hall of Shame (`/api/v1/leaderboard`).
+- **Recap** — the nightly recap with prev/next day navigation and a date
+  archive (`/api/v1/recap*`).
+- **Daily pick reminder** — optional local notification every morning at 9;
+  tapping it opens the current pick (no push infra, no data collected).
+- **Settings** — reminder toggle + backend base-URL override (persisted).
 
 ## Architecture
 
 ```
 AIx/
-  App/            AIxApp entry + RootView (TabView) + Config (base URL)
-  Models/         Codable structs + enums, mirrored 1:1 from packages/core
+  App/            AIxApp entry + RootView (TabView) + AppRouter + Config
+  Models/         Codable structs mirrored 1:1 from the API (core + feed)
   Networking/     APIClient (async/await URLSession, typed APIError)
+  Notifications/  DailyPickReminder (UNUserNotificationCenter, testable seam)
   Design/         Theme (verdict & score colors, light/dark friendly)
-  Components/     VerdictBadge, ScoreChip, MetricBar, ItemRow, state views
+  Components/     VerdictBadge, ScoreChip, MetricBar, ItemRow, AvatarView, …
   Features/
-    Directory/    DirectoryView + DirectoryViewModel (@Observable)
-    Detail/       ItemDetailView + DetailViewModel
+    Feed/         FeedView + FeedViewModel (@Observable)
+    Directory/    DirectoryView + DirectoryViewModel
+    Detail/       ItemDetailView + DetailViewModel (tabs, lens-aware)
     Leaderboard/  LeaderboardView + LeaderboardViewModel
+    Recap/        RecapScreen + RecapViewModel
     Settings/     SettingsView
+AIxTests/         Unit tests: model decoding, APIClient (URLProtocol stub),
+                  feed pagination/dedup, notification scheduling
 ```
 
 The `Codable` models match the API's JS field names exactly (camelCase:
 `overallScore`, `coverImageUrl`, `aiEngineerFit`, the 10 metric keys, etc.), so
 a field-name drift on the server is the thing to check first if screens go
-empty. No third-party dependencies.
+empty. Enum decoding is lenient (unknown verdict/category → safe fallback) so
+new server taxonomy never crashes old clients. No third-party dependencies.
 
 ## Open & run
 
@@ -52,6 +64,18 @@ empty. No third-party dependencies.
    xcodegen generate
    ```
 3. Open `AIx.xcodeproj` in Xcode, pick an iOS 17+ simulator, and Run (⌘R).
+
+## Tests
+
+```
+cd ios
+xcodegen generate
+xcodebuild -project AIx.xcodeproj -scheme AIx \
+  -destination 'platform=iOS Simulator,name=iPhone 17' test
+```
+
+All tests are offline: networking is stubbed with a `URLProtocol` mock and
+notifications with a fake scheduler.
 
 ## Point at localhost vs prod
 
@@ -67,16 +91,11 @@ The base URL defaults to `https://aix.trevormil.com`. Two ways to override:
 To run the web backend locally, from the repo root: `bun run dev` in `apps/web`
 (serves on `:3000`).
 
-## Verification
+## App Store
 
-Built headlessly for the simulator with:
-
-```
-cd ios
-xcodegen generate
-xcodebuild -project AIx.xcodeproj -scheme AIx \
-  -destination 'generic/platform=iOS Simulator' -configuration Debug build
-```
-
-Result: **BUILD SUCCEEDED** (Xcode 26.6, iOS 17 deployment target). Code
-signing is disabled for the simulator build (`CODE_SIGNING_ALLOWED=NO`).
+The project is submission-ready: single-size app icon, privacy manifest
+(`PrivacyInfo.xcprivacy`, no tracking / no data collected), store-configured
+Info.plist (developer-tools category, encryption-exempt), and an archive
+scheme. The human path from here (team id, App Store Connect record, archive,
+TestFlight, review) is documented in
+[`docs/runbooks/ios-app-store-submission.md`](../docs/runbooks/ios-app-store-submission.md).
