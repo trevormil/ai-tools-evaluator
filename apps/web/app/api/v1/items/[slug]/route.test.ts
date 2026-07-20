@@ -32,6 +32,7 @@ beforeAll(async () => {
       noiseScore: 10,
       evaluationJson: JSON.stringify({ slug: "itemdetail-tool" }),
       readmeMd: "# Hello readme",
+      coverImageUrl: "https://raw.githubusercontent.com/x/y/logo.png",
       published: true,
       scoreStatus: "scored",
     })
@@ -48,4 +49,6 @@ test("returns the evaluation plus the repo README as markdown AND rendered HTML"
   expect(body.readmeMd).toBe("# Hello readme");
   // Rendered with the site's safe renderer (markdown-it, html:false).
   expect(body.readmeHtml).toContain("<h1>Hello readme</h1>");
+  // Canonical display cover — clients must not read evaluation.media[0].
+  expect(body.coverImageUrl).toContain("logo.png");
 });

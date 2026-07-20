@@ -20,6 +20,9 @@ export async function GET(_req: Request, { params }: Params) {
   return NextResponse.json(
     {
       evaluation,
+      // The canonical display cover (sanitized/promoted) — clients must not
+      // fall back to evaluation.media[0], which may be a personal avatar.
+      coverImageUrl: item.coverImageUrl ?? null,
       readmeMd: item.readmeMd ?? null,
       // Same safe renderer the website uses (markdown-it, html:false) so
       // native clients get real GFM without shipping a renderer.

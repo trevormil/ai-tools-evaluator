@@ -52,3 +52,28 @@ export async function sanitizeCoverUrl(coverUrl: string | null): Promise<string 
   const type = await githubOwnerType(avatarOwner);
   return type === "User" ? null : coverUrl;
 }
+
+type MediaLike = {
+  type: string;
+  url: string;
+  cachedUrl?: string | null;
+  source?: string;
+};
+
+/**
+ * Choose the best displayable cover from an item's media: the first image
+ * that survives sanitation, skipping social-preview cards (they feature the
+ * owner's face prominently) and SVGs (native clients can't render them).
+ * Null when nothing qualifies — clients show a monogram tile.
+ */
+export async function pickCover(media: MediaLike[]): Promise<string | null> {
+  for (const asset of media) {
+    if (asset.type !== "image") continue;
+    if (asset.source === "repo-social-preview") continue;
+    const url = asset.cachedUrl ?? asset.url;
+    if (/\.svg(\?|$)/i.test(url)) continue;
+    const sanitized = await sanitizeCoverUrl(url);
+    if (sanitized) return sanitized;
+  }
+  return null;
+}

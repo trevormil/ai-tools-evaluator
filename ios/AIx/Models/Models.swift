@@ -152,10 +152,15 @@ struct DetailResponse: Codable {
     let readmeMd: String?
     /// Server-rendered GFM (markdown-it, sanitized). Nil from older servers.
     let readmeHtml: String?
+    /// Canonical display cover (sanitized/promoted server-side). Prefer this
+    /// over evaluation.media, which may still hold a personal avatar.
+    let coverImageUrl: String?
 
     var hasReadme: Bool {
         !(readmeHtml ?? readmeMd ?? "").isEmpty
     }
+
+    var coverURL: URL? { coverImageUrl.flatMap(URL.init(string:)) }
 }
 
 /// A single scorecard metric: a 0–100 score plus a one-line rationale.

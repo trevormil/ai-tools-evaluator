@@ -68,7 +68,7 @@ struct ItemDetailView: View {
         let eval = detail.evaluation
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                header(eval)
+                header(eval, coverURL: detail.coverURL)
 
                 Picker("Section", selection: $tab) {
                     ForEach(availableTabs(detail)) { t in
@@ -109,10 +109,10 @@ struct ItemDetailView: View {
 
     // Covers are mostly small social previews/avatars — shown at thumbnail
     // size they're crisp; stretched full-width they were a blurry mess.
-    private func header(_ eval: Evaluation) -> some View {
+    private func header(_ eval: Evaluation, coverURL: URL?) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                ItemThumbnail(url: eval.coverURL, verdict: eval.verdict, title: eval.source.title, size: 56)
+                ItemThumbnail(url: coverURL, verdict: eval.verdict, title: eval.source.title, size: 56)
                 Text(eval.source.title)
                     .font(.title2.weight(.bold))
                     .lineLimit(3)
