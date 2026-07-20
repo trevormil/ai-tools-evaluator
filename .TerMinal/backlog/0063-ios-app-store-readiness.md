@@ -11,7 +11,7 @@ created: 2026-07-20
 updated: 2026-07-20
 prs: []
 refs: []
-depends_on: ["060", "061", "062"]
+depends_on: ["060", "062", "065"]
 acceptance:
   - "App icon (1024pt single-size) + accent color in the asset catalog; launch screen configured"
   - "PrivacyInfo.xcprivacy privacy manifest present and accurate (UserDefaults reason code, no tracking)"
@@ -27,7 +27,8 @@ agent_kind: classic
 Everything needed so the only human steps are: paste the real
 `DEVELOPMENT_TEAM`, create the App Store Connect record, upload, submit.
 HITL by nature: Apple Developer account credentials, the actual archive
-upload, and App Review submission are human-only. UGC note for review: the
-app has user-generated content (takes/comments/DMs) — Apple requires a
-report/block story; runbook must document the minimum viable answer (contact
-email + web moderation via /admin) and flag any gap as a follow-up.
+upload, and App Review submission are human-only. Review posture is simple:
+the app is a read-only content browser (no accounts, no UGC creation, no
+tracking) — the feed *displays* website community content, which the runbook
+should note alongside the site's moderation story (/admin) in case review
+asks. Privacy nutrition label: no data collected.

@@ -2,23 +2,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getDb, submissions } from "@aix/db";
 import { validateGithubRepoUrl } from "@aix/core";
-import { getRequestUser, requireUser, Unauthorized } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { errorResponse } from "@/lib/api";
 import { createPendingItem } from "@/lib/pending-items";
-import { listSubmissionsByUser } from "@/lib/queries";
 
 export const dynamic = "force-dynamic";
-
-/** The viewer's own submissions, newest first (the Submit screen's status list). */
-export async function GET(req: Request) {
-  try {
-    const user = await getRequestUser(req);
-    if (!user) throw new Unauthorized();
-    return NextResponse.json({ submissions: listSubmissionsByUser(user.id) });
-  } catch (err) {
-    return errorResponse(err);
-  }
-}
 
 const Body = z.object({
   url: z.string().url().max(500),

@@ -17,7 +17,7 @@ export async function GET(_req: Request, { params }: Params) {
   }
   const evaluation = parseEvaluation(item);
   return NextResponse.json(
-    { evaluation },
+    { evaluation, readmeMd: item.readmeMd ?? null },
     {
       headers: {
         ...CORS,

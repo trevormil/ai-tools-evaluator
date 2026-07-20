@@ -1,6 +1,6 @@
 ---
 id: 060
-title: "iOS: Feed tab + item detail social parity (takes, comments, votes, I-use-this, repost, rescore)"
+title: "iOS: read-only home feed + item detail tabs (Evaluation / Scorecard / README)"
 status: in-progress
 priority: high
 horizon: now
@@ -13,19 +13,20 @@ prs: []
 refs: []
 depends_on: ["058", "059"]
 acceptance:
-  - "Feed tab: Everything/Following segments, cursor pagination, pull-to-refresh; Following gated on sign-in"
-  - "Item detail gains Takes and Discussion tabs: take composer (status + rating + blurb), nested comments with reply, both posting via existing write APIs"
-  - "Vote buttons, I-use-this toggle, repost, share sheet, and request-rescore wired on item detail"
-  - "Evaluation tab renders lens-specific sections + audience-fit meters; Scorecard renders all 10 metrics with rationales; README tab renders markdown"
-  - "Pending items show 'Awaiting score…' state matching web"
-  - "ViewModel unit tests for feed pagination, take/comment posting, and vote toggling (mocked client)"
+  - "Feed tab renders the anonymous unified timeline (items, posts, activities with embeds), cursor-paginated with pull-to-refresh and client-side dedup"
+  - "Today's pick card tops the feed when a daily pick exists; its absence never blocks the timeline"
+  - "Item detail gains segmented tabs: Evaluation (lens-aware sections + audience meters + make-the-call), Scorecard (10 metrics), README (when present); share via ShareLink"
+  - "Pending items show 'Awaiting score…' matching web"
+  - "ViewModel unit tests: pagination/dedup, daily-pick resilience, error handling (mocked network)"
 agent_id: 1000x-ai-engineer
 agent_scope: global
 agent_kind: classic
 ---
 
-Bring the two richest web surfaces to iOS: the home feed and the full item
-page. Web reference: `apps/web/app/page.tsx` (FeedTabs/FeedList) and
-`apps/web/app/item/[slug]/page.tsx` (ContentTabs, VoteButtons, TakeComposer,
-CommentThread, readout rail). Reads come from 0058's endpoints; writes reuse
-the existing cookie-authed JSON endpoints via bearer (0057).
+Bring the two richest web surfaces to iOS read-only: the home timeline
+(`apps/web/app/page.tsx`) and the full item page
+(`apps/web/app/item/[slug]/page.tsx`). No composers, votes, or any writes —
+the app browses; the website is where accounts live.
+
+*(Rescoped 2026-07-20: takes/discussion/vote/repost/rescore UI dropped with
+the read-only pivot.)*

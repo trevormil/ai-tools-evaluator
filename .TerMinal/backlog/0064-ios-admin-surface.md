@@ -1,7 +1,7 @@
 ---
 id: 064
 title: "iOS: admin/mod surface (hide items, remove posts, scan-run observability)"
-status: open
+status: icebox
 priority: low
 horizon: future
 hitl: false
@@ -19,8 +19,7 @@ agent_scope: global
 agent_kind: classic
 ---
 
-Mobile mirror of `/admin` + `/api/admin/hide`. Deliberately parked out of the
-v1 parity push: the admin surface is a one-person operator tool, works fine on
-mobile web, and adding role-gated moderation UI to the store build complicates
-App Review for zero user value. Revisit if moderation-from-phone becomes a
-real need.
+Mobile mirror of `/admin` + `/api/admin/hide`. Iceboxed 2026-07-20: the iOS
+app is read-only with no accounts at all, so an admin surface is doubly moot.
+The admin page works fine on mobile web. Revisit only if the app ever grows
+sign-in.

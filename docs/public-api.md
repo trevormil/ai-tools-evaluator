@@ -88,34 +88,6 @@ while :; do
 done
 ```
 
-## `GET /api/v1/items/{slug}/social`
-
-The item's social surface: takes (practitioner blurbs with status + ★rating),
-the nested comment thread, and use counts. Pending ("Awaiting score…") items
-are socially live — only unpublished items 404. With an
-`Authorization: Bearer <session token>` header (mobile sessions, ticket 0057),
-`viewer` carries your vote, comment votes, and stack entry; anonymous callers
-get `viewer: null`.
-
-```json
-{
-  "social": {
-    "takes": [{ "id": "…", "status": "using", "rating": 5, "take": "…",
-                "user": { "username": "…", "displayName": "…", "avatarUrl": null } }],
-    "comments": [{ "id": "…", "body": "…", "author": { "username": "…" }, "children": [] }],
-    "useCount": 2, "byStatus": { "using": 1, "trying": 1 },
-    "upvotes": 5, "commentCount": 2
-  },
-  "viewer": { "vote": 1, "commentVotes": {}, "stack": { "status": "trying" } }
-}
-```
-
-## `GET /api/v1/users/{username}`
-
-Profile JSON mirroring `/u/{username}`: public user, profile links, follow
-counts, takes, stack, recent activity, and the tools they brought in
-(`broughtIn`). Bearer viewers get `viewer: { following, self }`.
-
 ## `GET /api/v1/leaderboard`
 
 The three ranked lists as `PublicItem & { upvotes, commentCount }` arrays:
@@ -129,11 +101,13 @@ judged), and the archive of dates. A recap carries `items` (+ per-item `uses`),
 `leadPick`, `complexityTrap`, `topAdopted`, `verdictCounts`, and a `summary`
 line.
 
-## Authenticated use from native clients
+## `GET /api/v1/daily-pick`
 
-Every session-authed web endpoint (`/api/comments`, `/api/votes`,
-`/api/follows`, `/api/stack`, `/api/reposts`, `/api/messages*`,
-`/api/notifications`, `/api/profile`, `/api/rescore`, `/api/submissions`,
-`/api/feed`) also accepts `Authorization: Bearer <session token>`. Native
-clients obtain the token via `GET /api/auth/github?client=ios` — the OAuth
-callback hands it back on the `aix://auth#token=…` custom scheme.
+The current daily pick — the most recent published item stamped by the
+daily-pick job. `{ item: PublicItem & { upvotes, commentCount }, pickedAt }`;
+404 until the first pick lands.
+
+Note: `GET /api/v1/items/{slug}` also returns `readmeMd` (the repo's own
+README markdown, or null) alongside `evaluation`, and the anonymous
+`GET /api/feed` endpoint serves the home timeline (`?mode=all&cursor&limit`)
+for read-only clients like the iOS app.

@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { getRequestUser } from "@/lib/auth";
+import { getCurrentUser } from "@/lib/auth";
 import { getUnifiedFeed, type FeedMode } from "@/lib/home-feed";
 
 export const dynamic = "force-dynamic";
 
-/** Timeline pages for the client feed (ticket 0024; bearer viewers via 0057). */
+/** Timeline pages for the client feed (ticket 0024). */
 export async function GET(req: Request) {
   const url = new URL(req.url);
-  const viewer = await getRequestUser(req);
+  const viewer = await getCurrentUser();
   const mode: FeedMode =
     url.searchParams.get("mode") === "following" && viewer ? "following" : "all";
   const cursor = url.searchParams.get("cursor") ?? undefined;

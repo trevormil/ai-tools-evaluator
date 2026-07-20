@@ -41,55 +41,22 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(item.audience, PrimaryAudience.neither)
     }
 
-    func testEvaluationBodyIsLensAware() throws {
+    func testDetailResponseCarriesReadme() throws {
         let json = """
-        {"schemaVersion":1,"slug":"paper-x",
-         "source":{"kind":"arxiv_paper","externalId":"2501.0001","url":"https://arxiv.org/abs/2501.0001",
-                   "title":"Paper X"},
-         "category":"paper","integration":"knowledge","tags":[],
-         "verdict":"niche","noiseScore":30,
-         "audience":{"primary":"ai-engineer","aiEngineerFit":70,"vibeCoderFit":20,"rationale":"r"},
-         "scores":{"novelty":{"score":80,"rationale":"r"},"utility":{"score":50,"rationale":"r"},
-                   "deltaVsBaseline":{"score":60,"rationale":"r"},"easeOfAdoption":{"score":40,"rationale":"r"},
-                   "maturity":{"score":30,"rationale":"r"},"leanness":{"score":70,"rationale":"r"},
-                   "traction":{"score":20,"rationale":"r"},"composability":{"score":50,"rationale":"r"},
-                   "longevity":{"score":60,"rationale":"r"},"clarity":{"score":80,"rationale":"r"}},
-         "overallScore":55,"tagline":"t",
-         "body":{"whatItIs":"A paper about X that does Y in a novel-enough way to matter here.",
-                 "vsPriorWork":"Beats prior work on Z by a small but real margin across benchmarks.",
-                 "devilsAdvocate":"Narrow benchmark; may not transfer to real workloads at all.",
-                 "whatWouldMakeItBetter":"Release the training code and an ablation on real tasks."},
-         "media":[],"evaluatedBy":"ai","model":null,"evaluatedAt":"2026-07-01T00:00:00.000Z"}
+        {"evaluation":\(Self.evaluationJSON),"readmeMd":"# Hello"}
         """
-        let eval = try decoder.decode(Evaluation.self, from: Data(json.utf8))
+        let detail = try decoder.decode(DetailResponse.self, from: Data(json.utf8))
+        XCTAssertEqual(detail.readmeMd, "# Hello")
+        XCTAssertEqual(detail.evaluation.slug, "paper-x")
+    }
+
+    func testEvaluationBodyIsLensAware() throws {
+        let eval = try decoder.decode(Evaluation.self, from: Data(Self.evaluationJSON.utf8))
         XCTAssertEqual(eval.lens, .research)
         let sectionKeys = eval.bodySections.map(\.key)
         XCTAssertEqual(sectionKeys, ["whatItIs", "vsPriorWork", "devilsAdvocate", "whatWouldMakeItBetter"])
         XCTAssertEqual(eval.bodySections[1].title, "How it advances prior work")
         XCTAssertNil(eval.body.vsVanilla)
-    }
-
-    func testSocialResponseDecodesNestedCommentsAndViewer() throws {
-        let json = """
-        {"social":{
-           "takes":[{"id":"t1","status":"using","rating":5,"take":"Great","updatedAt":1750000000,
-                     "followedByViewer":false,
-                     "user":{"id":"u1","username":"alice","displayName":"Alice","avatarUrl":null,
-                             "bio":null,"role":"user","createdAt":"2026-01-01T00:00:00.000Z"}}],
-           "comments":[{"id":"c1","body":"root","createdAt":1750000000,"upvotes":2,"parentId":null,
-                        "author":{"username":"alice","displayName":null,"avatarUrl":null},
-                        "children":[{"id":"c2","body":"child","createdAt":1750000001,"upvotes":0,
-                                     "parentId":"c1",
-                                     "author":{"username":"bob","displayName":null,"avatarUrl":null},
-                                     "children":[]}]}],
-           "useCount":2,"byStatus":{"using":1,"trying":1},"upvotes":5,"commentCount":2},
-         "viewer":{"vote":1,"commentVotes":{"c1":1},"stack":{"id":"s1","status":"trying","take":null,
-                   "rating":null,"toolName":null,"itemId":"i1","updatedAt":1750000000}}}
-        """
-        let social = try decoder.decode(SocialResponse.self, from: Data(json.utf8))
-        XCTAssertEqual(social.social.comments[0].children[0].body, "child")
-        XCTAssertEqual(social.viewer?.vote, 1)
-        XCTAssertEqual(social.viewer?.stack?.status, "trying")
     }
 
     func testFeedPageDecodesTaggedUnionEntries() throws {
@@ -99,7 +66,7 @@ final class ModelDecodingTests: XCTestCase {
            "item":{"id":"i1","slug":"tool","title":"Tool","tagline":"t","category":"cli-tool",
                    "verdict":"worthwhile","overallScore":70,"noiseScore":10,"coverImageUrl":null,
                    "upvotes":1,"commentCount":0,"createdAt":1750000000,"scoreStatus":"scored"},
-           "myVote":1,"repostCount":0,"reposted":false},
+           "myVote":0,"repostCount":0,"reposted":false},
           {"kind":"post","createdAt":1750000001,
            "post":{"id":"p1","authorId":"u1","body":"hello","itemId":null,"upvotes":0,
                    "commentCount":0,"createdAt":1750000001},
@@ -117,18 +84,17 @@ final class ModelDecodingTests: XCTestCase {
         """
         let page = try decoder.decode(FeedPage.self, from: Data(json.utf8))
         XCTAssertEqual(page.entries.count, 4)
-        guard case .item(let item, let myVote, _, _, _) = page.entries[0] else {
+        guard case .item(let item, let createdAt) = page.entries[0] else {
             return XCTFail("expected item entry")
         }
         XCTAssertEqual(item.slug, "tool")
-        XCTAssertEqual(myVote, 1)
-        guard case .post(_, let author, _, _, let repostCount, let reposted, _) = page.entries[1] else {
+        XCTAssertEqual(createdAt, 1750000000)
+        guard case .post(let post, let author, _, _) = page.entries[1] else {
             return XCTFail("expected post entry")
         }
+        XCTAssertEqual(post.body, "hello")
         XCTAssertEqual(author.username, "alice")
-        XCTAssertEqual(repostCount, 2)
-        XCTAssertTrue(reposted)
-        guard case .activity(_, _, let label, _, _, let embed, _) = page.entries[2] else {
+        guard case .activity(_, _, let label, _, let embed, _) = page.entries[2] else {
             return XCTFail("expected activity entry")
         }
         XCTAssertEqual(label, "added Tool to their stack")
@@ -145,53 +111,61 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(page.nextCursor, "1750000000:i1")
     }
 
-    func testProfileResponseDecodesSelfKeyword() throws {
+    func testPendingFeedItemFlagsItself() throws {
         let json = """
-        {"user":{"id":"u1","username":"alice","displayName":null,"avatarUrl":null,"bio":null,
-                 "role":"user","createdAt":"2026-01-01T00:00:00.000Z"},
-         "links":[{"kind":"website","url":"https://alice.dev"}],
-         "counts":{"followers":3,"following":1},
-         "takes":[],"stack":[],"activity":[],"broughtIn":[],
-         "viewer":{"following":true,"self":false}}
+        {"id":"i9","slug":"fresh","title":"Fresh","tagline":"t","category":"cli-tool",
+         "verdict":"worthwhile","overallScore":0,"noiseScore":0,"coverImageUrl":null,
+         "upvotes":0,"commentCount":0,"createdAt":1,"scoreStatus":"pending"}
         """
-        let profile = try decoder.decode(ProfileResponse.self, from: Data(json.utf8))
-        XCTAssertEqual(profile.viewer?.following, true)
-        XCTAssertEqual(profile.viewer?.isSelf, false)
-        XCTAssertEqual(profile.links.first?.kind, "website")
+        let item = try decoder.decode(DBItem.self, from: Data(json.utf8))
+        XCTAssertTrue(item.isPending)
     }
 
-    func testNotificationAndConversationShapes() throws {
-        let notif = """
-        {"notifications":[{"notification":{"id":"n1","type":"follow","objectType":null,
-                                           "objectId":null,"readAt":null,"createdAt":1750000000},
-                           "actor":{"id":"u2","username":"bob","displayName":null,"avatarUrl":null},
-                           "label":"@bob followed you","href":"/u/bob"}],
-         "unread":1}
+    func testLeaderboardRecapAndDailyPickDecode() throws {
+        let board = """
+        {"topRated":[],"mostDiscussed":[],"hallOfShame":[]}
         """
-        let list = try decoder.decode(NotificationsResponse.self, from: Data(notif.utf8))
-        XCTAssertTrue(list.notifications[0].notification.isUnread)
-        XCTAssertEqual(list.unread, 1)
+        XCTAssertNoThrow(try decoder.decode(LeaderboardResponse.self, from: Data(board.utf8)))
 
-        let convo = """
-        {"conversations":[{"correspondent":{"id":"u2","username":"bob","displayName":null,
-                                            "avatarUrl":null},
-                           "lastMessage":{"id":"m1","fromUserId":"u2","toUserId":"u1","body":"hey",
-                                          "readAt":null,"createdAt":1750000000},
-                           "unread":2}]}
-        """
-        let conversations = try decoder.decode(ConversationsResponse.self, from: Data(convo.utf8))
-        XCTAssertEqual(conversations.conversations[0].unread, 2)
-        XCTAssertEqual(conversations.conversations[0].id, "u2")
-    }
-
-    func testRecapDecodes() throws {
-        let json = """
+        let recap = """
         {"recap":{"date":"2026-07-19","total":2,"verdictCounts":{"essential":1,"complexity-trap":1},
           "summary":"1 essential · 1 complexity trap",
           "items":[],"leadPick":null,"complexityTrap":null,"topAdopted":[]}}
         """
-        let recap = try decoder.decode(RecapResponse.self, from: Data(json.utf8)).recap
-        XCTAssertEqual(recap.date, "2026-07-19")
-        XCTAssertEqual(recap.verdictCounts["complexity-trap"], 1)
+        let decoded = try decoder.decode(RecapResponse.self, from: Data(recap.utf8)).recap
+        XCTAssertEqual(decoded.date, "2026-07-19")
+        XCTAssertEqual(decoded.verdictCounts["complexity-trap"], 1)
+
+        let pick = """
+        {"item":{"slug":"x","title":"X","url":"https://x","kind":"github_repo",
+                 "category":"cli-tool","integration":"i","verdict":"essential",
+                 "overallScore":95,"noiseScore":3,"tagline":"t","audience":"both",
+                 "coverImageUrl":null,"createdAt":"2026-07-01T00:00:00.000Z",
+                 "upvotes":9,"commentCount":4},
+         "pickedAt":"2026-07-20T07:00:00.000Z"}
+        """
+        let dailyPick = try decoder.decode(DailyPick.self, from: Data(pick.utf8))
+        XCTAssertEqual(dailyPick.item.slug, "x")
     }
+
+    // Research-lens evaluation fixture shared by two tests.
+    private static let evaluationJSON = """
+    {"schemaVersion":1,"slug":"paper-x",
+     "source":{"kind":"arxiv_paper","externalId":"2501.0001","url":"https://arxiv.org/abs/2501.0001",
+               "title":"Paper X"},
+     "category":"paper","integration":"knowledge","tags":[],
+     "verdict":"niche","noiseScore":30,
+     "audience":{"primary":"ai-engineer","aiEngineerFit":70,"vibeCoderFit":20,"rationale":"r"},
+     "scores":{"novelty":{"score":80,"rationale":"r"},"utility":{"score":50,"rationale":"r"},
+               "deltaVsBaseline":{"score":60,"rationale":"r"},"easeOfAdoption":{"score":40,"rationale":"r"},
+               "maturity":{"score":30,"rationale":"r"},"leanness":{"score":70,"rationale":"r"},
+               "traction":{"score":20,"rationale":"r"},"composability":{"score":50,"rationale":"r"},
+               "longevity":{"score":60,"rationale":"r"},"clarity":{"score":80,"rationale":"r"}},
+     "overallScore":55,"tagline":"t",
+     "body":{"whatItIs":"A paper about X that does Y in a novel-enough way to matter here.",
+             "vsPriorWork":"Beats prior work on Z by a small but real margin across benchmarks.",
+             "devilsAdvocate":"Narrow benchmark; may not transfer to real workloads at all.",
+             "whatWouldMakeItBetter":"Release the training code and an ablation on real tasks."},
+     "media":[],"evaluatedBy":"ai","model":null,"evaluatedAt":"2026-07-01T00:00:00.000Z"}
+    """
 }

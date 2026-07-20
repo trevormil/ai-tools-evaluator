@@ -28,10 +28,6 @@ targets:
         CFBundleVersion: "1"
         LSApplicationCategoryType: public.app-category.developer-tools
         ITSAppUsesNonExemptEncryption: false
-        CFBundleURLTypes:
-          - CFBundleURLName: com.trevormil.aix.auth
-            CFBundleURLSchemes:
-              - aix
         UILaunchScreen:
           UIColorName: ""
         UISupportedInterfaceOrientations:

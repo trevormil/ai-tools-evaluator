@@ -2,28 +2,60 @@ import SwiftUI
 
 @main
 struct AIxApp: App {
-    @StateObject private var auth = AuthStore()
+    @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @StateObject private var router = AppRouter.shared
 
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environmentObject(auth)
-                .task { await auth.refreshMe() }
+                .environmentObject(router)
         }
     }
 }
 
+/// Cross-tab navigation requests (e.g. the daily-pick notification tap).
+@MainActor
+final class AppRouter: ObservableObject {
+    static let shared = AppRouter()
+
+    enum Tab: Hashable {
+        case feed, directory, leaderboard, recap, settings
+    }
+
+    @Published var selectedTab: Tab = .feed
+    /// Slug the feed should open on next appearance (set by notification taps).
+    @Published var pendingItemSlug: String?
+
+    func openDailyPick(slug: String?) {
+        selectedTab = .feed
+        pendingItemSlug = slug
+    }
+}
+
 struct RootView: View {
+    @EnvironmentObject private var router: AppRouter
+
     var body: some View {
-        TabView {
+        TabView(selection: $router.selectedTab) {
+            FeedView()
+                .tabItem { Label("Feed", systemImage: "bolt.horizontal") }
+                .tag(AppRouter.Tab.feed)
+
             DirectoryView()
                 .tabItem { Label("Directory", systemImage: "square.grid.2x2") }
+                .tag(AppRouter.Tab.directory)
 
             LeaderboardView()
                 .tabItem { Label("Leaderboard", systemImage: "trophy") }
+                .tag(AppRouter.Tab.leaderboard)
+
+            RecapScreen()
+                .tabItem { Label("Recap", systemImage: "moon.stars") }
+                .tag(AppRouter.Tab.recap)
 
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }
+                .tag(AppRouter.Tab.settings)
         }
     }
 }

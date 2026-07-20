@@ -149,6 +149,7 @@ struct ItemsResponse: Codable {
 
 struct DetailResponse: Codable {
     let evaluation: Evaluation
+    let readmeMd: String?
 }
 
 /// A single scorecard metric: a 0–100 score plus a one-line rationale.

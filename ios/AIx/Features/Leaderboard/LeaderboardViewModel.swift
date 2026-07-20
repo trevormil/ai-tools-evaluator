@@ -4,8 +4,7 @@ import Observation
 @Observable
 @MainActor
 final class LeaderboardViewModel {
-    var top: LoadState<[PublicItem]> = .idle
-    var complexityTraps: LoadState<[PublicItem]> = .idle
+    var state: LoadState<LeaderboardResponse> = .idle
 
     private let client: APIClient
 
@@ -14,19 +13,11 @@ final class LeaderboardViewModel {
     }
 
     func load() async {
-        async let topResult = fetch(ItemQuery(sort: .top, limit: 25))
-        async let trapResult = fetch(ItemQuery(verdict: .complexityTrap, sort: .top, limit: 15))
-        top = await topResult
-        complexityTraps = await trapResult
-    }
-
-    func refresh() async { await load() }
-
-    private func fetch(_ query: ItemQuery) async -> LoadState<[PublicItem]> {
+        if case .loaded = state {} else { state = .loading }
         do {
-            return .loaded(try await client.fetchItems(query))
+            state = .loaded(try await client.fetchLeaderboard())
         } catch {
-            return .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
+            state = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
         }
     }
 }

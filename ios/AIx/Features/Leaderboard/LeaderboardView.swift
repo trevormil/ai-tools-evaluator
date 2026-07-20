@@ -1,5 +1,6 @@
 import SwiftUI
 
+/// The three web leaderboard lists: top rated, most discussed, hall of shame.
 struct LeaderboardView: View {
     @State private var vm = LeaderboardViewModel()
 
@@ -11,12 +12,12 @@ struct LeaderboardView: View {
                     ItemDetailView(slug: slug)
                 }
         }
-        .task { if case .idle = vm.top { await vm.load() } }
+        .task { if case .idle = vm.state { await vm.load() } }
     }
 
     @ViewBuilder
     private var content: some View {
-        switch vm.top {
+        switch vm.state {
         case .idle, .loading:
             ProgressView("Loading…")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -27,38 +28,49 @@ struct LeaderboardView: View {
                 message: message,
                 retry: { Task { await vm.load() } }
             )
-        case .loaded(let topItems):
+        case .loaded(let board):
             List {
-                Section {
-                    ForEach(Array(topItems.enumerated()), id: \.element.id) { index, item in
-                        NavigationLink(value: item.slug) {
-                            ItemRow(item: item, rank: index + 1)
-                        }
-                    }
-                } header: {
-                    Label("Top by Score", systemImage: "trophy.fill")
-                }
-
-                trapsSection
+                rankedSection(
+                    board.topRated,
+                    header: Label("Top Rated", systemImage: "trophy.fill"),
+                    ranked: true
+                )
+                rankedSection(
+                    board.mostDiscussed,
+                    header: Label("Most Discussed", systemImage: "bubble.left.and.bubble.right.fill"),
+                    ranked: false,
+                    footer: "Where the arguments are actually happening."
+                )
+                rankedSection(
+                    board.hallOfShame,
+                    header: Label("Complexity Trap Hall of Shame", systemImage: "exclamationmark.triangle.fill"),
+                    ranked: false,
+                    footer: "Judged complexity-trap or redundant — noisiest first. The site's whole point is to name these out loud."
+                )
             }
             .listStyle(.insetGrouped)
-            .refreshable { await vm.refresh() }
+            .refreshable { await vm.load() }
         }
     }
 
     @ViewBuilder
-    private var trapsSection: some View {
-        if case .loaded(let traps) = vm.complexityTraps, !traps.isEmpty {
+    private func rankedSection(
+        _ items: [PublicItem],
+        header: Label<Text, Image>,
+        ranked: Bool,
+        footer: String? = nil
+    ) -> some View {
+        if !items.isEmpty {
             Section {
-                ForEach(traps) { item in
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     NavigationLink(value: item.slug) {
-                        ItemRow(item: item)
+                        ItemRow(item: item, rank: ranked ? index + 1 : nil)
                     }
                 }
             } header: {
-                Label("Complexity Trap", systemImage: "exclamationmark.triangle.fill")
+                header
             } footer: {
-                Text("High moving-part count, low real payoff — adds complexity without earning it.")
+                if let footer { Text(footer) }
             }
         }
     }

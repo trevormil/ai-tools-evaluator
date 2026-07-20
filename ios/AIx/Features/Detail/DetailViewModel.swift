@@ -5,7 +5,7 @@ import Observation
 @MainActor
 final class DetailViewModel {
     let slug: String
-    var state: LoadState<Evaluation> = .idle
+    var state: LoadState<DetailResponse> = .idle
 
     private let client: APIClient
 
@@ -17,8 +17,8 @@ final class DetailViewModel {
     func load() async {
         state = .loading
         do {
-            let evaluation = try await client.fetchEvaluation(slug: slug)
-            state = .loaded(evaluation)
+            let detail = try await client.fetchItemDetail(slug: slug)
+            state = .loaded(detail)
         } catch {
             state = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
         }
