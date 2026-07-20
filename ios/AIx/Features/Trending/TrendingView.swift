@@ -7,7 +7,7 @@ struct TrendingView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 10) {
+            VStack(spacing: 8) {
                 Picker("Source", selection: $vm.source) {
                     ForEach(TrendingViewModel.Source.allCases) { s in
                         Text(s.label).tag(s)
@@ -16,17 +16,26 @@ struct TrendingView: View {
                 .pickerStyle(.segmented)
                 .padding(.horizontal)
 
-                Picker("Window", selection: $vm.window) {
-                    ForEach(TrendingWindow.allCases) { w in
-                        Text(w.label).tag(w)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-
                 content
             }
             .navigationTitle("Trending")
+            .toolbar {
+                // Time window rides the nav bar (same pattern as the
+                // directory's sort) instead of a second segmented row.
+                ToolbarItem(placement: .topBarTrailing) {
+                    Menu {
+                        Picker("Window", selection: $vm.window) {
+                            ForEach(TrendingWindow.allCases) { w in
+                                Text(w.label).tag(w)
+                            }
+                        }
+                    } label: {
+                        Label(vm.window.label, systemImage: "calendar")
+                            .labelStyle(.titleAndIcon)
+                            .font(.subheadline.weight(.semibold))
+                    }
+                }
+            }
             .task { await vm.loadCurrent() }
             .onChange(of: vm.source) { _, _ in Task { await vm.loadCurrent() } }
             .onChange(of: vm.window) { _, _ in Task { await vm.loadCurrent() } }
