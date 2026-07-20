@@ -199,10 +199,12 @@ private func rankGutter(_ rank: Int) -> some View {
         .padding(.top, 2)
 }
 
-/// Small square image with an SF Symbol fallback (avatars, PH thumbnails).
+/// Small square image with a fallback: a per-item monogram when text is
+/// given (never the same repeated glyph), else an SF Symbol.
 struct SquareThumb: View {
     let url: URL?
     var fallbackSymbol: String = "cube.transparent"
+    var monogram: String? = nil
     var size: CGFloat = 48
 
     var body: some View {
@@ -224,14 +226,25 @@ struct SquareThumb: View {
         .accessibilityHidden(true)
     }
 
+    @ViewBuilder
     private var fallback: some View {
-        RoundedRectangle(cornerRadius: 10)
-            .fill(Color.accentColor.opacity(0.12))
-            .overlay(
-                Image(systemName: fallbackSymbol)
-                    .font(.system(size: size * 0.4))
-                    .foregroundStyle(Color.accentColor.opacity(0.7))
-            )
+        if let monogram, let letter = monogram.first(where: { $0.isLetter || $0.isNumber }) {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.accentColor.opacity(0.14))
+                .overlay(
+                    Text(String(letter).uppercased())
+                        .font(.system(size: size * 0.42, weight: .bold, design: .rounded))
+                        .foregroundStyle(Color.accentColor)
+                )
+        } else {
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.accentColor.opacity(0.12))
+                .overlay(
+                    Image(systemName: fallbackSymbol)
+                        .font(.system(size: size * 0.4))
+                        .foregroundStyle(Color.accentColor.opacity(0.7))
+                )
+        }
     }
 }
 
@@ -274,7 +287,7 @@ private struct TrendingModelRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             rankGutter(rank)
-            SourceBadge(source: .huggingface, size: 48)
+            SquareThumb(url: model.authorAvatarURL, monogram: model.modelName)
             VStack(alignment: .leading, spacing: 5) {
                 Text(model.modelName).font(.headline).lineLimit(2)
                 Text(model.owner)
