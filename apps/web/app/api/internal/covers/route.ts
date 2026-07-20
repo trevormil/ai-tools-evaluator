@@ -34,7 +34,7 @@ export async function POST(req: Request) {
     } catch {
       media = [];
     }
-    const next = await pickCover(media as Parameters<typeof pickCover>[0]);
+    const next = pickCover(media as Parameters<typeof pickCover>[0]);
     if (next !== (row.coverImageUrl ?? null)) {
       db.update(items).set({ coverImageUrl: next }).where(eq(items.id, row.id)).run();
       changed.push({ slug: row.slug, cover: next });
