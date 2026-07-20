@@ -147,18 +147,41 @@ final class ModelDecodingTests: XCTestCase {
         let github = """
         {"source":"github","window":"weekly",
          "repos":[{"fullName":"a/b","url":"https://github.com/a/b","description":null,
-                   "stars":10,"language":null,"createdAt":"2026-07-18T00:00:00Z"}]}
+                   "stars":10,"language":null,"createdAt":"2026-07-18T00:00:00Z",
+                   "avatarUrl":"https://avatars.githubusercontent.com/u/1",
+                   "forks":3,"openIssues":1,"topics":["ai"],"homepage":null,
+                   "license":"MIT","pushedAt":null}]}
         """
         let repos = try decoder.decode(GithubTrendingResponse.self, from: Data(github.utf8)).repos
         XCTAssertEqual(repos[0].fullName, "a/b")
         XCTAssertNil(repos[0].description)
+        XCTAssertEqual(repos[0].forks, 3)
+        XCTAssertNotNil(repos[0].avatarURL)
 
         let ph = """
         {"source":"producthunt","window":"daily",
-         "products":[{"name":"X","tagline":"t","url":"https://ph/x","votes":5,"topics":[]}]}
+         "products":[{"name":"X","tagline":"t","url":"https://ph/x","votes":5,"topics":[],
+                      "thumbnailUrl":"https://ph-files.imgix.net/t.png",
+                      "description":"long story","commentsCount":2,
+                      "website":"https://x.io","mediaUrls":["https://ph-files.imgix.net/1.png"]}]}
         """
         let products = try decoder.decode(ProductHuntTrendingResponse.self, from: Data(ph.utf8)).products
         XCTAssertEqual(products[0].votes, 5)
+        XCTAssertEqual(products[0].mediaUrls.count, 1)
+        XCTAssertEqual(products[0].description, "long story")
+
+        let readme = "{\"repo\":\"a/b\",\"readmeMd\":\"# Hi\"}"
+        XCTAssertEqual(try decoder.decode(TrendingReadme.self, from: Data(readme.utf8)).readmeMd, "# Hi")
+
+        // Pre-enrichment server payloads (no forks/topics/media keys) must
+        // still decode — deploys and app updates aren't atomic.
+        let legacy = """
+        {"repos":[{"fullName":"a/b","url":"https://github.com/a/b","description":null,
+                   "stars":10,"language":null,"createdAt":null}]}
+        """
+        let legacyRepo = try decoder.decode(GithubTrendingResponse.self, from: Data(legacy.utf8)).repos[0]
+        XCTAssertEqual(legacyRepo.forks, 0)
+        XCTAssertEqual(legacyRepo.topics, [])
     }
 
     // Research-lens evaluation fixture shared by two tests.

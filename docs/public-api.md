@@ -98,11 +98,14 @@ line.
 ## `GET /api/v1/trending/{github|producthunt}?window=daily|weekly`
 
 Live "what's rising" proxies (cached ~30 min server-side). `github` returns
-`{ repos: [{ fullName, url, description, stars, language, createdAt }] }` —
+`{ repos: [{ fullName, url, description, stars, language, createdAt,
+avatarUrl, forks, openIssues, topics, homepage, license, pushedAt }] }` —
 young repos ranked by stars via the official search API (github.com/trending
-has no API). `producthunt` returns
-`{ products: [{ name, tagline, url, votes, topics }] }` via the PH GraphQL
-API; responds `503` when `PRODUCTHUNT_API_TOKEN` isn't configured.
+has no API). `producthunt` returns `{ products: [{ name, tagline, url, votes,
+topics, thumbnailUrl, description, commentsCount, website, mediaUrls }] }`
+via the PH GraphQL API; responds `503` when `PRODUCTHUNT_API_TOKEN` isn't
+configured. `GET /api/v1/trending/github/readme?repo=owner/name` returns the
+repo's raw README markdown (`{ repo, readmeMd }`, null when absent).
 
 ## `GET /api/v1/daily-pick`
 

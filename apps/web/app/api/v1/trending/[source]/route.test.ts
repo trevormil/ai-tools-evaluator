@@ -42,6 +42,13 @@ test("github daily: search API queried for young repos by stars; response projec
         stargazers_count: 420,
         language: "Rust",
         created_at: "2026-07-19T00:00:00Z",
+        owner: { avatar_url: "https://avatars.githubusercontent.com/u/1" },
+        forks_count: 12,
+        open_issues_count: 3,
+        topics: ["ai", "agents"],
+        homepage: "",
+        license: { spdx_id: "MIT" },
+        pushed_at: "2026-07-20T01:00:00Z",
       },
     ],
   });
@@ -55,6 +62,13 @@ test("github daily: search API queried for young repos by stars; response projec
     stars: 420,
     language: "Rust",
     createdAt: "2026-07-19T00:00:00Z",
+    avatarUrl: "https://avatars.githubusercontent.com/u/1",
+    forks: 12,
+    openIssues: 3,
+    topics: ["ai", "agents"],
+    homepage: null, // empty string upstream → null
+    license: "MIT",
+    pushedAt: "2026-07-20T01:00:00Z",
   });
   expect(fetchCalls[0]).toContain("api.github.com/search/repositories");
   expect(decodeURIComponent(fetchCalls[0] ?? "")).toContain("created:>");
@@ -88,8 +102,16 @@ test("producthunt with a token: GraphQL posts projected to products", async () =
             node: {
               name: "CoolLaunch",
               tagline: "t",
+              description: "Longer story about the launch.",
               url: "https://www.producthunt.com/posts/coollaunch",
+              website: "https://coollaunch.io",
               votesCount: 321,
+              commentsCount: 17,
+              thumbnail: { url: "https://ph-files.imgix.net/thumb.png" },
+              media: [
+                { url: "https://ph-files.imgix.net/shot1.png", type: "image" },
+                { url: "https://youtube.com/v", type: "video" },
+              ],
               topics: { edges: [{ node: { name: "AI" } }] },
             },
           },
@@ -106,6 +128,11 @@ test("producthunt with a token: GraphQL posts projected to products", async () =
     url: "https://www.producthunt.com/posts/coollaunch",
     votes: 321,
     topics: ["AI"],
+    thumbnailUrl: "https://ph-files.imgix.net/thumb.png",
+    description: "Longer story about the launch.",
+    commentsCount: 17,
+    website: "https://coollaunch.io",
+    mediaUrls: ["https://ph-files.imgix.net/shot1.png"], // images only
   });
   expect(fetchCalls[0]).toContain("api.producthunt.com");
 });

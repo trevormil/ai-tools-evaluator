@@ -17,6 +17,13 @@ export type TrendingRepo = {
   stars: number;
   language: string | null;
   createdAt: string | null;
+  avatarUrl: string | null;
+  forks: number;
+  openIssues: number;
+  topics: string[];
+  homepage: string | null;
+  license: string | null;
+  pushedAt: string | null;
 };
 
 export type TrendingProduct = {
@@ -25,6 +32,11 @@ export type TrendingProduct = {
   url: string;
   votes: number;
   topics: string[];
+  thumbnailUrl: string | null;
+  description: string | null;
+  commentsCount: number;
+  website: string | null;
+  mediaUrls: string[];
 };
 
 /** Thrown when an upstream source isn't configured (→ 503, not 500). */
@@ -81,6 +93,13 @@ export async function githubTrending(window: TrendingWindow): Promise<TrendingRe
         stargazers_count?: number;
         language?: string | null;
         created_at?: string;
+        owner?: { avatar_url?: string };
+        forks_count?: number;
+        open_issues_count?: number;
+        topics?: string[];
+        homepage?: string | null;
+        license?: { spdx_id?: string | null; name?: string | null } | null;
+        pushed_at?: string;
       }[];
     };
     return (body.items ?? []).map((r) => ({
@@ -90,7 +109,38 @@ export async function githubTrending(window: TrendingWindow): Promise<TrendingRe
       stars: r.stargazers_count ?? 0,
       language: r.language ?? null,
       createdAt: r.created_at ?? null,
+      avatarUrl: r.owner?.avatar_url ?? null,
+      forks: r.forks_count ?? 0,
+      openIssues: r.open_issues_count ?? 0,
+      topics: r.topics ?? [],
+      homepage: r.homepage || null,
+      license:
+        r.license?.spdx_id && r.license.spdx_id !== "NOASSERTION"
+          ? r.license.spdx_id
+          : (r.license?.name ?? null),
+      pushedAt: r.pushed_at ?? null,
     }));
+  });
+}
+
+/** Fetch a trending repo's README markdown (cached per repo). */
+export async function githubReadme(fullName: string): Promise<string | null> {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(fullName)) {
+    throw new TrendingUnavailable("repo must look like owner/name");
+  }
+  return cached(`readme:${fullName.toLowerCase()}`, async () => {
+    const headers: Record<string, string> = {
+      accept: "application/vnd.github.raw+json",
+      "user-agent": "aix-web",
+    };
+    const token = getEnv().GITHUB_TOKEN;
+    if (token) headers.authorization = `Bearer ${token}`;
+
+    const res = await fetch(`https://api.github.com/repos/${fullName}/readme`, { headers });
+    if (res.status === 404) return null; // repo has no README — not an error
+    if (!res.ok) throw new Error(`GitHub readme failed: HTTP ${res.status}`);
+    // Cap at ~200KB so a giant README can't balloon the cache or the client.
+    return (await res.text()).slice(0, 200_000);
   });
 }
 
@@ -102,8 +152,13 @@ const PH_QUERY = `query Trending($first: Int!, $postedAfter: DateTime) {
       node {
         name
         tagline
+        description
         url
+        website
         votesCount
+        commentsCount
+        thumbnail { url }
+        media { url type }
         topics(first: 5) { edges { node { name } } }
       }
     }
@@ -139,8 +194,13 @@ export async function productHuntTrending(window: TrendingWindow): Promise<Trend
             node?: {
               name?: string;
               tagline?: string;
+              description?: string;
               url?: string;
+              website?: string;
               votesCount?: number;
+              commentsCount?: number;
+              thumbnail?: { url?: string };
+              media?: { url?: string; type?: string }[];
               topics?: { edges?: { node?: { name?: string } }[] };
             };
           }[];
@@ -160,6 +220,14 @@ export async function productHuntTrending(window: TrendingWindow): Promise<Trend
         url: n.url ?? "",
         votes: n.votesCount ?? 0,
         topics: (n.topics?.edges ?? []).map((t) => t.node?.name).filter((t): t is string => !!t),
+        thumbnailUrl: n.thumbnail?.url ?? null,
+        description: n.description ?? null,
+        commentsCount: n.commentsCount ?? 0,
+        website: n.website ?? null,
+        mediaUrls: (n.media ?? [])
+          .filter((m) => m.type === "image" && m.url)
+          .map((m) => m.url as string)
+          .slice(0, 4),
       }));
   });
 }

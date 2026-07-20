@@ -12,10 +12,10 @@ final class TrendingViewModelTests: XCTestCase {
         TrendingViewModel(client: TestSupport.client())
     }
 
-    private let repoJSON = #"{"source":"github","window":"daily","repos":[{"fullName":"acme/hot","url":"https://github.com/acme/hot","description":"d","stars":42,"language":"Rust","createdAt":null}]}"#
-    private let productJSON = #"{"source":"producthunt","window":"daily","products":[{"name":"CoolLaunch","tagline":"t","url":"https://producthunt.com/posts/cool","votes":99,"topics":["AI"]}]}"#
+    private let repoJSON = #"{"source":"github","window":"weekly","repos":[{"fullName":"acme/hot","url":"https://github.com/acme/hot","description":"d","stars":42,"language":"Rust","createdAt":null,"avatarUrl":null,"forks":2,"openIssues":1,"topics":[],"homepage":null,"license":"MIT","pushedAt":null}]}"#
+    private let productJSON = #"{"source":"producthunt","window":"daily","products":[{"name":"CoolLaunch","tagline":"t","url":"https://producthunt.com/posts/cool","votes":99,"topics":["AI"],"thumbnailUrl":null,"description":"story","commentsCount":4,"website":null,"mediaUrls":[]}]}"#
 
-    func testGithubPaneLoadsWithWindowParam() async throws {
+    func testGithubPaneLoadsWithDefaultWeeklyWindow() async throws {
         let vm = makeVM()
         let recorder = TestSupport.stub(json: repoJSON)
         await vm.loadCurrent()
@@ -26,7 +26,8 @@ final class TrendingViewModelTests: XCTestCase {
         XCTAssertEqual(repos[0].fullName, "acme/hot")
         let url = try XCTUnwrap(recorder.last?.url)
         XCTAssertEqual(url.path, "/api/v1/trending/github")
-        XCTAssertTrue(url.query?.contains("window=daily") == true)
+        // This Week is the default lens.
+        XCTAssertTrue(url.query?.contains("window=weekly") == true)
     }
 
     func testSourceAndWindowSwitchLoadSeparatePanes() async {
@@ -35,7 +36,7 @@ final class TrendingViewModelTests: XCTestCase {
         await vm.loadCurrent()
 
         vm.source = .producthunt
-        vm.window = .weekly
+        vm.window = .daily
         let recorder = TestSupport.stub(json: productJSON)
         await vm.loadCurrent()
 
@@ -44,11 +45,11 @@ final class TrendingViewModelTests: XCTestCase {
         }
         XCTAssertEqual(products[0].votes, 99)
         XCTAssertTrue(recorder.last?.url?.path == "/api/v1/trending/producthunt")
-        XCTAssertTrue(recorder.last?.url?.query?.contains("window=weekly") == true)
+        XCTAssertTrue(recorder.last?.url?.query?.contains("window=daily") == true)
 
         // Flipping back is instant — the github pane is already loaded.
         vm.source = .github
-        vm.window = .daily
+        vm.window = .weekly
         MockURLProtocol.handler = { _ in
             XCTFail("already-loaded pane must not refetch")
             throw APIError.badURL
@@ -57,6 +58,21 @@ final class TrendingViewModelTests: XCTestCase {
         guard case .loaded(.repos) = vm.currentState else {
             return XCTFail("expected cached repos pane")
         }
+    }
+
+    func testCancelledRefreshKeepsTheLoadedPane() async {
+        let vm = makeVM()
+        TestSupport.stub(json: repoJSON)
+        await vm.loadCurrent()
+
+        // Pull-to-refresh torn down mid-flight (URLSession cancels the task):
+        // the pane must keep its data instead of flipping to an error.
+        MockURLProtocol.handler = { _ in throw URLError(.cancelled) }
+        await vm.loadCurrent(force: true)
+        guard case .loaded(.repos(let repos)) = vm.currentState else {
+            return XCTFail("cancelled refresh must not clear the pane, got \(vm.currentState)")
+        }
+        XCTAssertEqual(repos[0].fullName, "acme/hot")
     }
 
     func testUnconfiguredSourceShowsFriendlyMessage() async {

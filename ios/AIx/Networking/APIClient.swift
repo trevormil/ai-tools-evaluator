@@ -4,6 +4,7 @@ import Foundation
 enum APIError: LocalizedError, Equatable {
     case badURL
     case notFound
+    case cancelled
     case http(Int)
     case decoding(String)
     case transport(String)
@@ -12,6 +13,7 @@ enum APIError: LocalizedError, Equatable {
         switch self {
         case .badURL: return "Invalid request URL."
         case .notFound: return "Not found."
+        case .cancelled: return "Cancelled."
         case .http(let code): return "Server returned HTTP \(code)."
         case .decoding(let msg): return "Couldn't read the response. \(msg)"
         case .transport(let msg): return msg
@@ -122,6 +124,14 @@ struct APIClient {
         return response.products
     }
 
+    func fetchTrendingReadme(repo: String) async throws -> String? {
+        let response: TrendingReadme = try await get(
+            path: "/api/v1/trending/github/readme",
+            query: [URLQueryItem(name: "repo", value: repo)]
+        )
+        return response.readmeMd
+    }
+
     // MARK: Plumbing
 
     private func get<T: Decodable>(path: String, query: [URLQueryItem] = []) async throws -> T {
@@ -141,6 +151,11 @@ struct APIClient {
         do {
             (data, response) = try await session.data(for: request)
         } catch {
+            // A torn-down view (pull-to-refresh, navigation) cancels its
+            // task — that's lifecycle, not a failure to surface.
+            if error is CancellationError || (error as? URLError)?.code == .cancelled {
+                throw APIError.cancelled
+            }
             throw APIError.transport(error.localizedDescription)
         }
 
