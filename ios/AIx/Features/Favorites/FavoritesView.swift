@@ -100,7 +100,7 @@ private struct FavoriteItemRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
-            ItemThumbnail(url: item.coverURL, verdict: item.verdict)
+            ItemThumbnail(url: item.coverURL, verdict: item.verdict, title: item.title)
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.title).font(.headline).lineLimit(2)
                 Text(item.tagline)

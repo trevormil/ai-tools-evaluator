@@ -69,7 +69,7 @@ struct ItemRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 28, alignment: .center)
             }
-            ItemThumbnail(url: coverURL, verdict: verdict)
+            ItemThumbnail(url: coverURL, verdict: verdict, title: title)
             VStack(alignment: .leading, spacing: 6) {
                 Text(title)
                     .font(.headline)
@@ -99,10 +99,13 @@ struct ItemRow: View {
     }
 }
 
-/// Small square cover thumbnail with a verdict-tinted fallback.
+/// Small square cover thumbnail. Items without a real cover get a monogram
+/// tile (first letter on the verdict tint) — distinct per item, never the
+/// same repeated glyph.
 struct ItemThumbnail: View {
     let url: URL?
     let verdict: Verdict
+    var title: String = ""
     var size: CGFloat = 52
 
     var body: some View {
@@ -124,13 +127,18 @@ struct ItemThumbnail: View {
         .accessibilityHidden(true)
     }
 
+    private var monogram: String {
+        let letters = title.filter { $0.isLetter || $0.isNumber }
+        return letters.isEmpty ? "•" : String(letters.prefix(1)).uppercased()
+    }
+
     private var fallback: some View {
         RoundedRectangle(cornerRadius: 10)
-            .fill(Theme.color(for: verdict).opacity(0.15))
+            .fill(Theme.color(for: verdict).opacity(0.16))
             .overlay(
-                Image(systemName: "cube.transparent")
-                    .font(.system(size: size * 0.4))
-                    .foregroundStyle(Theme.color(for: verdict).opacity(0.7))
+                Text(monogram)
+                    .font(.system(size: size * 0.42, weight: .bold, design: .rounded))
+                    .foregroundStyle(Theme.color(for: verdict))
             )
     }
 }

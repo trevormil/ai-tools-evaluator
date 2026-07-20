@@ -85,7 +85,7 @@ struct DailyPickCard: View {
                 .font(.caption.weight(.heavy))
                 .foregroundStyle(.orange)
             HStack(alignment: .top, spacing: 12) {
-                ItemThumbnail(url: pick.item.coverURL, verdict: pick.item.verdict)
+                ItemThumbnail(url: pick.item.coverURL, verdict: pick.item.verdict, title: pick.item.title)
                 VStack(alignment: .leading, spacing: 6) {
                     Text(pick.item.title).font(.headline)
                     Text(pick.item.tagline)
