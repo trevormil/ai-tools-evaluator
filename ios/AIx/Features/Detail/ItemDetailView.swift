@@ -112,7 +112,7 @@ struct ItemDetailView: View {
     private func header(_ eval: Evaluation) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .center, spacing: 12) {
-                ItemThumbnail(url: eval.coverURL, verdict: eval.verdict, size: 56)
+                ItemThumbnail(url: eval.coverURL, verdict: eval.verdict, title: eval.source.title, size: 56)
                 Text(eval.source.title)
                     .font(.title2.weight(.bold))
                     .lineLimit(3)
