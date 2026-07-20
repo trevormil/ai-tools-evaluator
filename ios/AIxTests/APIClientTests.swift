@@ -57,7 +57,7 @@ final class APIClientTests: XCTestCase {
     func testServerErrorMapsToHTTPCode() async {
         TestSupport.stub(status: 503, json: #"{"error":"down"}"#)
         do {
-            _ = try await TestSupport.client().fetchLeaderboard()
+            _ = try await TestSupport.client().fetchItems(ItemQuery())
             XCTFail("expected throw")
         } catch {
             XCTAssertEqual(error as? APIError, .http(503))

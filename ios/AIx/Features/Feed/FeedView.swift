@@ -1,6 +1,7 @@
 import SwiftUI
 
-/// Home tab — Today's pick + the unified timeline (web `/` parity, read-only).
+/// Home tab — Today's pick, last night's recap strip, and the unified
+/// timeline (web `/` parity, read-only).
 struct FeedView: View {
     @EnvironmentObject private var router: AppRouter
     @State private var vm = FeedViewModel()
@@ -27,6 +28,9 @@ struct FeedView: View {
             .navigationDestination(for: String.self) { slug in
                 ItemDetailView(slug: slug)
             }
+            .navigationDestination(for: RecapRoute.self) { _ in
+                RecapScreen()
+            }
             .task { if vm.needsInitialLoad { await vm.refresh() } }
             .onChange(of: router.pendingItemSlug) { _, slug in
                 openPending(slug)
@@ -45,17 +49,27 @@ struct FeedView: View {
     private var feedList: some View {
         List {
             if let pick = vm.dailyPick {
-                Section {
-                    NavigationLink(value: pick.item.slug) {
-                        DailyPickCard(pick: pick)
-                    }
-                    .buttonStyle(.plain)
-                    .listRowSeparator(.hidden)
+                NavigationLink(value: pick.item.slug) {
+                    DailyPickCard(pick: pick)
                 }
+                .buttonStyle(.plain)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+            }
+
+            if let recap = vm.latestRecap {
+                NavigationLink(value: RecapRoute()) {
+                    RecapStrip(recap: recap)
+                }
+                .buttonStyle(.plain)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
             }
 
             ForEach(vm.entries) { entry in
                 FeedEntryRow(entry: entry)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .onAppear {
                         if entry.id == vm.entries.last?.id {
                             Task { await vm.loadMore() }
@@ -73,43 +87,78 @@ struct FeedView: View {
     }
 }
 
-/// "Today's pick" — the headline card above the timeline (web home parity).
+/// Pushed-recap navigation token (the feed's stack owns the destinations).
+struct RecapRoute: Hashable {}
+
+// MARK: - Today's pick
+
+/// "Today's pick" — the headline card above the timeline.
 struct DailyPickCard: View {
     let pick: DailyPick
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Label("TODAY'S PICK", systemImage: "sun.max.fill")
-                .font(.caption.weight(.heavy))
-                .foregroundStyle(.orange)
-            Text(pick.item.title).font(.title3.weight(.bold))
-            Text(pick.item.tagline)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .lineLimit(3)
-            HStack(spacing: 8) {
-                VerdictBadge(verdict: pick.item.verdict, compact: true)
-                ScoreChip(score: pick.item.overallScore)
-                Spacer()
-                Text(pick.item.category.label)
-                    .font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 0) {
+            CoverImage(url: pick.item.coverURL, verdict: pick.item.verdict, height: 150)
+            VStack(alignment: .leading, spacing: 8) {
+                Label("TODAY'S PICK", systemImage: "sun.max.fill")
+                    .font(.caption.weight(.heavy))
+                    .foregroundStyle(.orange)
+                Text(pick.item.title).font(.title3.weight(.bold))
+                Text(pick.item.tagline)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                HStack(spacing: 8) {
+                    VerdictBadge(verdict: pick.item.verdict, compact: true)
+                    ScoreChip(score: pick.item.overallScore)
+                    Spacer()
+                    Text(pick.item.category.label)
+                        .font(.caption).foregroundStyle(.secondary)
+                }
             }
+            .padding(14)
         }
-        .padding(14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            LinearGradient(
-                colors: [Color.orange.opacity(0.12), Theme.cardBackground],
-                startPoint: .topLeading, endPoint: .bottomTrailing
-            ),
-            in: RoundedRectangle(cornerRadius: 14)
-        )
+        .background(Theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .strokeBorder(Color.orange.opacity(0.25))
+            RoundedRectangle(cornerRadius: 16)
+                .strokeBorder(Color.orange.opacity(0.35), lineWidth: 1.5)
         )
     }
 }
+
+// MARK: - Recap strip
+
+/// One-line "last night" summary that opens the full recap.
+struct RecapStrip: View {
+    let recap: Recap
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "moon.stars.fill")
+                .font(.system(size: 18))
+                .foregroundStyle(Color.accentColor)
+                .frame(width: 36, height: 36)
+                .background(Color.accentColor.opacity(0.12), in: Circle())
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Last night's recap")
+                    .font(.subheadline.weight(.semibold))
+                Text("\(recap.total) judged · \(recap.summary)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(12)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14))
+    }
+}
+
+// MARK: - Timeline entries
 
 /// One timeline entry: a fresh item, a legacy post, or a social activity —
 /// all rendered read-only.
@@ -125,34 +174,39 @@ struct FeedEntryRow: View {
             .buttonStyle(.plain)
         case .post(let post, let author, let item, _):
             VStack(alignment: .leading, spacing: 8) {
-                actorLine(name: author.name, label: "posted", avatarURL: author.avatarURL)
-                Text(post.body).font(.body)
+                actorLine(name: author.name, label: "posted", avatarURL: author.avatarURL, createdAt: post.createdAt)
+                Text(post.body).font(.callout)
                 if let item { embeddedItem(item) }
-                countsLine(upvotes: post.upvotes, comments: post.commentCount, createdAt: post.createdAt)
             }
-            .padding(.vertical, 4)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14))
         case .activity(_, let actor, let label, let quote, let embed, let createdAt):
             VStack(alignment: .leading, spacing: 8) {
-                actorLine(name: actor.name, label: label, avatarURL: actor.avatarURL)
+                actorLine(name: actor.name, label: label, avatarURL: actor.avatarURL, createdAt: createdAt)
                 if let quote, !quote.isEmpty {
                     Text("“\(quote)”").font(.callout.italic()).foregroundStyle(.secondary)
                 }
                 embedView(embed)
-                Text(RelativeTime.string(from: createdAt))
-                    .font(.caption2).foregroundStyle(.tertiary)
             }
-            .padding(.vertical, 4)
+            .padding(12)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14))
         case .unknown:
             EmptyView()
         }
     }
 
-    private func actorLine(name: String, label: String, avatarURL: URL?) -> some View {
-        HStack(spacing: 8) {
-            AvatarView(url: avatarURL, name: name, size: 28)
+    private func actorLine(name: String, label: String, avatarURL: URL?, createdAt: Int) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            AvatarView(url: avatarURL, name: name, size: 30)
             (Text(name).bold() + Text(" \(label)"))
                 .font(.subheadline)
                 .lineLimit(2)
+            Spacer(minLength: 8)
+            Text(RelativeTime.string(from: createdAt))
+                .font(.caption2)
+                .foregroundStyle(.tertiary)
         }
     }
 
@@ -188,60 +242,93 @@ struct FeedEntryRow: View {
         VStack(alignment: .leading, spacing: 4, content: content)
             .padding(10)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 10))
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
     }
 
     private func embeddedItem(_ item: DBItem) -> some View {
         NavigationLink(value: item.slug) {
-            FeedItemCard(item: item)
+            FeedItemCard(item: item, embedded: true)
         }
         .buttonStyle(.plain)
     }
+}
 
-    private func countsLine(upvotes: Int, comments: Int, createdAt: Int) -> some View {
-        HStack(spacing: 12) {
-            Label("\(upvotes)", systemImage: "arrow.up")
-            Label("\(comments)", systemImage: "bubble.right")
-            Spacer()
-            Text(RelativeTime.string(from: createdAt))
+/// Item card in the feed — cover image up top when the item has one.
+struct FeedItemCard: View {
+    let item: DBItem
+    var embedded: Bool = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if !embedded {
+                CoverImage(url: item.coverURL, verdict: item.verdict, height: 140)
+            }
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(spacing: 8) {
+                    if item.isPending {
+                        Text("AWAITING SCORE…")
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VerdictBadge(verdict: item.verdict, compact: true)
+                        ScoreChip(score: item.overallScore)
+                    }
+                    Spacer()
+                    Text(item.category.label)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text(item.title).font(.headline)
+                Text(item.tagline)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
+            .padding(12)
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        .background(embedded ? Color.primary.opacity(0.05) : Theme.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: embedded ? 10 : 14))
     }
 }
 
-/// Compact item card used inside feed entries.
-struct FeedItemCard: View {
-    let item: DBItem
+/// Cover image with a verdict-tinted placeholder — shared by feed cards.
+struct CoverImage: View {
+    let url: URL?
+    let verdict: Verdict
+    var height: CGFloat = 140
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                if item.isPending {
-                    Text("AWAITING SCORE…")
-                        .font(.caption2.weight(.bold))
-                        .padding(.horizontal, 6).padding(.vertical, 2)
-                        .background(Color.secondary.opacity(0.15), in: Capsule())
-                        .foregroundStyle(.secondary)
-                } else {
-                    VerdictBadge(verdict: item.verdict, compact: true)
-                    ScoreChip(score: item.overallScore)
+        Group {
+            if let url {
+                AsyncImage(url: url) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    default:
+                        placeholder
+                    }
                 }
-                Spacer()
+            } else {
+                placeholder
             }
-            Text(item.title).font(.headline)
-            Text(item.tagline).font(.subheadline).foregroundStyle(.secondary).lineLimit(2)
-            HStack(spacing: 12) {
-                Text(item.category.label)
-                Label("\(item.upvotes)", systemImage: "arrow.up")
-                Label("\(item.commentCount)", systemImage: "bubble.right")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+        .frame(height: height)
+        .frame(maxWidth: .infinity)
+        .clipped()
+    }
+
+    private var placeholder: some View {
+        LinearGradient(
+            colors: [Theme.color(for: verdict).opacity(0.25), Theme.color(for: verdict).opacity(0.08)],
+            startPoint: .topLeading, endPoint: .bottomTrailing
+        )
+        .overlay(
+            Image(systemName: "cube.transparent")
+                .font(.system(size: 34))
+                .foregroundStyle(Theme.color(for: verdict).opacity(0.7))
+        )
     }
 }
 

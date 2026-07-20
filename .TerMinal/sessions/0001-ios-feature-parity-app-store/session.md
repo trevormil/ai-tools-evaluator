@@ -75,6 +75,10 @@ accounts. App Store submission readiness still in scope.
 - 2026-07-20 10:30 — Playwright e2e found broken on main (seed schema drift)
   → filed 0066; not a branch regression. Pushed; **PR #56 opened**, linked
   into tickets 058/059/060/062/063/065.
+- 2026-07-20 10:45 — Trevor UX pass: real web logo for the icon (funnel mark
+  reproduced in CoreGraphics), Leaderboard removed end-to-end (tab + v1
+  endpoint), Recap folded into a feed strip (3 tabs: Feed/Directory/
+  Settings), feed cards image-forward, brand-blue accent. All suites green.
 
 ## [5] Decisions
 

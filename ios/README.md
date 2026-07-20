@@ -18,10 +18,8 @@ all social actions live on the website. It consumes the public JSON API
   (lens-aware body sections + audience-fit meters), **Scorecard** (10 metric
   bars + rationale), **README** (repo's own markdown, when present). Share
   sheet links to the website.
-- **Leaderboard** — the three web lists: Top Rated, Most Discussed, and the
-  Complexity Trap Hall of Shame (`/api/v1/leaderboard`).
-- **Recap** — the nightly recap with prev/next day navigation and a date
-  archive (`/api/v1/recap*`).
+- **Recap** — a "last night's recap" strip under the pick opens the full
+  nightly recap (prev/next day navigation + date archive, `/api/v1/recap*`).
 - **Daily pick reminder** — optional local notification every morning at 9;
   tapping it opens the current pick (no push infra, no data collected).
 - **Settings** — reminder toggle + backend base-URL override (persisted).
@@ -40,8 +38,7 @@ AIx/
     Feed/         FeedView + FeedViewModel (@Observable)
     Directory/    DirectoryView + DirectoryViewModel
     Detail/       ItemDetailView + DetailViewModel (tabs, lens-aware)
-    Leaderboard/  LeaderboardView + LeaderboardViewModel
-    Recap/        RecapScreen + RecapViewModel
+    Recap/        RecapScreen + RecapViewModel (pushed from the feed strip)
     Settings/     SettingsView
 AIxTests/         Unit tests: model decoding, APIClient (URLProtocol stub),
                   feed pagination/dedup, notification scheduling

@@ -3,13 +3,12 @@ import { rmSync } from "node:fs";
 
 /**
  * v1 read APIs for the native client (ticket 0058, read-only scope):
- * leaderboard, recap, daily pick. Assertions are presence-scoped with unique
+ * recap + daily pick. Assertions are presence-scoped with unique
  * needles: bun runs all suites in one process, so the @aix/db singleton
  * shares one DB across test files.
  */
 const DB_PATH = `/tmp/aix-v1rankings-test-${process.pid}.db`;
 
-let leaderboardGET: (req: Request) => Promise<Response>;
 let recapGET: (req: Request) => Promise<Response>;
 let recapDateGET: (req: Request, ctx: { params: Promise<{ date: string }> }) => Promise<Response>;
 let archiveGET: (req: Request) => Promise<Response>;
@@ -27,7 +26,6 @@ beforeAll(async () => {
   runMigrations();
   const db = getDb();
 
-  ({ GET: leaderboardGET } = await import("./leaderboard/route"));
   ({ GET: recapGET } = await import("./recap/route"));
   ({ GET: recapDateGET } = await import("./recap/[date]/route"));
   ({ GET: archiveGET } = await import("./recap/archive/route"));
@@ -88,18 +86,6 @@ beforeAll(async () => {
   db.insert(stackItems)
     .values({ id: "v1r-stack", userId: user.id, itemId: "v1r-v1rank-tool", status: "using" })
     .run();
-});
-
-test("leaderboard: three lists with ranked public projections", async () => {
-  const res = await leaderboardGET(new Request("https://x/api/v1/leaderboard"));
-  expect(res.status).toBe(200);
-  const body = await res.json();
-  expect(body.topRated.map((i: { slug: string }) => i.slug)).toContain("v1rank-tool");
-  const discussed = body.mostDiscussed.find((i: { slug: string }) => i.slug === "v1rank-tool");
-  expect(discussed.commentCount).toBe(999);
-  const shame = body.hallOfShame.map((i: { slug: string }) => i.slug);
-  expect(shame).toContain("v1rank-trap");
-  expect(shame).not.toContain("v1rank-tool");
 });
 
 test("recap by date: judged items, lead pick, complexity trap, uses; empty day 404s", async () => {

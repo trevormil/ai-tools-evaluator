@@ -32,7 +32,7 @@ struct MessageState: View {
     }
 }
 
-/// A row in any item list. Title, verdict badge, score, category.
+/// A row in any item list. Thumbnail, title, verdict badge, score, category.
 struct ItemRow: View {
     let item: PublicItem
     var rank: Int? = nil
@@ -45,6 +45,7 @@ struct ItemRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 28, alignment: .center)
             }
+            ItemThumbnail(url: item.coverURL, verdict: item.verdict)
             VStack(alignment: .leading, spacing: 6) {
                 Text(item.title)
                     .font(.headline)
@@ -64,5 +65,41 @@ struct ItemRow: View {
             }
         }
         .padding(.vertical, 6)
+    }
+}
+
+/// Small square cover thumbnail with a verdict-tinted fallback.
+struct ItemThumbnail: View {
+    let url: URL?
+    let verdict: Verdict
+    var size: CGFloat = 52
+
+    var body: some View {
+        Group {
+            if let url {
+                AsyncImage(url: url) { phase in
+                    if case .success(let image) = phase {
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    } else {
+                        fallback
+                    }
+                }
+            } else {
+                fallback
+            }
+        }
+        .frame(width: size, height: size)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .accessibilityHidden(true)
+    }
+
+    private var fallback: some View {
+        RoundedRectangle(cornerRadius: 10)
+            .fill(Theme.color(for: verdict).opacity(0.15))
+            .overlay(
+                Image(systemName: "cube.transparent")
+                    .font(.system(size: size * 0.4))
+                    .foregroundStyle(Theme.color(for: verdict).opacity(0.7))
+            )
     }
 }

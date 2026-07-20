@@ -121,12 +121,7 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertTrue(item.isPending)
     }
 
-    func testLeaderboardRecapAndDailyPickDecode() throws {
-        let board = """
-        {"topRated":[],"mostDiscussed":[],"hallOfShame":[]}
-        """
-        XCTAssertNoThrow(try decoder.decode(LeaderboardResponse.self, from: Data(board.utf8)))
-
+    func testRecapAndDailyPickDecode() throws {
         let recap = """
         {"recap":{"date":"2026-07-19","total":2,"verdictCounts":{"essential":1,"complexity-trap":1},
           "summary":"1 essential · 1 complexity trap",

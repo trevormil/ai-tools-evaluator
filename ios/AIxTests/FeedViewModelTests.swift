@@ -29,26 +29,31 @@ final class FeedViewModelTests: XCTestCase {
      "pickedAt":"2026-07-20T07:00:00.000Z"}
     """
 
-    func testRefreshLoadsFeedAndDailyPick() async {
+    private let recapJSON = #"{"recap":{"date":"2026-07-19","total":5,"verdictCounts":{"essential":1},"summary":"1 essential","items":[],"leadPick":null,"complexityTrap":null,"topAdopted":[]}}"#
+
+    func testRefreshLoadsFeedPickAndRecapStrip() async {
         let vm = makeVM()
         TestSupport.stubRoutes([
             (path: "/api/feed", json: "{\"entries\":[\(itemEntryJSON(id: "i1", slug: "a"))],\"nextCursor\":null}"),
             (path: "/api/v1/daily-pick", json: pickJSON),
+            (path: "/api/v1/recap", json: recapJSON),
         ])
         await vm.refresh()
         XCTAssertEqual(vm.entries.count, 1)
         XCTAssertEqual(vm.dailyPick?.item.slug, "pick-of-day")
+        XCTAssertEqual(vm.latestRecap?.total, 5)
     }
 
-    func testMissingDailyPickNeverBlocksTheFeed() async {
+    func testMissingPickAndRecapNeverBlockTheFeed() async {
         let vm = makeVM()
-        // daily-pick 404s (no pick yet) — the feed must still load cleanly.
+        // daily-pick + recap 404 (nothing judged yet) — the feed still loads.
         TestSupport.stubRoutes([
             (path: "/api/feed", json: "{\"entries\":[\(itemEntryJSON(id: "i1", slug: "a"))],\"nextCursor\":null}")
         ])
         await vm.refresh()
         XCTAssertEqual(vm.entries.count, 1)
         XCTAssertNil(vm.dailyPick)
+        XCTAssertNil(vm.latestRecap)
         XCTAssertNil(vm.errorMessage)
     }
 

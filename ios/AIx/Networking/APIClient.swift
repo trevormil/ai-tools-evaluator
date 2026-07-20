@@ -82,11 +82,7 @@ struct APIClient {
         return try await get(path: "/api/feed", query: query)
     }
 
-    // MARK: Rankings + recap + daily pick
-
-    func fetchLeaderboard() async throws -> LeaderboardResponse {
-        try await get(path: "/api/v1/leaderboard")
-    }
+    // MARK: Recap + daily pick
 
     func fetchLatestRecap() async throws -> Recap {
         let response: RecapResponse = try await get(path: "/api/v1/recap")

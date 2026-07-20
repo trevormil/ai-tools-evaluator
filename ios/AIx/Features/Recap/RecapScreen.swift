@@ -1,48 +1,46 @@
 import SwiftUI
 
-/// Recap tab: the latest nightly recap with prev/next navigation + archive.
+/// The nightly recap, pushed from the feed's recap strip: prev/next
+/// navigation + a date archive. Lives inside the feed's NavigationStack, so
+/// item links resolve through the stack's existing String destination.
 struct RecapScreen: View {
     @State private var vm = RecapViewModel()
     @State private var showArchive = false
 
     var body: some View {
-        NavigationStack {
-            Group {
-                switch vm.state {
-                case .idle, .loading:
-                    ProgressView("Loading…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                case .failed(let message):
-                    MessageState(
-                        systemImage: "moon.stars",
-                        title: "No recap",
-                        message: message,
-                        retry: { Task { await vm.loadLatest() } }
-                    )
-                case .loaded(let recap):
-                    RecapContent(recap: recap, vm: vm)
-                }
+        Group {
+            switch vm.state {
+            case .idle, .loading:
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            case .failed(let message):
+                MessageState(
+                    systemImage: "moon.stars",
+                    title: "No recap",
+                    message: message,
+                    retry: { Task { await vm.loadLatest() } }
+                )
+            case .loaded(let recap):
+                RecapContent(recap: recap, vm: vm)
             }
-            .navigationTitle("Nightly Recap")
-            .navigationDestination(for: String.self) { slug in
-                ItemDetailView(slug: slug)
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        showArchive = true
-                    } label: {
-                        Image(systemName: "calendar")
-                    }
-                    .accessibilityLabel("Archive")
-                    .disabled(vm.dates.isEmpty)
+        }
+        .navigationTitle("Nightly Recap")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    showArchive = true
+                } label: {
+                    Image(systemName: "calendar")
                 }
+                .accessibilityLabel("Archive")
+                .disabled(vm.dates.isEmpty)
             }
-            .sheet(isPresented: $showArchive) {
-                RecapArchiveSheet(dates: vm.dates) { date in
-                    showArchive = false
-                    Task { await vm.load(date: date) }
-                }
+        }
+        .sheet(isPresented: $showArchive) {
+            RecapArchiveSheet(dates: vm.dates) { date in
+                showArchive = false
+                Task { await vm.load(date: date) }
             }
         }
         .task { if case .idle = vm.state { await vm.loadLatest() } }

@@ -88,12 +88,6 @@ while :; do
 done
 ```
 
-## `GET /api/v1/leaderboard`
-
-The three ranked lists as `PublicItem & { upvotes, commentCount }` arrays:
-`topRated` (overall score), `mostDiscussed` (comment count), `hallOfShame`
-(complexity-trap / redundant verdicts by noise).
-
 ## `GET /api/v1/recap` · `GET /api/v1/recap/{date}` · `GET /api/v1/recap/archive`
 
 The nightly recap: latest, by UTC date (`YYYY-MM-DD`, 404 when nothing was

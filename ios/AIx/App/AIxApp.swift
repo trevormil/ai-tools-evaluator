@@ -19,7 +19,7 @@ final class AppRouter: ObservableObject {
     static let shared = AppRouter()
 
     enum Tab: Hashable {
-        case feed, directory, leaderboard, recap, settings
+        case feed, directory, settings
     }
 
     @Published var selectedTab: Tab = .feed
@@ -44,14 +44,6 @@ struct RootView: View {
             DirectoryView()
                 .tabItem { Label("Directory", systemImage: "square.grid.2x2") }
                 .tag(AppRouter.Tab.directory)
-
-            LeaderboardView()
-                .tabItem { Label("Leaderboard", systemImage: "trophy") }
-                .tag(AppRouter.Tab.leaderboard)
-
-            RecapScreen()
-                .tabItem { Label("Recap", systemImage: "moon.stars") }
-                .tag(AppRouter.Tab.recap)
 
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }

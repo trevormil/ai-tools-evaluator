@@ -8,6 +8,7 @@ import Observation
 final class FeedViewModel {
     private(set) var entries: [FeedEntry] = []
     private(set) var dailyPick: DailyPick?
+    private(set) var latestRecap: Recap?
     private(set) var isLoading = false
     private(set) var isLoadingMore = false
     private(set) var errorMessage: String?
@@ -34,9 +35,11 @@ final class FeedViewModel {
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
         }
-        // The pick is decoration on the feed — its absence (404 before the
-        // first pick, or an outage) must never block the timeline.
+        // The pick + recap strip are decoration on the feed — their absence
+        // (404 before the first pick/night, or an outage) must never block
+        // the timeline.
         dailyPick = try? await client.fetchDailyPick()
+        latestRecap = try? await client.fetchLatestRecap()
         isLoading = false
     }
 

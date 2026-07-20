@@ -154,13 +154,7 @@ struct FeedPage: Decodable {
     let nextCursor: String?
 }
 
-// MARK: - Leaderboard, recap, daily pick (v1 read APIs)
-
-struct LeaderboardResponse: Codable {
-    let topRated: [PublicItem]
-    let mostDiscussed: [PublicItem]
-    let hallOfShame: [PublicItem]
-}
+// MARK: - Recap + daily pick (v1 read APIs)
 
 struct Recap: Codable {
     let date: String // "YYYY-MM-DD"

@@ -72,8 +72,9 @@ xcrun altool --upload-app -f build/export/AIx.ipa -t ios \
 ## 4. TestFlight sanity pass (recommended, ~10 min)
 
 Processing takes ~15–60 min. Install via TestFlight on a real device and
-check: feed loads · item detail tabs render (incl. a README-bearing item) ·
-leaderboard + recap load · daily-pick reminder toggle asks permission and a
+check: feed loads (pick card + recap strip once judged content exists) ·
+item detail tabs render (incl. a README-bearing item) ·
+recap opens from the strip · daily-pick reminder toggle asks permission and a
 test notification deep-links to the pick (set device clock past 9am or
 temporarily lower `DailyPickReminder.fireHour`).
 
@@ -92,8 +93,6 @@ temporarily lower `DailyPickReminder.fireHour`).
   > • The feed — everything judged, as it lands
   > • Directory — search and filter by category, verdict, and audience
   > • Scorecards — novelty, utility, delta vs a vanilla agent, and 7 more
-  > • Leaderboard — top rated, most discussed, and the Complexity Trap
-  >   Hall of Shame
   > • Nightly recap — what was judged, what won, what got called out
 
 - **Keywords** (100 chars): `ai,tools,mcp,agent,llm,claude,developer,evaluations,reviews,papers,trending`
@@ -105,7 +104,7 @@ temporarily lower `DailyPickReminder.fireHour`).
   the app makes anonymous GETs only).
 - **Screenshots**: required sizes 6.9" (iPhone 17 Pro Max sim) and 6.5".
   Take: Feed with Today's pick · Item detail Evaluation tab · Scorecard ·
-  Leaderboard · Recap. `xcrun simctl io booted screenshot feed.png` etc.
+  Recap. `xcrun simctl io booted screenshot feed.png` etc.
 - **Support URL**: https://aix.trevormil.com · **Marketing URL**: same.
 
 ## 6. Review notes (paste into App Review Information)
