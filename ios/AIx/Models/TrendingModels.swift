@@ -109,6 +109,10 @@ struct TrendingStory: Codable, Hashable, Identifiable {
     var id: String { hnUrl }
     var pageURL: URL? { url.flatMap(URL.init(string:)) }
     var discussionURL: URL? { URL(string: hnUrl) }
+    /// The numeric story id parsed from the discussion URL.
+    var storyID: String? {
+        URLComponents(string: hnUrl)?.queryItems?.first { $0.name == "id" }?.value
+    }
     var domain: String? { pageURL?.host()?.replacingOccurrences(of: "www.", with: "") }
 }
 
@@ -138,4 +142,24 @@ struct HuggingFaceTrendingResponse: Codable {
 struct ModelCardResponse: Codable {
     let model: String
     let readmeHtml: String?
+}
+
+/// GET /api/v1/trending/hackernews/item?id=… — story + top-level comments.
+struct HnComment: Codable, Hashable, Identifiable {
+    let author: String?
+    let text: String
+    let createdAt: String?
+    let replies: Int
+
+    var id: String { "\(author ?? "?"):\(text.prefix(40))" }
+}
+
+struct HnItemDetail: Codable, Hashable {
+    let id: Int
+    let title: String
+    let text: String?
+    let points: Int
+    let author: String?
+    let createdAt: String?
+    let comments: [HnComment]
 }

@@ -1,23 +1,30 @@
 import SwiftUI
 
-/// Trending tab — what's rising on GitHub / Product Hunt right now.
-/// Rows push a full in-app detail (README, screenshots, stats) so you rarely
-/// need to leave the app.
-struct TrendingView: View {
+/// The unified home tab: source chips — AIx (the judged feed) first, then
+/// what's rising on GitHub / Product Hunt / HN / Hugging Face. Every row
+/// pushes a full in-app detail (evaluations, READMEs, model cards) so you
+/// rarely need to leave the app.
+struct BrowseView: View {
+    @EnvironmentObject private var router: AppRouter
     @State private var vm = TrendingViewModel()
+    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             VStack(spacing: 8) {
                 SourceChipRow(selected: $vm.source)
 
-                content
+                if vm.source == .aix {
+                    FeedPane()
+                } else {
+                    content
+                }
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 // Time window rides the nav bar (same pattern as the
-                // directory's sort) instead of a second segmented row.
+                // directory's sort); AIx and HF don't have windows.
                 ToolbarItem(placement: .topBarTrailing) {
                     if vm.source.supportsWindow {
                         Menu {
@@ -34,6 +41,12 @@ struct TrendingView: View {
                     }
                 }
             }
+            .navigationDestination(for: String.self) { slug in
+                ItemDetailView(slug: slug)
+            }
+            .navigationDestination(for: RecapRoute.self) { _ in
+                RecapScreen()
+            }
             .navigationDestination(for: TrendingRepo.self) { repo in
                 TrendingRepoDetailView(repo: repo)
             }
@@ -49,7 +62,19 @@ struct TrendingView: View {
             .task { await vm.loadCurrent() }
             .onChange(of: vm.source) { _, _ in Task { await vm.loadCurrent() } }
             .onChange(of: vm.window) { _, _ in Task { await vm.loadCurrent() } }
+            .onChange(of: router.pendingItemSlug) { _, slug in
+                openPending(slug)
+            }
+            .onAppear { openPending(router.pendingItemSlug) }
         }
+    }
+
+    /// A notification/Spotlight tap requested a specific AIx item.
+    private func openPending(_ slug: String?) {
+        guard let slug else { return }
+        router.pendingItemSlug = nil
+        vm.source = .aix
+        path.append(slug)
     }
 
     @ViewBuilder
@@ -217,7 +242,6 @@ private struct TrendingStoryRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             rankGutter(rank)
-            SourceBadge(source: .hackernews, size: 48)
             VStack(alignment: .leading, spacing: 5) {
                 Text(story.title)
                     .font(.headline)
@@ -335,25 +359,36 @@ struct SourceChipRow: View {
     }
 }
 
-/// Brand-colored mark for each source (GitHub cat-mark, PH "P", HN "Y",
-/// Hugging Face's 🤗 — which is its actual logo).
+/// Brand mark for each source: AIx's funnel, GitHub's official Octocat mark
+/// (bundled per github.com/logos, used to link to GitHub), PH's white-P
+/// circle, HN's Y square, and Hugging Face's 🤗 (its actual logo).
 struct SourceBadge: View {
     let source: TrendingViewModel.Source
     var size: CGFloat = 22
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: size * 0.24)
-                .fill(background)
+            shape
             glyph
         }
         .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 
+    @ViewBuilder
+    private var shape: some View {
+        // PH's mark is a circle; the rest are rounded squares.
+        if source == .producthunt {
+            Circle().fill(background)
+        } else {
+            RoundedRectangle(cornerRadius: size * 0.24).fill(background)
+        }
+    }
+
     private var background: Color {
         switch source {
-        case .github: return Color(red: 0.09, green: 0.08, blue: 0.08)
+        case .aix: return Color(red: 0.04, green: 0.06, blue: 0.13) // #0a1020
+        case .github: return .white
         case .producthunt: return Color(red: 0.85, green: 0.33, blue: 0.18)
         case .hackernews: return Color(red: 1.0, green: 0.40, blue: 0.0)
         case .huggingface: return Color(red: 1.0, green: 0.82, blue: 0.26)
@@ -363,10 +398,17 @@ struct SourceBadge: View {
     @ViewBuilder
     private var glyph: some View {
         switch source {
+        case .aix:
+            // The funnel from the site logo, in the brand blue.
+            Image(systemName: "line.3.horizontal.decrease")
+                .font(.system(size: size * 0.55, weight: .bold))
+                .foregroundStyle(Color(red: 0.18, green: 0.50, blue: 0.96))
         case .github:
-            Image(systemName: "cat.fill")
-                .font(.system(size: size * 0.55))
-                .foregroundStyle(.white)
+            // The official Octocat mark ships black-on-white — show as-is.
+            Image("GitHubMark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: size * 0.86, height: size * 0.86)
         case .producthunt:
             Text("P")
                 .font(.system(size: size * 0.62, weight: .heavy, design: .rounded))

@@ -244,11 +244,12 @@ func topicCloud(_ topics: [String]) -> some View {
     }
 }
 
-// MARK: - HackerNews story detail (README in-app when it links a repo)
+// MARK: - HackerNews story detail (post + discussion + linked-repo README)
 
 struct TrendingStoryDetailView: View {
     let story: TrendingStory
     @EnvironmentObject private var favorites: FavoritesStore
+    @State private var discussion: LoadState<HnItemDetail> = .idle
     @State private var readme: LoadState<String?> = .idle
     @State private var client = APIClient()
     @State private var savedFlash = false
@@ -278,8 +279,8 @@ struct TrendingStoryDetailView: View {
                         }
                         .buttonStyle(.borderedProminent)
                     }
-                    if let discussion = story.discussionURL {
-                        Link(destination: discussion) {
+                    if let discussionURL = story.discussionURL {
+                        Link(destination: discussionURL) {
                             Label("HN", systemImage: "bubble.left.and.bubble.right")
                         }
                         .buttonStyle(.bordered)
@@ -297,24 +298,82 @@ struct TrendingStoryDetailView: View {
                 }
                 .font(.subheadline.weight(.semibold))
 
+                // The submitter's own text post, when there is one.
+                if case .loaded(let detail) = discussion, let text = detail.text, !text.isEmpty {
+                    Text(text)
+                        .font(.callout)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(12)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
+                }
+
                 if let repo = story.githubRepo {
                     Divider()
                     repoReadme(repo)
                 }
+
+                Divider()
+                discussionSection
             }
             .padding()
         }
         .navigationTitle("Show HN")
         .navigationBarTitleDisplayMode(.inline)
         .task {
-            guard let repo = story.githubRepo, case .idle = readme else { return }
-            readme = .loading
-            do {
-                readme = .loaded(try await client.fetchTrendingReadme(repo: repo))
-            } catch APIError.cancelled {
-                readme = .idle
-            } catch {
-                readme = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
+            await loadDiscussion()
+            await loadReadme()
+        }
+    }
+
+    private func loadDiscussion() async {
+        guard let id = story.storyID, case .idle = discussion else { return }
+        discussion = .loading
+        do {
+            discussion = .loaded(try await client.fetchHNItem(id: id))
+        } catch APIError.cancelled {
+            discussion = .idle
+        } catch {
+            discussion = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
+        }
+    }
+
+    private func loadReadme() async {
+        guard let repo = story.githubRepo, case .idle = readme else { return }
+        readme = .loading
+        do {
+            readme = .loaded(try await client.fetchTrendingReadme(repo: repo))
+        } catch APIError.cancelled {
+            readme = .idle
+        } catch {
+            readme = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
+        }
+    }
+
+    @ViewBuilder
+    private var discussionSection: some View {
+        Text("Discussion").font(.headline)
+        switch discussion {
+        case .idle, .loading:
+            HStack { Spacer(); ProgressView("Loading comments…"); Spacer() }
+                .padding(.vertical, 12)
+        case .failed(let message):
+            Text("Couldn't load the discussion. \(message)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .loaded(let detail):
+            if detail.comments.isEmpty {
+                Text("No comments yet.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(detail.comments) { comment in
+                    HnCommentRow(comment: comment)
+                }
+                if let discussionURL = story.discussionURL {
+                    Link("Full thread on Hacker News →", destination: discussionURL)
+                        .font(.footnote.weight(.semibold))
+                }
             }
         }
     }
@@ -331,13 +390,45 @@ struct TrendingStoryDetailView: View {
                 .foregroundStyle(.secondary)
         case .loaded(let html):
             if let html, !html.isEmpty {
-                ReadmePane(html: html, baseURL: URL(string: "https://github.com/\(repo)/raw/HEAD/"))
+                DisclosureGroup {
+                    ReadmePane(html: html, baseURL: URL(string: "https://github.com/\(repo)/raw/HEAD/"))
+                } label: {
+                    Label("README — \(repo)", systemImage: "doc.text")
+                        .font(.subheadline.weight(.semibold))
+                }
             } else {
                 Text("\(repo) has no README.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
         }
+    }
+}
+
+/// One top-level HN comment (plain text, server-stripped).
+private struct HnCommentRow: View {
+    let comment: HnComment
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 8) {
+                Text(comment.author ?? "anonymous")
+                    .font(.caption.weight(.bold))
+                if comment.replies > 0 {
+                    Text("\(comment.replies) repl\(comment.replies == 1 ? "y" : "ies")")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+            }
+            Text(comment.text)
+                .font(.callout)
+                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(12)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 12))
     }
 }
 

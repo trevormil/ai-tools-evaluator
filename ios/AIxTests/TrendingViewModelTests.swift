@@ -17,6 +17,7 @@ final class TrendingViewModelTests: XCTestCase {
 
     func testGithubPaneLoadsWithDefaultWeeklyWindow() async throws {
         let vm = makeVM()
+        vm.source = .github // AIx (the feed) is the default source
         let recorder = TestSupport.stub(json: repoJSON)
         await vm.loadCurrent()
 
@@ -32,6 +33,7 @@ final class TrendingViewModelTests: XCTestCase {
 
     func testSourceAndWindowSwitchLoadSeparatePanes() async {
         let vm = makeVM()
+        vm.source = .github
         TestSupport.stub(json: repoJSON)
         await vm.loadCurrent()
 
@@ -62,6 +64,7 @@ final class TrendingViewModelTests: XCTestCase {
 
     func testCancelledRefreshKeepsTheLoadedPane() async {
         let vm = makeVM()
+        vm.source = .github
         TestSupport.stub(json: repoJSON)
         await vm.loadCurrent()
 
@@ -88,6 +91,7 @@ final class TrendingViewModelTests: XCTestCase {
 
     func testForceReloadRefetchesLoadedPane() async {
         let vm = makeVM()
+        vm.source = .github
         TestSupport.stub(json: repoJSON)
         await vm.loadCurrent()
         let recorder = TestSupport.stub(json: repoJSON)
@@ -135,5 +139,21 @@ extension TrendingViewModelTests {
         guard case .loaded(.models) = vm.currentState else {
             return XCTFail("expected cached models pane")
         }
+    }
+}
+
+
+// MARK: - The AIx pane (combined Browse, no network from this VM)
+
+extension TrendingViewModelTests {
+    func testAixSourceIsDefaultAndNeverFetches() async {
+        let vm = TrendingViewModel(client: TestSupport.client())
+        XCTAssertEqual(vm.source, .aix)
+        XCTAssertFalse(vm.source.supportsWindow)
+        MockURLProtocol.handler = { _ in
+            XCTFail("the AIx pane is FeedViewModel's job — no trending fetch")
+            throw APIError.badURL
+        }
+        await vm.loadCurrent()
     }
 }
