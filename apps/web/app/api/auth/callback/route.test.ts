@@ -62,9 +62,7 @@ test("state mismatch redirects to /?auth=error and opens no session", async () =
 
 test("ios flow: redirects to aix://auth#token=… with a live session and no session cookie", async () => {
   mockGithub("cb-ios-user", 990002);
-  const res = await GET(
-    callback("code=c2&state=st2", "aix_oauth_state=st2; aix_oauth_client=ios")
-  );
+  const res = await GET(callback("code=c2&state=st2", "aix_oauth_state=st2; aix_oauth_client=ios"));
   const loc = res.headers.get("location") ?? "";
   expect(loc.startsWith("aix://auth#token=")).toBe(true);
   const token = loc.slice("aix://auth#token=".length);

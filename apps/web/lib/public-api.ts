@@ -1,4 +1,4 @@
-import type { Item } from "@aix/db";
+import type { Item, User } from "@aix/db";
 import type { Evaluation } from "@aix/core";
 
 /**
@@ -61,6 +61,36 @@ export function toPublicItem(item: Item): PublicItem {
     coverImageUrl: item.coverImageUrl ?? null,
     createdAt: new Date(item.createdAt * 1000).toISOString(),
   };
+}
+
+/** The public projection of a user — never the raw row (no githubId etc.). */
+export type PublicUser = {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  bio: string | null;
+  role: string;
+  createdAt: string; // ISO-8601
+};
+
+export function toPublicUser(user: User): PublicUser {
+  return {
+    id: user.id,
+    username: user.username,
+    displayName: user.displayName ?? null,
+    avatarUrl: user.avatarUrl ?? null,
+    bio: user.bio ?? null,
+    role: user.role,
+    createdAt: new Date(user.createdAt * 1000).toISOString(),
+  };
+}
+
+/** PublicItem plus the social counters the ranked lists display. */
+export type RankedItem = PublicItem & { upvotes: number; commentCount: number };
+
+export function toRankedItem(item: Item): RankedItem {
+  return { ...toPublicItem(item), upvotes: item.upvotes, commentCount: item.commentCount };
 }
 
 /**

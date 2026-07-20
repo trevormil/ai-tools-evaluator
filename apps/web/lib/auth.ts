@@ -52,6 +52,22 @@ export async function getCurrentUser(): Promise<User | null> {
   return resolveSessionUser(token);
 }
 
+/**
+ * Resolve the viewer for a route handler that receives its Request: bearer
+ * header first (mobile), then the browser cookie. The cookie path needs Next's
+ * request scope, which bun route tests don't have — no scope means no cookie
+ * viewer, so resolve to null rather than throw.
+ */
+export async function getRequestUser(req: Request): Promise<User | null> {
+  const token = bearerToken(req.headers.get("authorization"));
+  if (token) return resolveSessionUser(token);
+  try {
+    return await getCurrentUser();
+  } catch {
+    return null;
+  }
+}
+
 /** Throw a 401-carrying error when no user is signed in (used in route handlers). */
 export class Unauthorized extends Error {
   constructor() {

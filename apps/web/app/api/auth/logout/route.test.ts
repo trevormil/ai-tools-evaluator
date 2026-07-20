@@ -32,7 +32,7 @@ test("POST with a bearer token destroys that session and returns JSON, not a red
     new Request("https://aix.trevormil.com/api/auth/logout", {
       method: "POST",
       headers: { authorization: `Bearer ${token}` },
-    })
+    }),
   );
   expect(res.status).toBe(200);
   expect(await res.json()).toEqual({ ok: true });
@@ -44,7 +44,7 @@ test("POST with an unknown bearer token still returns 200 (idempotent sign-out)"
     new Request("https://aix.trevormil.com/api/auth/logout", {
       method: "POST",
       headers: { authorization: "Bearer bogus" },
-    })
+    }),
   );
   expect(res.status).toBe(200);
 });
