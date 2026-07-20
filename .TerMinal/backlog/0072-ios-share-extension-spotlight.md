@@ -1,7 +1,7 @@
 ---
 id: 072
 title: "iOS: share extension (save links from any app) + Spotlight indexing of favorites"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
