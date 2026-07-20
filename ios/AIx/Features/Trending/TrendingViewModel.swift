@@ -19,7 +19,7 @@ final class TrendingViewModel {
     }
 
     var source: Source = .github
-    var window: TrendingWindow = .daily
+    var window: TrendingWindow = .weekly
     private(set) var panes: [String: LoadState<Pane>] = [:]
 
     private let client: APIClient
@@ -39,8 +39,11 @@ final class TrendingViewModel {
     /// Load the selected pane (no-op if already loaded; `force` refetches).
     func loadCurrent(force: Bool = false) async {
         let paneKey = key(source, window)
-        if !force, case .loaded = panes[paneKey] ?? .idle { return }
-        panes[paneKey] = .loading
+        let existing = panes[paneKey] ?? .idle
+        if !force, case .loaded = existing { return }
+        // Keep the list on screen through a pull-to-refresh — swapping to a
+        // spinner tears down the gesture and cancels the request.
+        if case .loaded = existing {} else { panes[paneKey] = .loading }
         do {
             switch source {
             case .github:
@@ -48,6 +51,8 @@ final class TrendingViewModel {
             case .producthunt:
                 panes[paneKey] = .loaded(.products(try await client.fetchProductHuntTrending(window: window)))
             }
+        } catch APIError.cancelled {
+            // View lifecycle, not a failure — keep whatever we had.
         } catch APIError.http(503) {
             panes[paneKey] = .failed("This source isn't configured on the server yet.")
         } catch {

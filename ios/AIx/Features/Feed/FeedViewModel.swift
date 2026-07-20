@@ -32,6 +32,8 @@ final class FeedViewModel {
             entries = dedup(page.entries)
             nextCursor = page.nextCursor
             loadedOnce = true
+        } catch APIError.cancelled {
+            // Pull-to-refresh torn down mid-flight — not an error.
         } catch {
             errorMessage = (error as? APIError)?.errorDescription ?? error.localizedDescription
         }
