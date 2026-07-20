@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 
 @main
@@ -6,11 +7,29 @@ struct AIxApp: App {
     @StateObject private var router = AppRouter.shared
     @StateObject private var favorites = FavoritesStore()
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(router)
                 .environmentObject(favorites)
+                // Spotlight results (ticket 0072) deep-link back in.
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+                    if id.hasPrefix("item:") {
+                        router.openItem(slug: String(id.dropFirst("item:".count)))
+                    } else if id.hasPrefix("link:"),
+                              let uuid = UUID(uuidString: String(id.dropFirst("link:".count))),
+                              let link = favorites.links.first(where: { $0.id == uuid }),
+                              let url = link.pageURL {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                // Pick up links the share extension queued while we were away.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { favorites.drainPendingShared() }
+                }
         }
     }
 }
@@ -24,13 +43,27 @@ final class AppRouter: ObservableObject {
         case feed, trending, directory, favorites, settings
     }
 
-    @Published var selectedTab: Tab = .feed
+    @Published var selectedTab: Tab = {
+        // QA affordance: launch straight into a tab (simctl env var).
+        switch ProcessInfo.processInfo.environment["AIX_START_TAB"] {
+        case "browse": return .trending
+        case "directory": return .directory
+        case "favorites": return .favorites
+        case "settings": return .settings
+        default: return .feed
+        }
+    }()
     /// Slug the feed should open on next appearance (set by notification taps).
     @Published var pendingItemSlug: String?
 
     func openDailyPick(slug: String?) {
         selectedTab = .feed
         pendingItemSlug = slug
+    }
+
+    /// Open a specific item's detail (Spotlight results, deep links).
+    func openItem(slug: String) {
+        openDailyPick(slug: slug)
     }
 }
 
@@ -44,7 +77,7 @@ struct RootView: View {
                 .tag(AppRouter.Tab.feed)
 
             TrendingView()
-                .tabItem { Label("Trending", systemImage: "chart.line.uptrend.xyaxis") }
+                .tabItem { Label("Browse", systemImage: "globe") }
                 .tag(AppRouter.Tab.trending)
 
             DirectoryView()

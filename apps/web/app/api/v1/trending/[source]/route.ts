@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   githubTrending,
+  hackerNewsTrending,
+  huggingFaceTrending,
   productHuntTrending,
   TrendingUnavailable,
   type TrendingWindow,
@@ -37,6 +39,19 @@ export async function GET(req: Request, { params }: Params) {
     if (source === "producthunt") {
       return NextResponse.json(
         { source, window, products: await productHuntTrending(window) },
+        { headers: CORS },
+      );
+    }
+    if (source === "hackernews") {
+      return NextResponse.json(
+        { source, window, stories: await hackerNewsTrending(window) },
+        { headers: CORS },
+      );
+    }
+    if (source === "huggingface") {
+      // HF's trending score is inherently recent — the window doesn't apply.
+      return NextResponse.json(
+        { source, window, models: await huggingFaceTrending() },
         { headers: CORS },
       );
     }

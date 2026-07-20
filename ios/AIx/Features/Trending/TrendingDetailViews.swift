@@ -243,3 +243,196 @@ func topicCloud(_ topics: [String]) -> some View {
         }
     }
 }
+
+// MARK: - HackerNews story detail (README in-app when it links a repo)
+
+struct TrendingStoryDetailView: View {
+    let story: TrendingStory
+    @EnvironmentObject private var favorites: FavoritesStore
+    @State private var readme: LoadState<String?> = .idle
+    @State private var client = APIClient()
+    @State private var savedFlash = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(story.title)
+                    .font(.title3.weight(.bold))
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 10) {
+                    Label("\(story.points) points", systemImage: "arrowtriangle.up.fill")
+                        .foregroundStyle(.orange)
+                    Label("\(story.comments) comments", systemImage: "bubble.right")
+                        .foregroundStyle(.secondary)
+                    if let author = story.author {
+                        Text("by \(author)").foregroundStyle(.secondary)
+                    }
+                }
+                .font(.caption.weight(.semibold))
+
+                HStack(spacing: 10) {
+                    if let url = story.pageURL {
+                        Link(destination: url) {
+                            Label(story.domain ?? "Open", systemImage: "arrow.up.right.square")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    if let discussion = story.discussionURL {
+                        Link(destination: discussion) {
+                            Label("HN", systemImage: "bubble.left.and.bubble.right")
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    Button {
+                        savedFlash = favorites.addLink(
+                            url: story.url ?? story.hnUrl,
+                            title: story.title,
+                            note: "Show HN · \(story.points) points"
+                        )
+                    } label: {
+                        Label(savedFlash ? "Saved" : "Save", systemImage: savedFlash ? "bookmark.fill" : "bookmark")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .font(.subheadline.weight(.semibold))
+
+                if let repo = story.githubRepo {
+                    Divider()
+                    repoReadme(repo)
+                }
+            }
+            .padding()
+        }
+        .navigationTitle("Show HN")
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            guard let repo = story.githubRepo, case .idle = readme else { return }
+            readme = .loading
+            do {
+                readme = .loaded(try await client.fetchTrendingReadme(repo: repo))
+            } catch APIError.cancelled {
+                readme = .idle
+            } catch {
+                readme = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func repoReadme(_ repo: String) -> some View {
+        switch readme {
+        case .idle, .loading:
+            HStack { Spacer(); ProgressView("Loading README…"); Spacer() }
+                .padding(.vertical, 20)
+        case .failed(let message):
+            Text("Couldn't load the README. \(message)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .loaded(let html):
+            if let html, !html.isEmpty {
+                ReadmePane(html: html, baseURL: URL(string: "https://github.com/\(repo)/raw/HEAD/"))
+            } else {
+                Text("\(repo) has no README.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
+// MARK: - Hugging Face model detail (model card in-app)
+
+struct TrendingModelDetailView: View {
+    let model: TrendingModel
+    @EnvironmentObject private var favorites: FavoritesStore
+    @State private var card: LoadState<String?> = .idle
+    @State private var client = APIClient()
+    @State private var savedFlash = false
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(model.modelName).font(.title3.weight(.bold))
+                    Text(model.owner).font(.subheadline).foregroundStyle(.secondary)
+                }
+
+                HStack(spacing: 10) {
+                    Label("\(model.likes)", systemImage: "heart.fill")
+                        .foregroundStyle(.pink)
+                    Label("\(compactCount(model.downloads)) downloads", systemImage: "arrow.down.circle")
+                        .foregroundStyle(.secondary)
+                    if let pipeline = model.pipelineTag {
+                        Text(pipeline).foregroundStyle(.secondary)
+                    }
+                }
+                .font(.caption.weight(.semibold))
+
+                if !model.tags.isEmpty {
+                    topicCloud(model.tags)
+                }
+
+                HStack(spacing: 10) {
+                    if let url = model.pageURL {
+                        Link(destination: url) {
+                            Label("Hugging Face", systemImage: "arrow.up.right.square")
+                        }
+                        .buttonStyle(.borderedProminent)
+                    }
+                    Button {
+                        savedFlash = favorites.addLink(
+                            url: model.url,
+                            title: model.id,
+                            note: model.pipelineTag
+                        )
+                    } label: {
+                        Label(savedFlash ? "Saved" : "Save", systemImage: savedFlash ? "bookmark.fill" : "bookmark")
+                    }
+                    .buttonStyle(.bordered)
+                }
+                .font(.subheadline.weight(.semibold))
+
+                Divider()
+
+                cardSection
+            }
+            .padding()
+        }
+        .navigationTitle(model.modelName)
+        .navigationBarTitleDisplayMode(.inline)
+        .task {
+            guard case .idle = card else { return }
+            card = .loading
+            do {
+                card = .loaded(try await client.fetchModelCard(model: model.id))
+            } catch APIError.cancelled {
+                card = .idle
+            } catch {
+                card = .failed((error as? APIError)?.errorDescription ?? error.localizedDescription)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var cardSection: some View {
+        switch card {
+        case .idle, .loading:
+            HStack { Spacer(); ProgressView("Loading model card…"); Spacer() }
+                .padding(.vertical, 20)
+        case .failed(let message):
+            Text("Couldn't load the model card. \(message)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+        case .loaded(let html):
+            if let html, !html.isEmpty {
+                // Base URL resolves relative images in the card.
+                ReadmePane(html: html, baseURL: URL(string: "https://huggingface.co/\(model.id)/resolve/main/"))
+            } else {
+                Text("This model has no card.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}

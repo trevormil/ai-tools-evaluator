@@ -39,6 +39,28 @@ export type TrendingProduct = {
   mediaUrls: string[];
 };
 
+export type TrendingStory = {
+  title: string;
+  url: string | null; // the linked article/repo (null for text posts)
+  hnUrl: string; // the HN discussion
+  points: number;
+  comments: number;
+  author: string | null;
+  createdAt: string | null;
+  /** owner/name when the story links a GitHub repo (enables in-app README). */
+  githubRepo: string | null;
+};
+
+export type TrendingModel = {
+  id: string; // "owner/name"
+  url: string; // huggingface.co page
+  likes: number;
+  downloads: number;
+  pipelineTag: string | null;
+  tags: string[];
+  createdAt: string | null;
+};
+
 /** Thrown when an upstream source isn't configured (→ 503, not 500). */
 export class TrendingUnavailable extends Error {}
 
@@ -234,5 +256,149 @@ export async function productHuntTrending(window: TrendingWindow): Promise<Trend
           .map((m) => m.url as string)
           .slice(0, 4),
       }));
+  });
+}
+
+/**
+ * AI-affinity filter for HN — the community this serves cares about coding
+ * agents and the tooling around them (mirrors the scanner's ranking signals).
+ */
+const AI_SIGNALS = [
+  "ai",
+  "llm",
+  "agent",
+  "claude",
+  "codex",
+  "gpt",
+  "openai",
+  "anthropic",
+  "gemini",
+  "llama",
+  "mistral",
+  "mcp",
+  "rag",
+  "copilot",
+  "prompt",
+  "model",
+  "ml",
+  "neural",
+  "transformer",
+  "diffusion",
+  "embedding",
+  "fine-tun",
+  "inference",
+  "cursor",
+  "openclaw",
+];
+
+function looksAI(title: string): boolean {
+  const words = title.toLowerCase();
+  return AI_SIGNALS.some((s) =>
+    s.length <= 3 ? new RegExp(`\\b${s}\\b`, "i").test(words) : words.includes(s),
+  );
+}
+
+const GH_REPO_RE = /github\.com\/([A-Za-z0-9._-]+\/[A-Za-z0-9._-]+)/;
+
+/**
+ * Show HN via the public Algolia API (no auth): top stories in the window,
+ * filtered to AI-relevant titles, topped up with the unfiltered leaders when
+ * the filter over-prunes a quiet day.
+ */
+export async function hackerNewsTrending(window: TrendingWindow): Promise<TrendingStory[]> {
+  return cached(`hackernews:${window}`, async () => {
+    const since = Math.floor(Date.now() / 1000) - (window === "daily" ? 2 : 7) * 86_400;
+    const url = new URL("https://hn.algolia.com/api/v1/search");
+    url.searchParams.set("tags", "show_hn");
+    url.searchParams.set("numericFilters", `created_at_i>${since}`);
+    url.searchParams.set("hitsPerPage", "100");
+
+    const res = await fetch(url, { headers: { "user-agent": "aix-web" } });
+    if (!res.ok) throw new Error(`HN search failed: HTTP ${res.status}`);
+    const body = (await res.json()) as {
+      hits?: {
+        title?: string;
+        url?: string | null;
+        objectID?: string;
+        points?: number;
+        num_comments?: number;
+        author?: string;
+        created_at?: string;
+      }[];
+    };
+
+    const toStory = (h: NonNullable<typeof body.hits>[number]): TrendingStory => ({
+      title: (h.title ?? "").replace(/^show hn:\s*/i, ""),
+      url: h.url ?? null,
+      hnUrl: `https://news.ycombinator.com/item?id=${h.objectID ?? ""}`,
+      points: h.points ?? 0,
+      comments: h.num_comments ?? 0,
+      author: h.author ?? null,
+      createdAt: h.created_at ?? null,
+      githubRepo: h.url?.match(GH_REPO_RE)?.[1]?.replace(/\.git$/, "") ?? null,
+    });
+
+    const hits = (body.hits ?? []).filter((h) => h.title);
+    const ai = hits.filter((h) => looksAI(h.title!));
+    // Quiet day for AI launches → top up with the unfiltered leaders rather
+    // than showing a near-empty list.
+    const pool = ai.length >= 10 ? ai : [...ai, ...hits.filter((h) => !looksAI(h.title!))];
+    return pool.slice(0, 25).map(toStory);
+  });
+}
+
+/**
+ * Hugging Face trending models via the public hub API (no auth). HF's
+ * trending score is inherently recent, so the window doesn't apply.
+ */
+export async function huggingFaceTrending(): Promise<TrendingModel[]> {
+  return cached("huggingface", async () => {
+    const url = new URL("https://huggingface.co/api/models");
+    url.searchParams.set("sort", "trendingScore");
+    url.searchParams.set("direction", "-1");
+    url.searchParams.set("limit", "25");
+
+    const res = await fetch(url, { headers: { "user-agent": "aix-web" } });
+    if (!res.ok) throw new Error(`HF API failed: HTTP ${res.status}`);
+    const body = (await res.json()) as {
+      id?: string;
+      likes?: number;
+      downloads?: number;
+      pipeline_tag?: string;
+      tags?: string[];
+      createdAt?: string;
+    }[];
+
+    return (Array.isArray(body) ? body : [])
+      .filter((m) => m.id)
+      .map((m) => ({
+        id: m.id!,
+        url: `https://huggingface.co/${m.id}`,
+        likes: m.likes ?? 0,
+        downloads: m.downloads ?? 0,
+        pipelineTag: m.pipeline_tag ?? null,
+        tags: (m.tags ?? []).filter((t) => !t.includes(":")).slice(0, 6),
+        createdAt: m.createdAt ?? null,
+      }));
+  });
+}
+
+/**
+ * A Hugging Face model card as raw markdown with the YAML frontmatter block
+ * stripped (the caller renders it). Cached per model.
+ */
+export async function huggingFaceModelCard(modelId: string): Promise<string | null> {
+  if (!/^[\w.-]+\/[\w.-]+$/.test(modelId)) {
+    throw new TrendingUnavailable("model must look like owner/name");
+  }
+  return cached(`hf-card:${modelId.toLowerCase()}`, async () => {
+    const res = await fetch(`https://huggingface.co/${modelId}/raw/main/README.md`, {
+      headers: { "user-agent": "aix-web" },
+    });
+    if (res.status === 404) return null;
+    if (!res.ok) throw new Error(`HF model card failed: HTTP ${res.status}`);
+    const raw = (await res.text()).slice(0, 300_000);
+    // Strip the metadata frontmatter (--- ... ---) HF model cards lead with.
+    return raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
   });
 }

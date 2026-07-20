@@ -45,6 +45,35 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_USER_SCRIPT_SANDBOXING: YES
+  # AIxShare (share extension, ticket 0072) is PARKED until the paid Apple
+  # Developer enrollment: free personal teams can't provision the App Group
+  # entitlement it needs (verified 2026-07-20). The code lives in AIxShare/;
+  # to enable, restore this target + `dependencies: [target: AIxShare,
+  # embed: true]` on AIx + CODE_SIGN_ENTITLEMENTS on both targets, and flip
+  # FavoritesStore.sharedDefaults() to the app-group suite:
+  #
+  # AIxShare:
+  #   type: app-extension
+  #   platform: iOS
+  #   deploymentTarget: "17.0"
+  #   sources: [{path: AIxShare, excludes: ["*.entitlements"]}]
+  #   info:
+  #     path: AIxShare/Info.plist
+  #     properties:
+  #       CFBundleDisplayName: Save to AIx
+  #       NSExtension:
+  #         NSExtensionPointIdentifier: com.apple.share-services
+  #         NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+  #         NSExtensionAttributes:
+  #           NSExtensionActivationRule:
+  #             NSExtensionActivationSupportsWebURLWithMaxCount: 1
+  #             NSExtensionActivationSupportsWebPageWithMaxCount: 1
+  #   settings:
+  #     base:
+  #       PRODUCT_BUNDLE_IDENTIFIER: com.trevormil.aix.share
+  #       GENERATE_INFOPLIST_FILE: NO
+  #       SKIP_INSTALL: YES
+  #       CODE_SIGN_ENTITLEMENTS: AIxShare/AIxShare.entitlements
   AIxTests:
     type: bundle.unit-test
     platform: iOS

@@ -133,6 +133,29 @@ struct APIClient {
         return response.readmeHtml
     }
 
+    func fetchHackerNewsTrending(window: TrendingWindow) async throws -> [TrendingStory] {
+        let response: HackerNewsTrendingResponse = try await get(
+            path: "/api/v1/trending/hackernews",
+            query: [URLQueryItem(name: "window", value: window.rawValue)]
+        )
+        return response.stories
+    }
+
+    /// HF trending is inherently recent — no window parameter.
+    func fetchHuggingFaceTrending() async throws -> [TrendingModel] {
+        let response: HuggingFaceTrendingResponse = try await get(path: "/api/v1/trending/huggingface")
+        return response.models
+    }
+
+    /// Rendered HF model card HTML (nil = the model has no card).
+    func fetchModelCard(model: String) async throws -> String? {
+        let response: ModelCardResponse = try await get(
+            path: "/api/v1/trending/huggingface/readme",
+            query: [URLQueryItem(name: "model", value: model)]
+        )
+        return response.readmeHtml
+    }
+
     // MARK: Plumbing
 
     private func get<T: Decodable>(path: String, query: [URLQueryItem] = []) async throws -> T {
