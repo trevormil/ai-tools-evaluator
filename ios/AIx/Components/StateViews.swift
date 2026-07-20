@@ -39,7 +39,6 @@ struct ItemRow: View {
     let tagline: String
     let verdict: Verdict
     let overallScore: Int
-    let category: Category
     let coverURL: URL?
     var isPending: Bool = false
     var rank: Int? = nil
@@ -49,7 +48,6 @@ struct ItemRow: View {
         self.tagline = item.tagline
         self.verdict = item.verdict
         self.overallScore = item.overallScore
-        self.category = item.category
         self.coverURL = item.coverURL
         self.rank = rank
     }
@@ -59,7 +57,6 @@ struct ItemRow: View {
         self.tagline = item.tagline
         self.verdict = item.verdict
         self.overallScore = item.overallScore
-        self.category = item.category
         self.coverURL = item.coverURL
         self.isPending = item.isPending
     }
@@ -91,9 +88,6 @@ struct ItemRow: View {
                     } else {
                         VerdictBadge(verdict: verdict, compact: true)
                     }
-                    Text(category.label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
                     Spacer()
                     if !isPending {
                         ScoreChip(score: overallScore)

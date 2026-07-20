@@ -116,8 +116,6 @@ struct DailyPickCard: View {
                         .lineLimit(2)
                     HStack(spacing: 8) {
                         VerdictBadge(verdict: pick.item.verdict, compact: true)
-                        Text(pick.item.category.label)
-                            .font(.caption).foregroundStyle(.secondary)
                         Spacer()
                         ScoreChip(score: pick.item.overallScore)
                     }
