@@ -67,10 +67,9 @@ export async function POST(req: Request) {
 
   const overallScore = computeOverall(evaluation.scores);
   const stored = { ...evaluation, overallScore };
-  // Best displayable image from the media set (personal avatars, social
-  // cards, placeholders and SVGs skipped) — null → monogram tile (0073).
-  const coverUrl = await pickCover(evaluation.media);
-  const cover = coverUrl != null;
+  // Best displayable image from the media set: README imagery > owner
+  // avatar > null (client monogram tile). Junk skipped (0073).
+  const coverUrl = pickCover(evaluation.media);
   const nowSec = Math.floor(Date.now() / 1000);
   // Exactly ONE trending publish per day is the featured daily pick (dailyPickAt
   // set); the scanner's other batch publishes are runners-up (dailyPick=false →

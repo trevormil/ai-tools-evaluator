@@ -1,22 +1,11 @@
-import { test, expect, beforeAll, beforeEach, afterEach } from "bun:test";
+import { test, expect, beforeAll } from "bun:test";
 import { rmSync } from "node:fs";
-import { clearOwnerTypeCache } from "@/lib/covers";
+import { pickCover } from "@/lib/covers";
 
-/** Cover sanitation backfill (ticket 0073). */
+/** Cover selection + backfill (ticket 0073, round 3: avatars are valid fallbacks). */
 const DB_PATH = `/tmp/aix-covers-test-${process.pid}.db`;
 
 let POST: (req: Request) => Promise<Response>;
-
-const realFetch = globalThis.fetch;
-
-/** GitHub /users/{owner} mock: humans vs orgs by name. */
-function mockGithubUsers() {
-  globalThis.fetch = (async (input: RequestInfo | URL) => {
-    const url = String(input);
-    const owner = url.split("/").pop() ?? "";
-    return Response.json({ type: owner.startsWith("org-") ? "Organization" : "User" });
-  }) as typeof fetch;
-}
 
 beforeAll(async () => {
   for (const suffix of ["", "-wal", "-shm"]) rmSync(DB_PATH + suffix, { force: true });
@@ -29,7 +18,7 @@ beforeAll(async () => {
   runMigrations();
   const db = getDb();
 
-  const mk = (slug: string, cover: string | null, media: unknown[] = []) =>
+  const mk = (slug: string, cover: string | null, media: unknown[]) =>
     db
       .insert(items)
       .values({
@@ -47,26 +36,28 @@ beforeAll(async () => {
         noiseScore: 10,
         evaluationJson: "{}",
         coverImageUrl: cover,
-        mediaJson: JSON.stringify(
-          media.length ? media : cover ? [{ type: "image", url: cover }] : [],
-        ),
+        mediaJson: JSON.stringify(media),
         published: true,
       })
       .run();
 
-  // User avatar cover BUT a real README screenshot in the gallery → promoted.
-  mk("cov-face", "https://github.com/some-person.png?size=200", [
+  // Avatar cover but a README screenshot available → README image wins.
+  mk("cov-upgrade", "https://github.com/some-person.png?size=200", [
     { type: "image", url: "https://github.com/some-person.png?size=200", source: "repo-avatar" },
     { type: "image", url: "https://raw.githubusercontent.com/a/b/shot.png", source: "repo-readme" },
+  ]);
+  // Cover was nulled by the earlier over-aggressive pass; only the avatar
+  // exists → avatar RESTORED (kepano-obsidian case).
+  mk("cov-restore", null, [
+    { type: "image", url: "https://github.com/kepano.png?size=200", source: "repo-avatar" },
     {
       type: "image",
       url: "https://opengraph.githubassets.com/1/a/b",
       source: "repo-social-preview",
     },
   ]);
-  mk("cov-logo", "https://github.com/org-arize.png?size=200"); // Org avatar → kept
-  // Placeholder cover, nothing else usable (svg + social only) → cleared.
-  mk("cov-placehold", "https://placehold.co/1200x630/0b1020/e2e8f0.png?text=X", [
+  // Placeholder cover, only svg/social besides → cleared to monogram.
+  mk("cov-junk", "https://placehold.co/1200x630/0b1020/e2e8f0.png?text=X", [
     { type: "image", url: "https://placehold.co/1200x630/0b1020/e2e8f0.png?text=X" },
     { type: "image", url: "https://raw.githubusercontent.com/a/b/logo.svg", source: "repo-readme" },
     {
@@ -75,17 +66,33 @@ beforeAll(async () => {
       source: "repo-social-preview",
     },
   ]);
-  mk("cov-real", "https://raw.githubusercontent.com/a/b/logo.png"); // README pick → kept
-  mk("cov-none", null);
+  // Already correct → untouched.
+  mk("cov-good", "https://raw.githubusercontent.com/a/b/logo.png", [
+    { type: "image", url: "https://raw.githubusercontent.com/a/b/logo.png", source: "repo-readme" },
+  ]);
 });
 
-beforeEach(() => {
-  clearOwnerTypeCache();
-  mockGithubUsers();
-});
-
-afterEach(() => {
-  globalThis.fetch = realFetch;
+test("pickCover ranking: README image > avatar > null; junk always skipped", () => {
+  expect(
+    pickCover([
+      { type: "image", url: "https://github.com/x.png", source: "repo-avatar" },
+      { type: "image", url: "https://cdn.example/logo.png", source: "repo-readme" },
+    ]),
+  ).toBe("https://cdn.example/logo.png");
+  expect(
+    pickCover([{ type: "image", url: "https://github.com/x.png", source: "repo-avatar" }]),
+  ).toBe("https://github.com/x.png");
+  expect(
+    pickCover([
+      { type: "image", url: "https://placehold.co/x.png?text=Y" },
+      { type: "image", url: "https://a.io/logo.svg", source: "repo-readme" },
+      {
+        type: "image",
+        url: "https://opengraph.githubassets.com/1/a/b",
+        source: "repo-social-preview",
+      },
+    ]),
+  ).toBeNull();
 });
 
 const request = (token = "covers-test-token") =>
@@ -96,32 +103,19 @@ const request = (token = "covers-test-token") =>
     }),
   );
 
-test("promotes README imagery over selfies, clears junk, keeps real covers", async () => {
+test("backfill upgrades, restores, clears, and leaves good covers alone", async () => {
   const res = await request();
   expect(res.status).toBe(200);
   const body = await res.json();
   const bySlug = Object.fromEntries(
     body.changes.map((c: { slug: string; cover: string | null }) => [c.slug, c.cover]),
   );
-  // Selfie cover with a README screenshot available → promoted, not cleared.
-  expect(bySlug["cov-face"]).toBe("https://raw.githubusercontent.com/a/b/shot.png");
-  // Placeholder with only svg/social alternatives → cleared to monogram.
-  expect(bySlug["cov-placehold"]).toBeNull();
-  // Untouched: org logo + real image covers.
-  expect(bySlug).not.toHaveProperty("cov-logo");
-  expect(bySlug).not.toHaveProperty("cov-real");
+  expect(bySlug["cov-upgrade"]).toContain("shot.png"); // README beats avatar
+  expect(bySlug["cov-restore"]).toContain("kepano.png"); // avatar beats monogram
+  expect(bySlug["cov-junk"]).toBeNull(); // junk-only → monogram
+  expect(bySlug).not.toHaveProperty("cov-good");
 
-  const { getDb, items } = await import("@aix/db");
-  const { eq } = await import("drizzle-orm");
-  const db = getDb();
-  expect(db.select().from(items).where(eq(items.slug, "cov-face")).get()?.coverImageUrl).toContain(
-    "shot.png",
-  );
-  expect(db.select().from(items).where(eq(items.slug, "cov-logo")).get()?.coverImageUrl).toContain(
-    "org-arize",
-  );
-
-  // Idempotent: a second run changes nothing.
+  // Idempotent.
   const again = await (await request()).json();
   expect(again.changed).toBe(0);
 });
