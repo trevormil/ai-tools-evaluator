@@ -1,7 +1,7 @@
 ---
 id: 058
 title: "Public v1 read APIs for the iOS app: leaderboard, recap, daily pick, item README"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-20
 updated: 2026-07-20
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
+prs: []
 refs: []
 depends_on: []
 acceptance:

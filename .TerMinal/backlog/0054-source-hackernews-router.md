@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-10
 updated: 2026-07-10
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/39"]
+prs: []
 refs: [ADR-0003]
 depends_on: [053]
 agent_id: 1000x-ai-engineer
