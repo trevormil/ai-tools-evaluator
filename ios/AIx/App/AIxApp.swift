@@ -43,7 +43,16 @@ final class AppRouter: ObservableObject {
         case feed, trending, directory, favorites, settings
     }
 
-    @Published var selectedTab: Tab = .feed
+    @Published var selectedTab: Tab = {
+        // QA affordance: launch straight into a tab (simctl env var).
+        switch ProcessInfo.processInfo.environment["AIX_START_TAB"] {
+        case "browse": return .trending
+        case "directory": return .directory
+        case "favorites": return .favorites
+        case "settings": return .settings
+        default: return .feed
+        }
+    }()
     /// Slug the feed should open on next appearance (set by notification taps).
     @Published var pendingItemSlug: String?
 
@@ -68,7 +77,7 @@ struct RootView: View {
                 .tag(AppRouter.Tab.feed)
 
             TrendingView()
-                .tabItem { Label("Trending", systemImage: "chart.line.uptrend.xyaxis") }
+                .tabItem { Label("Browse", systemImage: "globe") }
                 .tag(AppRouter.Tab.trending)
 
             DirectoryView()

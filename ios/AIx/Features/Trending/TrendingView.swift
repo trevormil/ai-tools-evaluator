@@ -9,24 +9,13 @@ struct TrendingView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 8) {
-                Picker("Source", selection: $vm.source) {
-                    ForEach(TrendingViewModel.Source.allCases) { s in
-                        Text(s.label).tag(s)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
+                SourceChipRow(selected: $vm.source)
 
                 content
             }
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Text(vm.source.fullName)
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
                 // Time window rides the nav bar (same pattern as the
                 // directory's sort) instead of a second segmented row.
                 ToolbarItem(placement: .topBarTrailing) {
@@ -228,7 +217,7 @@ private struct TrendingStoryRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             rankGutter(rank)
-            SquareThumb(url: nil, fallbackSymbol: "newspaper")
+            SourceBadge(source: .hackernews, size: 48)
             VStack(alignment: .leading, spacing: 5) {
                 Text(story.title)
                     .font(.headline)
@@ -261,7 +250,7 @@ private struct TrendingModelRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             rankGutter(rank)
-            SquareThumb(url: nil, fallbackSymbol: "cpu")
+            SourceBadge(source: .huggingface, size: 48)
             VStack(alignment: .leading, spacing: 5) {
                 Text(model.modelName).font(.headline).lineLimit(2)
                 Text(model.owner)
@@ -294,5 +283,101 @@ func compactCount(_ n: Int) -> String {
     case 1_000_000...: return String(format: "%.1fM", Double(n) / 1_000_000)
     case 1_000...: return String(format: "%.1fK", Double(n) / 1_000)
     default: return "\(n)"
+    }
+}
+
+// MARK: - Source picker (chips with brand badges)
+
+/// Roomy, scrollable source chips — replaces the cramped 4-way segmented
+/// control. Badges are drawn in brand colors (no bundled logo assets).
+struct SourceChipRow: View {
+    @Binding var selected: TrendingViewModel.Source
+
+    var body: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(TrendingViewModel.Source.allCases) { source in
+                    chip(source)
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 2)
+        }
+    }
+
+    private func chip(_ source: TrendingViewModel.Source) -> some View {
+        let isSelected = source == selected
+        return Button {
+            selected = source
+        } label: {
+            HStack(spacing: 7) {
+                SourceBadge(source: source, size: 22)
+                Text(source.fullName)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(isSelected ? Color.accentColor : .primary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 7)
+            .background(
+                isSelected ? Color.accentColor.opacity(0.14) : Theme.cardBackground,
+                in: Capsule()
+            )
+            .overlay(
+                Capsule().strokeBorder(
+                    isSelected ? Color.accentColor.opacity(0.7) : Color.clear,
+                    lineWidth: 1.5
+                )
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(source.fullName)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+/// Brand-colored mark for each source (GitHub cat-mark, PH "P", HN "Y",
+/// Hugging Face's 🤗 — which is its actual logo).
+struct SourceBadge: View {
+    let source: TrendingViewModel.Source
+    var size: CGFloat = 22
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: size * 0.24)
+                .fill(background)
+            glyph
+        }
+        .frame(width: size, height: size)
+        .accessibilityHidden(true)
+    }
+
+    private var background: Color {
+        switch source {
+        case .github: return Color(red: 0.09, green: 0.08, blue: 0.08)
+        case .producthunt: return Color(red: 0.85, green: 0.33, blue: 0.18)
+        case .hackernews: return Color(red: 1.0, green: 0.40, blue: 0.0)
+        case .huggingface: return Color(red: 1.0, green: 0.82, blue: 0.26)
+        }
+    }
+
+    @ViewBuilder
+    private var glyph: some View {
+        switch source {
+        case .github:
+            Image(systemName: "cat.fill")
+                .font(.system(size: size * 0.55))
+                .foregroundStyle(.white)
+        case .producthunt:
+            Text("P")
+                .font(.system(size: size * 0.62, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+        case .hackernews:
+            Text("Y")
+                .font(.system(size: size * 0.62, weight: .heavy))
+                .foregroundStyle(.white)
+        case .huggingface:
+            Text("🤗")
+                .font(.system(size: size * 0.60))
+        }
     }
 }
