@@ -59,6 +59,8 @@ export type TrendingModel = {
   pipelineTag: string | null;
   tags: string[];
   createdAt: string | null;
+  /** First real prose line of the model card, when it has one. */
+  description: string | null;
 };
 
 /** Thrown when an upstream source isn't configured (→ 503, not 500). */
@@ -369,7 +371,7 @@ export async function huggingFaceTrending(): Promise<TrendingModel[]> {
       createdAt?: string;
     }[];
 
-    return (Array.isArray(body) ? body : [])
+    const models = (Array.isArray(body) ? body : [])
       .filter((m) => m.id)
       .map((m) => ({
         id: m.id!,
@@ -380,6 +382,17 @@ export async function huggingFaceTrending(): Promise<TrendingModel[]> {
         tags: (m.tags ?? []).filter((t) => !t.includes(":")).slice(0, 6),
         createdAt: m.createdAt ?? null,
       }));
+
+    // The list API has no descriptions — pull the first prose line from each
+    // model card (concurrent; per-card cache also pre-warms the detail view).
+    const summaries = await Promise.allSettled(models.map((m) => huggingFaceModelCard(m.id)));
+    return models.map((m, i) => {
+      const settled = summaries[i];
+      return {
+        ...m,
+        description: settled?.status === "fulfilled" ? modelCardSummary(settled.value) : null,
+      };
+    });
   });
 }
 
@@ -398,8 +411,10 @@ export async function huggingFaceModelCard(modelId: string): Promise<string | nu
     if (res.status === 404) return null;
     if (!res.ok) throw new Error(`HF model card failed: HTTP ${res.status}`);
     const raw = (await res.text()).slice(0, 300_000);
-    // Strip the metadata frontmatter (--- ... ---) HF model cards lead with.
-    return raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
+    // Strip the metadata frontmatter (--- ... ---), then convert the cards'
+    // raw HTML into markdown so the safe renderer doesn't escape it to
+    // visible tags (and <img> galleries actually render).
+    return normalizeModelCard(raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim());
   });
 }
 
@@ -486,4 +501,61 @@ export async function hackerNewsItem(id: string): Promise<HnItemDetail> {
       comments,
     };
   });
+}
+
+/**
+ * HF model cards are markdown littered with raw HTML (centered divs, <img>
+ * galleries, badges). Our renderer is html:false (safe), which would show
+ * the tags as literal text — so convert the useful HTML to markdown and
+ * drop the rest before rendering.
+ */
+export function normalizeModelCard(md: string): string {
+  return (
+    md
+      // <img src=X alt=Y> → ![Y](X) (either attribute order)
+      .replace(/<img[^>]*src=["']([^"']+)["'][^>]*alt=["']([^"']*)["'][^>]*\/?>/gi, "![$2]($1)")
+      .replace(/<img[^>]*alt=["']([^"']*)["'][^>]*src=["']([^"']+)["'][^>]*\/?>/gi, "![$1]($2)")
+      .replace(/<img[^>]*src=["']([^"']+)["'][^>]*\/?>/gi, "![]($1)")
+      // <a href=X>text</a> → [text](X)
+      .replace(/<a[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, "[$2]($1)")
+      // Inline emphasis keeps its text.
+      .replace(/<\/?(b|strong)>/gi, "**")
+      .replace(/<\/?(i|em)>/gi, "*")
+      .replace(/<\/?code>/gi, "`")
+      // Structural tags become line breaks; everything else is dropped.
+      .replace(/<br\s*\/?>/gi, "\n")
+      .replace(/<\/(p|div|details|summary|center|table|tr|section|figure)>/gi, "\n\n")
+      .replace(/<[^>]+>/g, "")
+      // Decode the entities that HTML-heavy cards leave behind.
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#0?39;|&#x27;/gi, "'")
+      .replace(/\n{3,}/g, "\n\n")
+      .trim()
+  );
+}
+
+/**
+ * A one-liner for the trending list: the first real prose of the card —
+ * skipping headings, images, badges, and link-only lines.
+ */
+export function modelCardSummary(md: string | null): string | null {
+  if (!md) return null;
+  for (const rawLine of md.split("\n")) {
+    const line = rawLine
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, "") // images
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, "$1") // links → text
+      .replace(/\]?\([^)\s]*\)/g, "") // orphaned link fragments (multi-line links)
+      .replace(/[\[\]]/g, "")
+      .replace(/^[-*>#\s]+/, "") // leading list/heading markers
+      .replace(/[*_`#>|]/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (line.length < 30) continue; // headings, badge rows, fragments
+    return line.length > 220 ? `${line.slice(0, 217)}…` : line;
+  }
+  return null;
 }
