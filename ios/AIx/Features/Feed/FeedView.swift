@@ -111,9 +111,9 @@ struct DailyPickCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text(pick.item.title).font(.headline)
                     Text(pick.item.tagline)
-                        .font(.subheadline)
+                        .font(.footnote)
                         .foregroundStyle(.secondary)
-                        .lineLimit(2)
+                        .lineLimit(5)
                     HStack(spacing: 8) {
                         VerdictBadge(verdict: pick.item.verdict, compact: true)
                         Spacer()

@@ -75,9 +75,9 @@ struct ItemRow: View {
                     .font(.headline)
                     .lineLimit(2)
                 Text(tagline)
-                    .font(.subheadline)
+                    .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .lineLimit(2)
+                    .lineLimit(5)
                 HStack(spacing: 8) {
                     if isPending {
                         Text("AWAITING SCORE…")
