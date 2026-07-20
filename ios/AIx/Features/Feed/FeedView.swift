@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Home tab — Today's pick, last night's recap strip, and the unified
-/// timeline (web `/` parity, read-only).
+/// timeline (web `/` parity, read-only). Layout matches the directory:
+/// thumbnail rows, no disclosure chevrons.
 struct FeedView: View {
     @EnvironmentObject private var router: AppRouter
     @State private var vm = FeedViewModel()
@@ -49,27 +50,21 @@ struct FeedView: View {
     private var feedList: some View {
         List {
             if let pick = vm.dailyPick {
-                NavigationLink(value: pick.item.slug) {
-                    DailyPickCard(pick: pick)
-                }
-                .buttonStyle(.plain)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
+                DailyPickCard(pick: pick)
+                    .plainNavigation(value: pick.item.slug)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 4, trailing: 16))
             }
 
             if let recap = vm.latestRecap {
-                NavigationLink(value: RecapRoute()) {
-                    RecapStrip(recap: recap)
-                }
-                .buttonStyle(.plain)
-                .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 10, trailing: 16))
+                RecapStrip(recap: recap)
+                    .plainNavigation(value: RecapRoute())
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: 4, leading: 16, bottom: 8, trailing: 16))
             }
 
             ForEach(vm.entries) { entry in
                 FeedEntryRow(entry: entry)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .onAppear {
                         if entry.id == vm.entries.last?.id {
                             Task { await vm.loadMore() }
@@ -90,6 +85,16 @@ struct FeedView: View {
 /// Pushed-recap navigation token (the feed's stack owns the destinations).
 struct RecapRoute: Hashable {}
 
+/// Row-level navigation without the List disclosure chevron: the link rides
+/// an invisible overlay instead of wrapping the row content.
+extension View {
+    func plainNavigation<V: Hashable>(value: V) -> some View {
+        overlay {
+            NavigationLink(value: value) { EmptyView() }.opacity(0)
+        }
+    }
+}
+
 // MARK: - Today's pick
 
 /// "Today's pick" — the headline card above the timeline.
@@ -97,29 +102,31 @@ struct DailyPickCard: View {
     let pick: DailyPick
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            CoverImage(url: pick.item.coverURL, verdict: pick.item.verdict, height: 150)
-            VStack(alignment: .leading, spacing: 8) {
-                Label("TODAY'S PICK", systemImage: "sun.max.fill")
-                    .font(.caption.weight(.heavy))
-                    .foregroundStyle(.orange)
-                Text(pick.item.title).font(.title3.weight(.bold))
-                Text(pick.item.tagline)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                HStack(spacing: 8) {
-                    VerdictBadge(verdict: pick.item.verdict, compact: true)
-                    ScoreChip(score: pick.item.overallScore)
-                    Spacer()
-                    Text(pick.item.category.label)
-                        .font(.caption).foregroundStyle(.secondary)
+        VStack(alignment: .leading, spacing: 10) {
+            Label("TODAY'S PICK", systemImage: "sun.max.fill")
+                .font(.caption.weight(.heavy))
+                .foregroundStyle(.orange)
+            HStack(alignment: .top, spacing: 12) {
+                ItemThumbnail(url: pick.item.coverURL, verdict: pick.item.verdict)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(pick.item.title).font(.headline)
+                    Text(pick.item.tagline)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    HStack(spacing: 8) {
+                        VerdictBadge(verdict: pick.item.verdict, compact: true)
+                        Text(pick.item.category.label)
+                            .font(.caption).foregroundStyle(.secondary)
+                        Spacer()
+                        ScoreChip(score: pick.item.overallScore)
+                    }
                 }
             }
-            .padding(14)
         }
-        .background(Theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 16))
         .overlay(
             RoundedRectangle(cornerRadius: 16)
                 .strokeBorder(Color.orange.opacity(0.35), lineWidth: 1.5)
@@ -161,26 +168,22 @@ struct RecapStrip: View {
 // MARK: - Timeline entries
 
 /// One timeline entry: a fresh item, a legacy post, or a social activity —
-/// all rendered read-only.
+/// all rendered read-only, directory-style.
 struct FeedEntryRow: View {
     let entry: FeedEntry
 
     var body: some View {
         switch entry {
         case .item(let item, _):
-            NavigationLink(value: item.slug) {
-                FeedItemCard(item: item)
-            }
-            .buttonStyle(.plain)
+            ItemRow(item: item)
+                .plainNavigation(value: item.slug)
         case .post(let post, let author, let item, _):
             VStack(alignment: .leading, spacing: 8) {
                 actorLine(name: author.name, label: "posted", avatarURL: author.avatarURL, createdAt: post.createdAt)
                 Text(post.body).font(.callout)
                 if let item { embeddedItem(item) }
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.vertical, 6)
         case .activity(_, let actor, let label, let quote, let embed, let createdAt):
             VStack(alignment: .leading, spacing: 8) {
                 actorLine(name: actor.name, label: label, avatarURL: actor.avatarURL, createdAt: createdAt)
@@ -189,9 +192,7 @@ struct FeedEntryRow: View {
                 }
                 embedView(embed)
             }
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Theme.cardBackground, in: RoundedRectangle(cornerRadius: 14))
+            .padding(.vertical, 6)
         case .unknown:
             EmptyView()
         }
@@ -199,7 +200,7 @@ struct FeedEntryRow: View {
 
     private func actorLine(name: String, label: String, avatarURL: URL?, createdAt: Int) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            AvatarView(url: avatarURL, name: name, size: 30)
+            AvatarView(url: avatarURL, name: name, size: 28)
             (Text(name).bold() + Text(" \(label)"))
                 .font(.subheadline)
                 .lineLimit(2)
@@ -246,89 +247,10 @@ struct FeedEntryRow: View {
     }
 
     private func embeddedItem(_ item: DBItem) -> some View {
-        NavigationLink(value: item.slug) {
-            FeedItemCard(item: item, embedded: true)
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-/// Item card in the feed — cover image up top when the item has one.
-struct FeedItemCard: View {
-    let item: DBItem
-    var embedded: Bool = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            if !embedded {
-                CoverImage(url: item.coverURL, verdict: item.verdict, height: 140)
-            }
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 8) {
-                    if item.isPending {
-                        Text("AWAITING SCORE…")
-                            .font(.caption2.weight(.bold))
-                            .padding(.horizontal, 6).padding(.vertical, 2)
-                            .background(Color.secondary.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.secondary)
-                    } else {
-                        VerdictBadge(verdict: item.verdict, compact: true)
-                        ScoreChip(score: item.overallScore)
-                    }
-                    Spacer()
-                    Text(item.category.label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                Text(item.title).font(.headline)
-                Text(item.tagline)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
-            .padding(12)
-        }
-        .background(embedded ? Color.primary.opacity(0.05) : Theme.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: embedded ? 10 : 14))
-    }
-}
-
-/// Cover image with a verdict-tinted placeholder — shared by feed cards.
-struct CoverImage: View {
-    let url: URL?
-    let verdict: Verdict
-    var height: CGFloat = 140
-
-    var body: some View {
-        Group {
-            if let url {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().aspectRatio(contentMode: .fill)
-                    default:
-                        placeholder
-                    }
-                }
-            } else {
-                placeholder
-            }
-        }
-        .frame(height: height)
-        .frame(maxWidth: .infinity)
-        .clipped()
-    }
-
-    private var placeholder: some View {
-        LinearGradient(
-            colors: [Theme.color(for: verdict).opacity(0.25), Theme.color(for: verdict).opacity(0.08)],
-            startPoint: .topLeading, endPoint: .bottomTrailing
-        )
-        .overlay(
-            Image(systemName: "cube.transparent")
-                .font(.system(size: 34))
-                .foregroundStyle(Theme.color(for: verdict).opacity(0.7))
-        )
+        ItemRow(item: item)
+            .padding(.horizontal, 10)
+            .background(Color.primary.opacity(0.05), in: RoundedRectangle(cornerRadius: 10))
+            .plainNavigation(value: item.slug)
     }
 }
 

@@ -32,10 +32,37 @@ struct MessageState: View {
     }
 }
 
-/// A row in any item list. Thumbnail, title, verdict badge, score, category.
+/// A row in any item list — small square thumbnail top-left, title, tagline,
+/// verdict + score. One layout shared by the directory, feed, and recap.
 struct ItemRow: View {
-    let item: PublicItem
+    let title: String
+    let tagline: String
+    let verdict: Verdict
+    let overallScore: Int
+    let category: Category
+    let coverURL: URL?
+    var isPending: Bool = false
     var rank: Int? = nil
+
+    init(item: PublicItem, rank: Int? = nil) {
+        self.title = item.title
+        self.tagline = item.tagline
+        self.verdict = item.verdict
+        self.overallScore = item.overallScore
+        self.category = item.category
+        self.coverURL = item.coverURL
+        self.rank = rank
+    }
+
+    init(item: DBItem) {
+        self.title = item.title
+        self.tagline = item.tagline
+        self.verdict = item.verdict
+        self.overallScore = item.overallScore
+        self.category = item.category
+        self.coverURL = item.coverURL
+        self.isPending = item.isPending
+    }
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
@@ -45,22 +72,32 @@ struct ItemRow: View {
                     .foregroundStyle(.secondary)
                     .frame(width: 28, alignment: .center)
             }
-            ItemThumbnail(url: item.coverURL, verdict: item.verdict)
+            ItemThumbnail(url: coverURL, verdict: verdict)
             VStack(alignment: .leading, spacing: 6) {
-                Text(item.title)
+                Text(title)
                     .font(.headline)
                     .lineLimit(2)
-                Text(item.tagline)
+                Text(tagline)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .lineLimit(2)
                 HStack(spacing: 8) {
-                    VerdictBadge(verdict: item.verdict, compact: true)
-                    Text(item.category.label)
+                    if isPending {
+                        Text("AWAITING SCORE…")
+                            .font(.caption2.weight(.bold))
+                            .padding(.horizontal, 6).padding(.vertical, 2)
+                            .background(Color.secondary.opacity(0.15), in: Capsule())
+                            .foregroundStyle(.secondary)
+                    } else {
+                        VerdictBadge(verdict: verdict, compact: true)
+                    }
+                    Text(category.label)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Spacer()
-                    ScoreChip(score: item.overallScore)
+                    if !isPending {
+                        ScoreChip(score: overallScore)
+                    }
                 }
             }
         }
