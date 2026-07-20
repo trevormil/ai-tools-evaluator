@@ -90,6 +90,15 @@ accounts. App Store submission readiness still in scope.
   proxy, cached 30 min; iOS source/window segments) and 0068 Favorites tab
   (device-local bookmarks + pasted-links reading list). Server 137 tests,
   iOS 30 tests, all green. Reinstalled on iPhone.
+- 2026-07-20 11:20–12:40 — rapid ship loop with Trevor merging (#56 review
+  approve 0 findings; then review waived for UX follow-ups #58–#61):
+  full GFM READMEs (GitHub-rendered HTML + markdown-it), Trending→Browse,
+  0071 HN + HF sources (+ HN in-app discussions, HF model cards), 0072
+  Spotlight (share extension parked: free team can't provision App Groups),
+  Feed+Browse unified behind source chips (AIx · GitHub · PH · HN · 🤗,
+  official Octocat mark), crisp thumbnail item headers. Each merge
+  auto-deployed via CI image build + rollout restart; endpoints verified
+  live. TestFlight HITL open (paid Apple enrollment).
 
 ## [5] Decisions
 

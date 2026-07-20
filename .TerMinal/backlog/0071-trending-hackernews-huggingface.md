@@ -1,7 +1,7 @@
 ---
 id: 071
 title: "Trending sources: HackerNews (Show HN, AI-filtered) + Hugging Face models"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
