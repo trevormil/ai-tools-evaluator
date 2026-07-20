@@ -19,7 +19,8 @@ struct TrendingView: View {
 
                 content
             }
-            .navigationTitle("Trending")
+            .navigationTitle("")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 // Time window rides the nav bar (same pattern as the
                 // directory's sort) instead of a second segmented row.

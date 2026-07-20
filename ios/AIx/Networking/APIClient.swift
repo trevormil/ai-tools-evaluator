@@ -124,12 +124,13 @@ struct APIClient {
         return response.products
     }
 
+    /// GitHub-rendered README HTML for a trending repo (nil = no README).
     func fetchTrendingReadme(repo: String) async throws -> String? {
         let response: TrendingReadme = try await get(
             path: "/api/v1/trending/github/readme",
             query: [URLQueryItem(name: "repo", value: repo)]
         )
-        return response.readmeMd
+        return response.readmeHtml
     }
 
     // MARK: Plumbing

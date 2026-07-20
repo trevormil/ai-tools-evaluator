@@ -93,7 +93,7 @@ struct ItemDetailView: View {
                 case .scorecard:
                     scorecard(eval)
                 case .readme:
-                    ReadmePane(markdown: detail.readmeMd ?? "")
+                    ReadmePane(html: detail.readmeHtml, markdown: detail.readmeMd)
                 }
             }
             .padding()
@@ -102,7 +102,7 @@ struct ItemDetailView: View {
 
     private func availableTabs(_ detail: DetailResponse) -> [DetailTab] {
         DetailTab.allCases.filter { tab in
-            tab != .readme || !(detail.readmeMd ?? "").isEmpty
+            tab != .readme || detail.hasReadme
         }
     }
 
@@ -336,22 +336,29 @@ struct ItemDetailView: View {
 
 // MARK: - README
 
+/// Full-fidelity README: server-rendered HTML (real GFM — tables, code
+/// blocks, images) when available, with a plain-text fallback for older
+/// servers that only sent raw markdown.
 struct ReadmePane: View {
-    let markdown: String
+    var html: String? = nil
+    var markdown: String? = nil
+    var baseURL: URL? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("README").font(.title3.weight(.bold))
-            // Basic markdown: AttributedString handles inline styles; block
-            // structure is approximated by paragraph splitting.
-            ForEach(Array(markdown.components(separatedBy: "\n\n").enumerated()), id: \.offset) { _, block in
-                if let attributed = try? AttributedString(
-                    markdown: block,
-                    options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-                ) {
-                    Text(attributed).font(.callout)
-                } else {
-                    Text(block).font(.callout)
+            if let html, !html.isEmpty {
+                HTMLContentView(html: html, baseURL: baseURL)
+            } else if let markdown, !markdown.isEmpty {
+                ForEach(Array(markdown.components(separatedBy: "\n\n").enumerated()), id: \.offset) { _, block in
+                    if let attributed = try? AttributedString(
+                        markdown: block,
+                        options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                    ) {
+                        Text(attributed).font(.callout)
+                    } else {
+                        Text(block).font(.callout)
+                    }
                 }
             }
         }

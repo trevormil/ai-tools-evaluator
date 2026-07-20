@@ -119,9 +119,10 @@ struct TrendingRepoDetailView: View {
             Text("Couldn't load the README. \(message)")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-        case .loaded(let markdown):
-            if let markdown, !markdown.isEmpty {
-                ReadmePane(markdown: markdown)
+        case .loaded(let html):
+            if let html, !html.isEmpty {
+                // Base URL resolves any relative image paths GitHub left in.
+                ReadmePane(html: html, baseURL: URL(string: "https://github.com/\(repo.fullName)/raw/HEAD/"))
             } else {
                 Text("This repo has no README.")
                     .font(.footnote)

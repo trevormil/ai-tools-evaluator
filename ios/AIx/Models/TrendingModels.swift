@@ -88,8 +88,8 @@ struct ProductHuntTrendingResponse: Codable {
     let products: [TrendingProduct]
 }
 
-/// GET /api/v1/trending/github/readme?repo=owner/name
+/// GET /api/v1/trending/github/readme?repo=owner/name — GitHub-rendered HTML.
 struct TrendingReadme: Codable {
     let repo: String
-    let readmeMd: String?
+    let readmeHtml: String?
 }
