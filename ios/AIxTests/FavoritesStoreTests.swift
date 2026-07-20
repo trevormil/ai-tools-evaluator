@@ -78,3 +78,39 @@ final class FavoritesStoreTests: XCTestCase {
         XCTAssertTrue(FavoritesStore(defaults: defaults).links.isEmpty)
     }
 }
+
+// MARK: - App Group era (ticket 0072)
+
+extension FavoritesStoreTests {
+    func testDrainsPendingSharedLinksFromTheShareExtension() {
+        // The extension queued two links while the app wasn't running.
+        defaults.set(
+            [
+                ["url": "https://x.com/great/post", "title": "Great post"],
+                ["url": "https://github.com/a/b"],
+            ],
+            forKey: FavoritesStore.pendingSharedKey
+        )
+        let store = FavoritesStore(defaults: defaults)
+        XCTAssertEqual(store.links.count, 2)
+        XCTAssertEqual(store.links[0].title, "Great post", "queue order preserved (oldest first → newest on top)")
+        XCTAssertEqual(store.links[1].title, "github.com")
+        XCTAssertNil(defaults.array(forKey: FavoritesStore.pendingSharedKey), "queue cleared after drain")
+
+        // Draining again is a no-op; duplicates from re-shares are rejected.
+        defaults.set([["url": "https://x.com/great/post/"]], forKey: FavoritesStore.pendingSharedKey)
+        store.drainPendingShared()
+        XCTAssertEqual(store.links.count, 2)
+    }
+
+    func testMigratesLegacyStandardDefaultsIntoTheAppGroupSuite() throws {
+        // Favorites saved before the App Group move live in .standard.
+        let legacy = FavoritesStore(defaults: .standard)
+        legacy.toggle(sampleItem(slug: "legacy-tool"))
+        defer { UserDefaults.standard.removeObject(forKey: "aix.favorites.items")
+                UserDefaults.standard.removeObject(forKey: "aix.favorites.links") }
+
+        let migrated = FavoritesStore(defaults: defaults)
+        XCTAssertTrue(migrated.isFavorite(slug: "legacy-tool"))
+    }
+}

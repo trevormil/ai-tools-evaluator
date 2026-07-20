@@ -22,19 +22,26 @@ struct TrendingView: View {
             .navigationTitle("")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Text(vm.source.fullName)
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
                 // Time window rides the nav bar (same pattern as the
                 // directory's sort) instead of a second segmented row.
                 ToolbarItem(placement: .topBarTrailing) {
-                    Menu {
-                        Picker("Window", selection: $vm.window) {
-                            ForEach(TrendingWindow.allCases) { w in
-                                Text(w.label).tag(w)
+                    if vm.source.supportsWindow {
+                        Menu {
+                            Picker("Window", selection: $vm.window) {
+                                ForEach(TrendingWindow.allCases) { w in
+                                    Text(w.label).tag(w)
+                                }
                             }
+                        } label: {
+                            Label(vm.window.label, systemImage: "calendar")
+                                .labelStyle(.titleAndIcon)
+                                .font(.subheadline.weight(.semibold))
                         }
-                    } label: {
-                        Label(vm.window.label, systemImage: "calendar")
-                            .labelStyle(.titleAndIcon)
-                            .font(.subheadline.weight(.semibold))
                     }
                 }
             }
@@ -43,6 +50,12 @@ struct TrendingView: View {
             }
             .navigationDestination(for: TrendingProduct.self) { product in
                 TrendingProductDetailView(product: product)
+            }
+            .navigationDestination(for: TrendingStory.self) { story in
+                TrendingStoryDetailView(story: story)
+            }
+            .navigationDestination(for: TrendingModel.self) { model in
+                TrendingModelDetailView(model: model)
             }
             .task { await vm.loadCurrent() }
             .onChange(of: vm.source) { _, _ in Task { await vm.loadCurrent() } }
@@ -75,6 +88,16 @@ struct TrendingView: View {
                     ForEach(Array(products.enumerated()), id: \.element.id) { index, product in
                         TrendingProductRow(product: product, rank: index + 1)
                             .plainNavigation(value: product)
+                    }
+                case .stories(let stories):
+                    ForEach(Array(stories.enumerated()), id: \.element.id) { index, story in
+                        TrendingStoryRow(story: story, rank: index + 1)
+                            .plainNavigation(value: story)
+                    }
+                case .models(let models):
+                    ForEach(Array(models.enumerated()), id: \.element.id) { index, model in
+                        TrendingModelRow(model: model, rank: index + 1)
+                            .plainNavigation(value: model)
                     }
                 }
             }
@@ -195,5 +218,81 @@ struct SquareThumb: View {
                     .font(.system(size: size * 0.4))
                     .foregroundStyle(Color.accentColor.opacity(0.7))
             )
+    }
+}
+
+private struct TrendingStoryRow: View {
+    let story: TrendingStory
+    let rank: Int
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            rankGutter(rank)
+            SquareThumb(url: nil, fallbackSymbol: "newspaper")
+            VStack(alignment: .leading, spacing: 5) {
+                Text(story.title)
+                    .font(.headline)
+                    .lineLimit(3)
+                HStack(spacing: 12) {
+                    Label("\(story.points)", systemImage: "arrowtriangle.up.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.orange)
+                    Label("\(story.comments)", systemImage: "bubble.right")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let domain = story.domain {
+                        Text(domain)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+private struct TrendingModelRow: View {
+    let model: TrendingModel
+    let rank: Int
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            rankGutter(rank)
+            SquareThumb(url: nil, fallbackSymbol: "cpu")
+            VStack(alignment: .leading, spacing: 5) {
+                Text(model.modelName).font(.headline).lineLimit(2)
+                Text(model.owner)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    Label("\(model.likes)", systemImage: "heart.fill")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.pink)
+                    Label(compactCount(model.downloads), systemImage: "arrow.down.circle")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if let pipeline = model.pipelineTag {
+                        Text(pipeline)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                    Spacer()
+                }
+            }
+        }
+        .padding(.vertical, 6)
+    }
+}
+
+/// 1234567 → "1.2M" style download counts.
+func compactCount(_ n: Int) -> String {
+    switch n {
+    case 1_000_000...: return String(format: "%.1fM", Double(n) / 1_000_000)
+    case 1_000...: return String(format: "%.1fK", Double(n) / 1_000)
+    default: return "\(n)"
     }
 }

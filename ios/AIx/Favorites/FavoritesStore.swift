@@ -34,14 +34,50 @@ final class FavoritesStore: ObservableObject {
     @Published private(set) var items: [FavoriteItem] = []
     @Published private(set) var links: [SavedLink] = []
 
+    nonisolated static let appGroupID = "group.com.trevormil.aix"
     private static let itemsKey = "aix.favorites.items"
     private static let linksKey = "aix.favorites.links"
+    /// URLs the share extension queued while the app wasn't running.
+    static let pendingSharedKey = "aix.favorites.pendingShared"
     private let defaults: UserDefaults
 
-    init(defaults: UserDefaults = .standard) {
+    /// Standard defaults for now: the App Group suite (shared with the
+    /// share extension) needs an entitlement free personal teams can't
+    /// provision — flip to `UserDefaults(suiteName: appGroupID)` when the
+    /// paid enrollment lands (ticket 0072; the migration below handles it).
+    nonisolated static func sharedDefaults() -> UserDefaults {
+        .standard
+    }
+
+    init(defaults: UserDefaults = FavoritesStore.sharedDefaults()) {
         self.defaults = defaults
+        // One-time migration: favorites saved before the App Group move.
+        if defaults !== UserDefaults.standard, defaults.data(forKey: Self.itemsKey) == nil,
+           defaults.data(forKey: Self.linksKey) == nil {
+            for key in [Self.itemsKey, Self.linksKey] {
+                if let legacy = UserDefaults.standard.data(forKey: key) {
+                    defaults.set(legacy, forKey: key)
+                }
+            }
+        }
         items = Self.read([FavoriteItem].self, from: defaults, key: Self.itemsKey) ?? []
         links = Self.read([SavedLink].self, from: defaults, key: Self.linksKey) ?? []
+        drainPendingShared()
+        reindexSpotlight()
+    }
+
+    /// Pull in links the share extension queued (called at init and on
+    /// foreground). Each entry: {url, title?}.
+    func drainPendingShared() {
+        guard let pending = defaults.array(forKey: Self.pendingSharedKey) as? [[String: String]],
+              !pending.isEmpty
+        else { return }
+        defaults.removeObject(forKey: Self.pendingSharedKey)
+        for entry in pending.reversed() {
+            if let url = entry["url"] {
+                addLink(url: url, title: entry["title"], note: nil)
+            }
+        }
     }
 
     // MARK: AIx items
@@ -120,11 +156,21 @@ final class FavoritesStore: ObservableObject {
         if let data = try? JSONEncoder().encode(links) {
             defaults.set(data, forKey: Self.linksKey)
         }
+        reindexSpotlight()
     }
 
     private static func read<T: Decodable>(_ type: T.Type, from defaults: UserDefaults, key: String) -> T? {
         guard let data = defaults.data(forKey: key) else { return nil }
         return try? JSONDecoder().decode(T.self, from: data)
+    }
+
+    /// System-search integration (ticket 0072): everything you saved is
+    /// findable from Spotlight. Injected as a seam so tests never touch the
+    /// real index.
+    var spotlight: FavoritesSpotlightIndexing = FavoritesSpotlightIndexer()
+
+    private func reindexSpotlight() {
+        spotlight.reindex(items: items, links: links)
     }
 }
 

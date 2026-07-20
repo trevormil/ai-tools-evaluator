@@ -139,7 +139,7 @@ test("producthunt with a token: GraphQL posts projected to products", async () =
 
 test("invalid window → 400; unknown source → 404; upstream failure → 502", async () => {
   expect((await request("github", "hourly")).status).toBe(400);
-  expect((await request("hackernews", "daily")).status).toBe(404);
+  expect((await request("dribbble", "daily")).status).toBe(404);
 
   mockUpstream({ message: "rate limited" }, 403);
   expect((await request("github", "daily")).status).toBe(502);

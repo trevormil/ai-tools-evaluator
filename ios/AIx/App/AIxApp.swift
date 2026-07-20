@@ -1,3 +1,4 @@
+import CoreSpotlight
 import SwiftUI
 
 @main
@@ -6,11 +7,29 @@ struct AIxApp: App {
     @StateObject private var router = AppRouter.shared
     @StateObject private var favorites = FavoritesStore()
 
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(router)
                 .environmentObject(favorites)
+                // Spotlight results (ticket 0072) deep-link back in.
+                .onContinueUserActivity(CSSearchableItemActionType) { activity in
+                    guard let id = activity.userInfo?[CSSearchableItemActivityIdentifier] as? String else { return }
+                    if id.hasPrefix("item:") {
+                        router.openItem(slug: String(id.dropFirst("item:".count)))
+                    } else if id.hasPrefix("link:"),
+                              let uuid = UUID(uuidString: String(id.dropFirst("link:".count))),
+                              let link = favorites.links.first(where: { $0.id == uuid }),
+                              let url = link.pageURL {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                // Pick up links the share extension queued while we were away.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active { favorites.drainPendingShared() }
+                }
         }
     }
 }
@@ -31,6 +50,11 @@ final class AppRouter: ObservableObject {
     func openDailyPick(slug: String?) {
         selectedTab = .feed
         pendingItemSlug = slug
+    }
+
+    /// Open a specific item's detail (Spotlight results, deep links).
+    func openItem(slug: String) {
+        openDailyPick(slug: slug)
     }
 }
 

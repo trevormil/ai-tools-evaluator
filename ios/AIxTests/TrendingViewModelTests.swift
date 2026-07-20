@@ -95,3 +95,45 @@ final class TrendingViewModelTests: XCTestCase {
         XCTAssertEqual(recorder.requests.count, 1)
     }
 }
+
+// MARK: - HN + HF sources (ticket 0071)
+
+extension TrendingViewModelTests {
+    func testHackerNewsPaneLoadsStories() async throws {
+        let vm = TrendingViewModel(client: TestSupport.client())
+        vm.source = .hackernews
+        let storiesJSON = #"{"source":"hackernews","window":"weekly","stories":[{"title":"My agent","url":"https://github.com/a/b","hnUrl":"https://news.ycombinator.com/item?id=1","points":99,"comments":12,"author":"pg","createdAt":null,"githubRepo":"a/b"}]}"#
+        let recorder = TestSupport.stub(json: storiesJSON)
+        await vm.loadCurrent()
+        guard case .loaded(.stories(let stories)) = vm.currentState else {
+            return XCTFail("expected stories, got \(vm.currentState)")
+        }
+        XCTAssertEqual(stories[0].githubRepo, "a/b")
+        XCTAssertEqual(recorder.last?.url?.path, "/api/v1/trending/hackernews")
+    }
+
+    func testHuggingFaceIgnoresTheWindow() async throws {
+        let vm = TrendingViewModel(client: TestSupport.client())
+        vm.source = .huggingface
+        let modelsJSON = #"{"source":"huggingface","window":"weekly","models":[{"id":"acme/mega","url":"https://huggingface.co/acme/mega","likes":10,"downloads":5000,"pipelineTag":"text-generation","tags":["en"],"createdAt":null}]}"#
+        TestSupport.stub(json: modelsJSON)
+        await vm.loadCurrent()
+        guard case .loaded(.models(let models)) = vm.currentState else {
+            return XCTFail("expected models")
+        }
+        XCTAssertEqual(models[0].modelName, "mega")
+        XCTAssertEqual(models[0].owner, "acme")
+        XCTAssertFalse(vm.source.supportsWindow)
+
+        // Same pane regardless of window — no refetch on window change.
+        vm.window = .daily
+        MockURLProtocol.handler = { _ in
+            XCTFail("HF pane must not refetch on window change")
+            throw APIError.badURL
+        }
+        await vm.loadCurrent()
+        guard case .loaded(.models) = vm.currentState else {
+            return XCTFail("expected cached models pane")
+        }
+    }
+}

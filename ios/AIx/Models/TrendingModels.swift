@@ -93,3 +93,49 @@ struct TrendingReadme: Codable {
     let repo: String
     let readmeHtml: String?
 }
+
+// MARK: - HackerNews (Show HN) + Hugging Face (ticket 0071)
+
+struct TrendingStory: Codable, Hashable, Identifiable {
+    let title: String
+    let url: String?
+    let hnUrl: String
+    let points: Int
+    let comments: Int
+    let author: String?
+    let createdAt: String?
+    let githubRepo: String?
+
+    var id: String { hnUrl }
+    var pageURL: URL? { url.flatMap(URL.init(string:)) }
+    var discussionURL: URL? { URL(string: hnUrl) }
+    var domain: String? { pageURL?.host()?.replacingOccurrences(of: "www.", with: "") }
+}
+
+struct TrendingModel: Codable, Hashable, Identifiable {
+    let id: String // "owner/name"
+    let url: String
+    let likes: Int
+    let downloads: Int
+    let pipelineTag: String?
+    let tags: [String]
+    let createdAt: String?
+
+    var pageURL: URL? { URL(string: url) }
+    var owner: String { String(id.split(separator: "/").first ?? "") }
+    var modelName: String { String(id.split(separator: "/").last ?? "") }
+}
+
+struct HackerNewsTrendingResponse: Codable {
+    let stories: [TrendingStory]
+}
+
+struct HuggingFaceTrendingResponse: Codable {
+    let models: [TrendingModel]
+}
+
+/// GET /api/v1/trending/huggingface/readme?model=owner/name
+struct ModelCardResponse: Codable {
+    let model: String
+    let readmeHtml: String?
+}

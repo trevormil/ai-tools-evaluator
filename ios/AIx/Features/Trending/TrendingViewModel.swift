@@ -1,21 +1,43 @@
 import Foundation
 import Observation
 
-/// Live trending browser (ticket 0067): GitHub / Product Hunt × today / week.
-/// Each (source, window) pane keeps its own loaded state so flipping segments
-/// is instant once visited.
+/// Live trending browser (tickets 0067/0071): GitHub / Product Hunt /
+/// HackerNews / Hugging Face. Each (source, window) pane keeps its own
+/// loaded state so flipping segments is instant once visited.
 @Observable
 @MainActor
 final class TrendingViewModel {
     enum Source: String, CaseIterable, Identifiable {
-        case github, producthunt
+        case github, producthunt, hackernews, huggingface
         var id: String { rawValue }
-        var label: String { self == .github ? "GitHub" : "Product Hunt" }
+
+        var label: String {
+            switch self {
+            case .github: return "GitHub"
+            case .producthunt: return "PH"
+            case .hackernews: return "HN"
+            case .huggingface: return "HF"
+            }
+        }
+
+        var fullName: String {
+            switch self {
+            case .github: return "GitHub"
+            case .producthunt: return "Product Hunt"
+            case .hackernews: return "Hacker News"
+            case .huggingface: return "Hugging Face"
+            }
+        }
+
+        /// HF's trending score is inherently recent — no today/week split.
+        var supportsWindow: Bool { self != .huggingface }
     }
 
     enum Pane {
         case repos([TrendingRepo])
         case products([TrendingProduct])
+        case stories([TrendingStory])
+        case models([TrendingModel])
     }
 
     var source: Source = .github
@@ -33,7 +55,7 @@ final class TrendingViewModel {
     }
 
     private func key(_ source: Source, _ window: TrendingWindow) -> String {
-        "\(source.rawValue):\(window.rawValue)"
+        source.supportsWindow ? "\(source.rawValue):\(window.rawValue)" : source.rawValue
     }
 
     /// Load the selected pane (no-op if already loaded; `force` refetches).
@@ -50,6 +72,10 @@ final class TrendingViewModel {
                 panes[paneKey] = .loaded(.repos(try await client.fetchGithubTrending(window: window)))
             case .producthunt:
                 panes[paneKey] = .loaded(.products(try await client.fetchProductHuntTrending(window: window)))
+            case .hackernews:
+                panes[paneKey] = .loaded(.stories(try await client.fetchHackerNewsTrending(window: window)))
+            case .huggingface:
+                panes[paneKey] = .loaded(.models(try await client.fetchHuggingFaceTrending()))
             }
         } catch APIError.cancelled {
             // View lifecycle, not a failure — keep whatever we had.
