@@ -7,7 +7,7 @@ status: active
 started: 2026-07-20T09:34
 ended: null
 goal: "iOS app feature parity with web + App Store submission readiness (server mobile-auth + v1 social read APIs, SwiftUI social features, store assets)"
-tickets: ["058", "059", "060", "062", "063", "065"]
+tickets: ["058", "059", "060", "062", "063", "065", "067", "068"]
 branches: ["feat/ios-parity"]
 prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
 related_research: []
@@ -79,6 +79,14 @@ accounts. App Store submission readiness still in scope.
   reproduced in CoreGraphics), Leaderboard removed end-to-end (tab + v1
   endpoint), Recap folded into a feed strip (3 tabs: Feed/Directory/
   Settings), feed cards image-forward, brand-blue accent. All suites green.
+- 2026-07-20 10:50 — more UX: chevrons removed, feed rows = directory rows
+  (shared ItemRow), sort menu alignment fixed, category dropped, taglines
+  footnote + 5-line clamp. App deployed to Trevor's physical iPhone 16 via
+  devicectl (team passed at build time, not committed).
+- 2026-07-20 11:05 — 0067 Trending tab (GitHub search-API proxy + PH GraphQL
+  proxy, cached 30 min; iOS source/window segments) and 0068 Favorites tab
+  (device-local bookmarks + pasted-links reading list). Server 137 tests,
+  iOS 30 tests, all green. Reinstalled on iPhone.
 
 ## [5] Decisions
 
