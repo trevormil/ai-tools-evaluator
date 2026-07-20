@@ -40,24 +40,23 @@ final class AppRouter: ObservableObject {
     static let shared = AppRouter()
 
     enum Tab: Hashable {
-        case feed, trending, directory, favorites, settings
+        case browse, directory, favorites, settings
     }
 
     @Published var selectedTab: Tab = {
         // QA affordance: launch straight into a tab (simctl env var).
         switch ProcessInfo.processInfo.environment["AIX_START_TAB"] {
-        case "browse": return .trending
         case "directory": return .directory
         case "favorites": return .favorites
         case "settings": return .settings
-        default: return .feed
+        default: return .browse
         }
     }()
     /// Slug the feed should open on next appearance (set by notification taps).
     @Published var pendingItemSlug: String?
 
     func openDailyPick(slug: String?) {
-        selectedTab = .feed
+        selectedTab = .browse
         pendingItemSlug = slug
     }
 
@@ -72,13 +71,9 @@ struct RootView: View {
 
     var body: some View {
         TabView(selection: $router.selectedTab) {
-            FeedView()
-                .tabItem { Label("Feed", systemImage: "bolt.horizontal") }
-                .tag(AppRouter.Tab.feed)
-
-            TrendingView()
+            BrowseView()
                 .tabItem { Label("Browse", systemImage: "globe") }
-                .tag(AppRouter.Tab.trending)
+                .tag(AppRouter.Tab.browse)
 
             DirectoryView()
                 .tabItem { Label("Directory", systemImage: "square.grid.2x2") }

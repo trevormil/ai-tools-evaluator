@@ -141,6 +141,14 @@ struct APIClient {
         return response.stories
     }
 
+    /// One HN story with its top-level comments (in-app discussion).
+    func fetchHNItem(id: String) async throws -> HnItemDetail {
+        try await get(
+            path: "/api/v1/trending/hackernews/item",
+            query: [URLQueryItem(name: "id", value: id)]
+        )
+    }
+
     /// HF trending is inherently recent — no window parameter.
     func fetchHuggingFaceTrending() async throws -> [TrendingModel] {
         let response: HuggingFaceTrendingResponse = try await get(path: "/api/v1/trending/huggingface")

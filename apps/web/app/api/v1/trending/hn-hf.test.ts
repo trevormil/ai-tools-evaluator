@@ -120,3 +120,40 @@ test("huggingface model card: frontmatter stripped, rendered to HTML; malformed 
   const bad = await cardGET(new Request("https://x/api/v1/trending/huggingface/readme?model=nope"));
   expect(bad.status).toBe(400);
 });
+
+import { GET as hnItemGET } from "./hackernews/item/route";
+
+test("hn item: story + top-level comments, HTML stripped to text", async () => {
+  mockUpstream({
+    id: 101,
+    title: "Show HN: My agent",
+    text: "<p>It does &quot;things&quot; &amp; stuff</p>",
+    points: 120,
+    author: "pg",
+    created_at: "2026-07-19T00:00:00Z",
+    children: [
+      {
+        author: "alice",
+        text: "Really <i>neat</i>.<p>How does it handle &gt;1M tokens?</p>",
+        created_at: "2026-07-19T01:00:00Z",
+        children: [{}, {}],
+      },
+      { author: "spam", text: null, children: [] }, // dead/empty comments dropped
+    ],
+  });
+  const res = await hnItemGET(new Request("https://x/api/v1/trending/hackernews/item?id=101"));
+  expect(res.status).toBe(200);
+  const body = await res.json();
+  expect(body.text).toBe('It does "things" & stuff');
+  expect(body.comments.length).toBe(1);
+  expect(body.comments[0].text).toBe("Really neat.\n\nHow does it handle >1M tokens?");
+  expect(body.comments[0].replies).toBe(2);
+  expect(fetchCalls[0]).toContain("hn.algolia.com/api/v1/items/101");
+
+  // Malformed id → 400, no upstream call.
+  const before = fetchCalls.length;
+  expect(
+    (await hnItemGET(new Request("https://x/api/v1/trending/hackernews/item?id=abc"))).status,
+  ).toBe(400);
+  expect(fetchCalls.length).toBe(before);
+});

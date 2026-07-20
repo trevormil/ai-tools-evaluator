@@ -8,20 +8,12 @@ import Observation
 @MainActor
 final class TrendingViewModel {
     enum Source: String, CaseIterable, Identifiable {
-        case github, producthunt, hackernews, huggingface
+        case aix, github, producthunt, hackernews, huggingface
         var id: String { rawValue }
-
-        var label: String {
-            switch self {
-            case .github: return "GitHub"
-            case .producthunt: return "PH"
-            case .hackernews: return "HN"
-            case .huggingface: return "HF"
-            }
-        }
 
         var fullName: String {
             switch self {
+            case .aix: return "AIx"
             case .github: return "GitHub"
             case .producthunt: return "Product Hunt"
             case .hackernews: return "Hacker News"
@@ -29,8 +21,14 @@ final class TrendingViewModel {
             }
         }
 
-        /// HF's trending score is inherently recent — no today/week split.
-        var supportsWindow: Bool { self != .huggingface }
+        /// The AIx feed is a timeline and HF's trending score is inherently
+        /// recent — the today/week menu only applies to GH/PH/HN.
+        var supportsWindow: Bool {
+            switch self {
+            case .aix, .huggingface: return false
+            case .github, .producthunt, .hackernews: return true
+            }
+        }
     }
 
     enum Pane {
@@ -40,7 +38,7 @@ final class TrendingViewModel {
         case models([TrendingModel])
     }
 
-    var source: Source = .github
+    var source: Source = .aix
     var window: TrendingWindow = .weekly
     private(set) var panes: [String: LoadState<Pane>] = [:]
 
@@ -68,6 +66,9 @@ final class TrendingViewModel {
         if case .loaded = existing {} else { panes[paneKey] = .loading }
         do {
             switch source {
+            case .aix:
+                // The AIx pane is the home feed — FeedViewModel owns it.
+                panes[paneKey] = .idle
             case .github:
                 panes[paneKey] = .loaded(.repos(try await client.fetchGithubTrending(window: window)))
             case .producthunt:

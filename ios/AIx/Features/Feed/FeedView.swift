@@ -1,52 +1,28 @@
 import SwiftUI
 
-/// Home tab — Today's pick, last night's recap strip, and the unified
-/// timeline (web `/` parity, read-only). Layout matches the directory:
-/// thumbnail rows, no disclosure chevrons.
-struct FeedView: View {
-    @EnvironmentObject private var router: AppRouter
+/// The AIx pane of the Browse tab — Today's pick, last night's recap strip,
+/// and the unified timeline (web `/` parity, read-only). Hosted inside
+/// BrowseView's NavigationStack, which owns all destinations.
+struct FeedPane: View {
     @State private var vm = FeedViewModel()
-    @State private var path = NavigationPath()
 
     var body: some View {
-        NavigationStack(path: $path) {
-            Group {
-                if let error = vm.errorMessage, vm.entries.isEmpty {
-                    MessageState(
-                        systemImage: "exclamationmark.triangle",
-                        title: "Couldn't load the feed",
-                        message: error,
-                        retry: { Task { await vm.refresh() } }
-                    )
-                } else if vm.entries.isEmpty && vm.isLoading {
-                    ProgressView("Loading…")
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                } else {
-                    feedList
-                }
+        Group {
+            if let error = vm.errorMessage, vm.entries.isEmpty {
+                MessageState(
+                    systemImage: "exclamationmark.triangle",
+                    title: "Couldn't load the feed",
+                    message: error,
+                    retry: { Task { await vm.refresh() } }
+                )
+            } else if vm.entries.isEmpty && vm.isLoading {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                feedList
             }
-            .navigationTitle("")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(.hidden, for: .navigationBar)
-            .navigationDestination(for: String.self) { slug in
-                ItemDetailView(slug: slug)
-            }
-            .navigationDestination(for: RecapRoute.self) { _ in
-                RecapScreen()
-            }
-            .task { if vm.needsInitialLoad { await vm.refresh() } }
-            .onChange(of: router.pendingItemSlug) { _, slug in
-                openPending(slug)
-            }
-            .onAppear { openPending(router.pendingItemSlug) }
         }
-    }
-
-    /// A notification tap requested a specific item (the daily pick).
-    private func openPending(_ slug: String?) {
-        guard let slug else { return }
-        router.pendingItemSlug = nil
-        path.append(slug)
+        .task { if vm.needsInitialLoad { await vm.refresh() } }
     }
 
     private var feedList: some View {

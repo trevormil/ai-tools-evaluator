@@ -402,3 +402,88 @@ export async function huggingFaceModelCard(modelId: string): Promise<string | nu
     return raw.replace(/^---\n[\s\S]*?\n---\n/, "").trim();
   });
 }
+
+export type HnComment = {
+  author: string | null;
+  /** Plain text (Algolia serves HTML; tags stripped, entities decoded). */
+  text: string;
+  createdAt: string | null;
+  replies: number;
+};
+
+export type HnItemDetail = {
+  id: number;
+  title: string;
+  /** The submitter's own text post, when there is one (plain text). */
+  text: string | null;
+  points: number;
+  author: string | null;
+  createdAt: string | null;
+  comments: HnComment[];
+};
+
+/** Minimal HTML → plain text for HN comment bodies. */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<p>/gi, "\n\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<[^>]+>/g, "")
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#x27;|&#39;/g, "'")
+    .replace(/&#x2F;/g, "/")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+/**
+ * One HN story with its top-level comments (ranked order from Algolia),
+ * for the in-app discussion view. Cached per story.
+ */
+export async function hackerNewsItem(id: string): Promise<HnItemDetail> {
+  if (!/^\d{1,12}$/.test(id)) {
+    throw new TrendingUnavailable("id must be a numeric HN story id");
+  }
+  return cached(`hn-item:${id}`, async () => {
+    const res = await fetch(`https://hn.algolia.com/api/v1/items/${id}`, {
+      headers: { "user-agent": "aix-web" },
+    });
+    if (!res.ok) throw new Error(`HN item failed: HTTP ${res.status}`);
+    const body = (await res.json()) as {
+      id?: number;
+      title?: string;
+      text?: string | null;
+      points?: number;
+      author?: string;
+      created_at?: string;
+      children?: {
+        author?: string | null;
+        text?: string | null;
+        created_at?: string;
+        children?: unknown[];
+      }[];
+    };
+
+    const comments: HnComment[] = (body.children ?? [])
+      .filter((c) => c.text)
+      .slice(0, 20)
+      .map((c) => ({
+        author: c.author ?? null,
+        text: stripHtml(c.text!),
+        createdAt: c.created_at ?? null,
+        replies: c.children?.length ?? 0,
+      }));
+
+    return {
+      id: body.id ?? Number(id),
+      title: body.title ?? "",
+      text: body.text ? stripHtml(body.text) : null,
+      points: body.points ?? 0,
+      author: body.author ?? null,
+      createdAt: body.created_at ?? null,
+      comments,
+    };
+  });
+}

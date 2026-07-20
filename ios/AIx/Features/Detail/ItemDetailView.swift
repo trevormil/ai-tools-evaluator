@@ -68,7 +68,6 @@ struct ItemDetailView: View {
         let eval = detail.evaluation
         return ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                cover(eval)
                 header(eval)
 
                 Picker("Section", selection: $tab) {
@@ -106,44 +105,18 @@ struct ItemDetailView: View {
         }
     }
 
-    // MARK: Cover
-
-    @ViewBuilder
-    private func cover(_ eval: Evaluation) -> some View {
-        if let url = eval.coverURL {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().aspectRatio(contentMode: .fill)
-                case .failure:
-                    coverPlaceholder(eval)
-                case .empty:
-                    ZStack { coverPlaceholder(eval); ProgressView() }
-                @unknown default:
-                    coverPlaceholder(eval)
-                }
-            }
-            .frame(height: 200)
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-    }
-
-    private func coverPlaceholder(_ eval: Evaluation) -> some View {
-        Theme.color(for: eval.verdict).opacity(0.18)
-            .overlay(
-                Image(systemName: "cube.transparent")
-                    .font(.system(size: 44))
-                    .foregroundStyle(Theme.color(for: eval.verdict))
-            )
-    }
-
     // MARK: Header
 
+    // Covers are mostly small social previews/avatars — shown at thumbnail
+    // size they're crisp; stretched full-width they were a blurry mess.
     private func header(_ eval: Evaluation) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(eval.source.title)
-                .font(.title2.weight(.bold))
+            HStack(alignment: .center, spacing: 12) {
+                ItemThumbnail(url: eval.coverURL, verdict: eval.verdict, size: 56)
+                Text(eval.source.title)
+                    .font(.title2.weight(.bold))
+                    .lineLimit(3)
+            }
             HStack(spacing: 10) {
                 VerdictBadge(verdict: eval.verdict)
                 ScoreChip(score: eval.overallScore, label: "OVERALL")
