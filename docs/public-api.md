@@ -95,6 +95,15 @@ judged), and the archive of dates. A recap carries `items` (+ per-item `uses`),
 `leadPick`, `complexityTrap`, `topAdopted`, `verdictCounts`, and a `summary`
 line.
 
+## `GET /api/v1/trending/{github|producthunt}?window=daily|weekly`
+
+Live "what's rising" proxies (cached ~30 min server-side). `github` returns
+`{ repos: [{ fullName, url, description, stars, language, createdAt }] }` —
+young repos ranked by stars via the official search API (github.com/trending
+has no API). `producthunt` returns
+`{ products: [{ name, tagline, url, votes, topics }] }` via the PH GraphQL
+API; responds `503` when `PRODUCTHUNT_API_TOKEN` isn't configured.
+
 ## `GET /api/v1/daily-pick`
 
 The current daily pick — the most recent published item stamped by the

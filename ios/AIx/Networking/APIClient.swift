@@ -104,6 +104,24 @@ struct APIClient {
         try await get(path: "/api/v1/daily-pick")
     }
 
+    // MARK: Live trending (server-proxied, ticket 0067)
+
+    func fetchGithubTrending(window: TrendingWindow) async throws -> [TrendingRepo] {
+        let response: GithubTrendingResponse = try await get(
+            path: "/api/v1/trending/github",
+            query: [URLQueryItem(name: "window", value: window.rawValue)]
+        )
+        return response.repos
+    }
+
+    func fetchProductHuntTrending(window: TrendingWindow) async throws -> [TrendingProduct] {
+        let response: ProductHuntTrendingResponse = try await get(
+            path: "/api/v1/trending/producthunt",
+            query: [URLQueryItem(name: "window", value: window.rawValue)]
+        )
+        return response.products
+    }
+
     // MARK: Plumbing
 
     private func get<T: Decodable>(path: String, query: [URLQueryItem] = []) async throws -> T {

@@ -143,6 +143,24 @@ final class ModelDecodingTests: XCTestCase {
         XCTAssertEqual(dailyPick.item.slug, "x")
     }
 
+    func testTrendingResponsesDecode() throws {
+        let github = """
+        {"source":"github","window":"weekly",
+         "repos":[{"fullName":"a/b","url":"https://github.com/a/b","description":null,
+                   "stars":10,"language":null,"createdAt":"2026-07-18T00:00:00Z"}]}
+        """
+        let repos = try decoder.decode(GithubTrendingResponse.self, from: Data(github.utf8)).repos
+        XCTAssertEqual(repos[0].fullName, "a/b")
+        XCTAssertNil(repos[0].description)
+
+        let ph = """
+        {"source":"producthunt","window":"daily",
+         "products":[{"name":"X","tagline":"t","url":"https://ph/x","votes":5,"topics":[]}]}
+        """
+        let products = try decoder.decode(ProductHuntTrendingResponse.self, from: Data(ph.utf8)).products
+        XCTAssertEqual(products[0].votes, 5)
+    }
+
     // Research-lens evaluation fixture shared by two tests.
     private static let evaluationJSON = """
     {"schemaVersion":1,"slug":"paper-x",

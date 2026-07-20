@@ -19,7 +19,7 @@ final class AppRouter: ObservableObject {
     static let shared = AppRouter()
 
     enum Tab: Hashable {
-        case feed, directory, settings
+        case feed, trending, directory, settings
     }
 
     @Published var selectedTab: Tab = .feed
@@ -40,6 +40,10 @@ struct RootView: View {
             FeedView()
                 .tabItem { Label("Feed", systemImage: "bolt.horizontal") }
                 .tag(AppRouter.Tab.feed)
+
+            TrendingView()
+                .tabItem { Label("Trending", systemImage: "chart.line.uptrend.xyaxis") }
+                .tag(AppRouter.Tab.trending)
 
             DirectoryView()
                 .tabItem { Label("Directory", systemImage: "square.grid.2x2") }

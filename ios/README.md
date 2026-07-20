@@ -11,6 +11,8 @@ all social actions live on the website. It consumes the public JSON API
 - **Feed** — the unified home timeline (fresh items, posts, community
   activity with embeds), cursor-paginated with pull-to-refresh, topped by a
   **Today's pick** card (`/api/v1/daily-pick`).
+- **Trending** — live GitHub + Product Hunt trending, today / this week
+  (server-proxied `/api/v1/trending/*`); rows open the upstream page.
 - **Directory** — searchable, filterable list (category / verdict / audience,
   sort by hot / new / top). Verdict badge, score chip, empty/error states.
 - **Item detail** — cover, verdict + overall + noise, "Make the call"
@@ -36,6 +38,7 @@ AIx/
   Components/     VerdictBadge, ScoreChip, MetricBar, ItemRow, AvatarView, …
   Features/
     Feed/         FeedView + FeedViewModel (@Observable)
+    Trending/     TrendingView + TrendingViewModel (GitHub / PH panes)
     Directory/    DirectoryView + DirectoryViewModel
     Detail/       ItemDetailView + DetailViewModel (tabs, lens-aware)
     Recap/        RecapScreen + RecapViewModel (pushed from the feed strip)
