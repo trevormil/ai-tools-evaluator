@@ -444,9 +444,12 @@ struct TrendingModelDetailView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(model.modelName).font(.title3.weight(.bold))
-                    Text(model.owner).font(.subheadline).foregroundStyle(.secondary)
+                HStack(spacing: 12) {
+                    SquareThumb(url: model.authorAvatarURL, monogram: model.modelName, size: 56)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(model.modelName).font(.title3.weight(.bold))
+                        Text(model.owner).font(.subheadline).foregroundStyle(.secondary)
+                    }
                 }
 
                 if let description = model.description, !description.isEmpty {

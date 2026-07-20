@@ -119,7 +119,7 @@ extension TrendingViewModelTests {
     func testHuggingFaceIgnoresTheWindow() async throws {
         let vm = TrendingViewModel(client: TestSupport.client())
         vm.source = .huggingface
-        let modelsJSON = #"{"source":"huggingface","window":"weekly","models":[{"id":"acme/mega","url":"https://huggingface.co/acme/mega","likes":10,"downloads":5000,"pipelineTag":"text-generation","tags":["en"],"createdAt":null,"description":"A 7B instruct model."}]}"#
+        let modelsJSON = #"{"source":"huggingface","window":"weekly","models":[{"id":"acme/mega","url":"https://huggingface.co/acme/mega","likes":10,"downloads":5000,"pipelineTag":"text-generation","tags":["en"],"createdAt":null,"description":"A 7B instruct model.","authorAvatarUrl":"https://cdn-avatars.huggingface.co/acme.png"}]}"#
         TestSupport.stub(json: modelsJSON)
         await vm.loadCurrent()
         guard case .loaded(.models(let models)) = vm.currentState else {

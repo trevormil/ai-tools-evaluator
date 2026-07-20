@@ -61,6 +61,8 @@ export type TrendingModel = {
   createdAt: string | null;
   /** First real prose line of the model card, when it has one. */
   description: string | null;
+  /** The owner's HF avatar (org/user logo), when resolvable. */
+  authorAvatarUrl: string | null;
 };
 
 /** Thrown when an upstream source isn't configured (→ 503, not 500). */
@@ -349,6 +351,30 @@ export async function hackerNewsTrending(window: TrendingWindow): Promise<Trendi
   });
 }
 
+const hfAvatarCache = new Map<string, string | null>();
+
+/** HF owner avatar (orgs first, then users) — real logos, cached per owner. */
+async function hfOwnerAvatar(owner: string): Promise<string | null> {
+  const key = owner.toLowerCase();
+  if (hfAvatarCache.has(key)) return hfAvatarCache.get(key) ?? null;
+  let avatar: string | null = null;
+  for (const kind of ["organizations", "users"]) {
+    try {
+      const res = await fetch(`https://huggingface.co/api/${kind}/${owner}/avatar`, {
+        headers: { "user-agent": "aix-web" },
+      });
+      if (res.ok) {
+        avatar = ((await res.json()) as { avatarUrl?: string }).avatarUrl ?? null;
+        if (avatar) break;
+      }
+    } catch {
+      // fall through — avatar stays null
+    }
+  }
+  hfAvatarCache.set(key, avatar);
+  return avatar;
+}
+
 /**
  * Hugging Face trending models via the public hub API (no auth). HF's
  * trending score is inherently recent, so the window doesn't apply.
@@ -383,14 +409,19 @@ export async function huggingFaceTrending(): Promise<TrendingModel[]> {
         createdAt: m.createdAt ?? null,
       }));
 
-    // The list API has no descriptions — pull the first prose line from each
-    // model card (concurrent; per-card cache also pre-warms the detail view).
-    const summaries = await Promise.allSettled(models.map((m) => huggingFaceModelCard(m.id)));
+    // The list API has no descriptions or avatars — pull the first prose
+    // line from each card and the owner's logo (both concurrent + cached).
+    const [summaries, avatars] = await Promise.all([
+      Promise.allSettled(models.map((m) => huggingFaceModelCard(m.id))),
+      Promise.allSettled(models.map((m) => hfOwnerAvatar(m.id.split("/")[0] ?? ""))),
+    ]);
     return models.map((m, i) => {
-      const settled = summaries[i];
+      const card = summaries[i];
+      const avatar = avatars[i];
       return {
         ...m,
-        description: settled?.status === "fulfilled" ? modelCardSummary(settled.value) : null,
+        description: card?.status === "fulfilled" ? modelCardSummary(card.value) : null,
+        authorAvatarUrl: avatar?.status === "fulfilled" ? avatar.value : null,
       };
     });
   });

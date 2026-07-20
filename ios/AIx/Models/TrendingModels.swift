@@ -126,8 +126,11 @@ struct TrendingModel: Codable, Hashable, Identifiable {
     let createdAt: String?
     /// First prose line of the model card (nil from older servers).
     let description: String?
+    /// Owner's HF logo (nil from older servers / unknown owners).
+    let authorAvatarUrl: String?
 
     var pageURL: URL? { URL(string: url) }
+    var authorAvatarURL: URL? { authorAvatarUrl.flatMap(URL.init(string:)) }
     var owner: String { String(id.split(separator: "/").first ?? "") }
     var modelName: String { String(id.split(separator: "/").last ?? "") }
 }

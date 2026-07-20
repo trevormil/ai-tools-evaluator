@@ -96,6 +96,11 @@ test("huggingface: trending models with card-derived descriptions; window ignore
     if (url.includes("/api/models")) {
       return new Response(listJSON, { status: 200 });
     }
+    if (url.includes("/avatar")) {
+      return url.includes("/organizations/")
+        ? Response.json({ avatarUrl: "https://cdn-avatars.huggingface.co/acme.png" })
+        : new Response("nope", { status: 404 });
+    }
     return new Response(card, { status: 200 }); // README fetches
   }) as typeof fetch;
 
@@ -107,6 +112,7 @@ test("huggingface: trending models with card-derived descriptions; window ignore
   expect(model.tags).toEqual(["transformers", "en"]); // namespaced tags dropped
   // Description = first prose line of the card (headings/images skipped).
   expect(model.description).toContain("7B instruction-tuned model");
+  expect(model.authorAvatarUrl).toBe("https://cdn-avatars.huggingface.co/acme.png");
   expect(fetchCalls[0]).toContain("trendingScore");
 
   const before = fetchCalls.length;
