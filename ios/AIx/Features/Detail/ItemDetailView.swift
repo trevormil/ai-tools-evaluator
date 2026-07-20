@@ -191,16 +191,29 @@ struct ItemDetailView: View {
         }
     }
 
-    // MARK: Five body sections
+    // MARK: Lens-aware body sections
+
+    private static let sectionIcons: [String: String] = [
+        "whatItIs": "doc.text",
+        "vsVanilla": "arrow.left.arrow.right",
+        "surfaceArea": "puzzlepiece.extension",
+        "vsAlternatives": "arrow.left.arrow.right",
+        "vsPriorWork": "clock.arrow.circlepath",
+        "reproducibility": "hammer",
+        "devilsAdvocate": "flame",
+        "whatWouldMakeItBetter": "arrow.up.forward",
+        "steelman": "shield",
+    ]
 
     private func bodySections(_ eval: Evaluation) -> some View {
         VStack(alignment: .leading, spacing: 18) {
-            section("What it is", eval.body.whatItIs, icon: "doc.text")
-            section("vs. Vanilla", eval.body.vsVanilla, icon: "arrow.left.arrow.right")
-            section("Skill / Plugin / Workflow", eval.body.surfaceArea, icon: "puzzlepiece.extension")
-            section("Devil's Advocate", eval.body.devilsAdvocate, icon: "flame", accent: .red)
-            if let steelman = eval.body.steelman, !steelman.isEmpty {
-                section("Steelman", steelman, icon: "shield", accent: .green)
+            ForEach(eval.bodySections, id: \.key) { row in
+                section(
+                    row.title,
+                    row.text,
+                    icon: Self.sectionIcons[row.key] ?? "doc.text",
+                    accent: row.key == "devilsAdvocate" ? .red : row.key == "steelman" ? .green : .accentColor
+                )
             }
         }
     }

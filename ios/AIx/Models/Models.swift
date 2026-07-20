@@ -130,6 +130,10 @@ struct PublicItem: Codable, Identifiable, Hashable {
     let audience: PrimaryAudience?
     let coverImageUrl: String?
     let createdAt: String // ISO-8601
+    // Present on ranked/recap projections only (RankedItem / recap items).
+    let upvotes: Int?
+    let commentCount: Int?
+    let uses: Int?
 
     var id: String { slug }
 
@@ -164,6 +168,7 @@ struct AudienceFit: Codable, Hashable {
 /// Raw signal captured from the source. Mirrors `ItemSource`.
 struct ItemSource: Codable, Hashable {
     let kind: String
+    let lens: String?
     let externalId: String
     let url: String
     let title: String
@@ -191,13 +196,92 @@ struct Decision: Codable, Hashable {
     let insteadOf: String?
 }
 
-/// The five required plaintext explanations. Mirrors `Evaluation.body`.
+/// The lens-aware write-up. Mirrors `Evaluation.body`: three sections are
+/// common to every lens; the rest are lens-specific (see `Lens.sections`).
+/// All optional in Swift for decoding resilience on older records.
 struct EvaluationBody: Codable, Hashable {
     let whatItIs: String
-    let vsVanilla: String
-    let surfaceArea: String
-    let devilsAdvocate: String
+    let vsVanilla: String?
+    let surfaceArea: String?
+    let vsAlternatives: String?
+    let vsPriorWork: String?
+    let reproducibility: String?
+    let devilsAdvocate: String?
+    let whatWouldMakeItBetter: String?
     let steelman: String?
+
+    subscript(_ key: String) -> String? {
+        switch key {
+        case "whatItIs": return whatItIs
+        case "vsVanilla": return vsVanilla
+        case "surfaceArea": return surfaceArea
+        case "vsAlternatives": return vsAlternatives
+        case "vsPriorWork": return vsPriorWork
+        case "reproducibility": return reproducibility
+        case "devilsAdvocate": return devilsAdvocate
+        case "whatWouldMakeItBetter": return whatWouldMakeItBetter
+        case "steelman": return steelman
+        default: return nil
+        }
+    }
+}
+
+/// Evaluation lens (packages/core/src/lenses.ts). Decides which body sections
+/// exist and how they're titled.
+enum Lens: String, Codable, CaseIterable {
+    case agentTool = "agent-tool"
+    case product
+    case research
+
+    /// KIND_LENS mapping: which lens a source kind gets when none is set.
+    static func forSource(kind: String, lens: String?) -> Lens {
+        if let lens, let explicit = Lens(rawValue: lens) { return explicit }
+        switch kind {
+        case "arxiv_paper": return .research
+        case "producthunt": return .product
+        default: return .agentTool
+        }
+    }
+
+    /// Ordered (key, title) body sections for this lens — mirrors LENS_SECTIONS.
+    var sections: [(key: String, title: String)] {
+        switch self {
+        case .agentTool:
+            return [
+                ("whatItIs", "What it is"),
+                ("vsVanilla", "How it differs from vanilla Claude"),
+                ("surfaceArea", "Skill, plugin, or workflow shift?"),
+                ("devilsAdvocate", "Devil's advocate — is this just complexity?"),
+                ("whatWouldMakeItBetter", "What would make it better"),
+                ("steelman", "The honest case for it"),
+            ]
+        case .product:
+            return [
+                ("whatItIs", "What it is"),
+                ("vsAlternatives", "How it compares to the alternatives"),
+                ("devilsAdvocate", "Devil's advocate — do you actually need this?"),
+                ("whatWouldMakeItBetter", "What would make it better"),
+                ("steelman", "The honest case for it"),
+            ]
+        case .research:
+            return [
+                ("whatItIs", "What it is"),
+                ("vsPriorWork", "How it advances prior work"),
+                ("reproducibility", "Can you actually use it?"),
+                ("devilsAdvocate", "Devil's advocate — does this matter?"),
+                ("whatWouldMakeItBetter", "What would make it better"),
+                ("steelman", "The honest case for it"),
+            ]
+        }
+    }
+
+    var label: String {
+        switch self {
+        case .agentTool: return "Agent Tool"
+        case .product: return "Product"
+        case .research: return "Research"
+        }
+    }
 }
 
 struct MediaAsset: Codable, Hashable {
@@ -266,6 +350,17 @@ struct Evaluation: Codable, Hashable, Identifiable {
     let evaluatedAt: String
 
     var id: String { slug }
+
+    /// The lens this evaluation was judged under (explicit or derived from kind).
+    var lens: Lens { Lens.forSource(kind: source.kind, lens: source.lens) }
+
+    /// Ordered (title, text) body sections present on this evaluation.
+    var bodySections: [(key: String, title: String, text: String)] {
+        lens.sections.compactMap { section in
+            guard let text = body[section.key], !text.isEmpty else { return nil }
+            return (section.key, section.title, text)
+        }
+    }
 
     /// First usable cover image (prefers a cached/self-hosted copy).
     var coverURL: URL? {

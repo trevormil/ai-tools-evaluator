@@ -1,14 +1,14 @@
 ---
 id: 015
 title: "Seed data, admin/mod tooling, ranking cron"
-status: in-progress
+status: open
 priority: medium
 horizon: next
 hitl: false
 type: feature
 source: manual
 created: 2026-07-06
-updated: 2026-07-06
+updated: 2026-07-20
 prs: []
 refs: [ADR-0002, ARCH]
 depends_on: [0003,0004]
