@@ -9,7 +9,7 @@ ended: null
 goal: "iOS app feature parity with web + App Store submission readiness (server mobile-auth + v1 social read APIs, SwiftUI social features, store assets)"
 tickets: ["058", "059", "060", "062", "063", "065"]
 branches: ["feat/ios-parity"]
-prs: []
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
 related_research: []
 related_docs:
   - docs/architecture.md
@@ -53,9 +53,10 @@ accounts. App Store submission readiness still in scope.
 - [x] 060 — read-only Feed tab (+ Today's pick card) + item detail tabs, VM tests
 - [x] 062 — three-list leaderboard + recap browser
 - [x] 065 — daily-pick reminder (scheduler tests + Settings toggle + deep link)
-- [ ] 063 — app icon, launch screen, privacy manifest, Info.plist store config, signing prep, submission runbook
-- [ ] verify — bun test + typecheck green; xcodebuild test green; Release sim build green
-- [ ] open PR closing 058/059/060/062/063/065; link PR into each ticket's prs:
+- [x] 063 — app icon, launch screen, privacy manifest, Info.plist store config, signing prep, submission runbook
+- [x] verify — bun test (133) + typecheck + prettier green; xcodebuild test (21) green; Release sim build green; live smoke test vs prod in simulator
+- [x] open PR #56 closing 058/059/060/062/063/065; PR linked into each ticket's prs:
+- [ ] code-review agent to the merge bar → human merges → /merge-sync
 
 ## [4] Log
 
@@ -69,6 +70,11 @@ accounts. App Store submission readiness still in scope.
   endpoints; added /api/v1/daily-pick + readmeMd on item detail.
 - 2026-07-20 10:20 — read-only rebuild green: server 133+ tests, iOS 21 tests.
   Tickets reconciled (057/061/064 icebox; 058/059/060/062 rescoped; 065 new).
+- 2026-07-20 10:27 — 063 done (icon, privacy manifest, runbook); Release build
+  green; app smoke-tested in simulator against prod (feed renders live data).
+- 2026-07-20 10:30 — Playwright e2e found broken on main (seed schema drift)
+  → filed 0066; not a branch regression. Pushed; **PR #56 opened**, linked
+  into tickets 058/059/060/062/063/065.
 
 ## [5] Decisions
 
