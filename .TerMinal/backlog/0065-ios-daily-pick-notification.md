@@ -1,7 +1,7 @@
 ---
 id: 065
 title: "iOS: daily pick local notification (morning reminder, deep link)"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-20
 updated: 2026-07-20
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
+prs: []
 refs: []
 depends_on: ["060"]
 acceptance:

@@ -1,7 +1,7 @@
 ---
 id: 063
 title: "iOS: App Store submission readiness (icon, privacy manifest, signing, metadata, runbook)"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: true
@@ -9,7 +9,7 @@ type: chore
 source: manual
 created: 2026-07-20
 updated: 2026-07-20
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
+prs: []
 refs: []
 depends_on: ["060", "062", "065"]
 acceptance:

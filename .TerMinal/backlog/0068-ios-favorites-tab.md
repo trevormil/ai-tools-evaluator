@@ -1,7 +1,7 @@
 ---
 id: 068
 title: "iOS: Favorites tab — bookmark AIx items + save custom links, all on-device"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-20
 updated: 2026-07-20
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
+prs: []
 refs: []
 depends_on: ["060"]
 acceptance:

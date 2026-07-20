@@ -1,7 +1,7 @@
 ---
 id: 067
 title: "Trending tab: GitHub + Product Hunt, today / this week (server proxy + iOS)"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-07-20
 updated: 2026-07-20
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/56"]
+prs: []
 refs: []
 depends_on: ["059"]
 acceptance:
