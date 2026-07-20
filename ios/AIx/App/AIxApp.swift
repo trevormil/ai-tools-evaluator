@@ -4,11 +4,13 @@ import SwiftUI
 struct AIxApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var router = AppRouter.shared
+    @StateObject private var favorites = FavoritesStore()
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(router)
+                .environmentObject(favorites)
         }
     }
 }
@@ -19,7 +21,7 @@ final class AppRouter: ObservableObject {
     static let shared = AppRouter()
 
     enum Tab: Hashable {
-        case feed, trending, directory, settings
+        case feed, trending, directory, favorites, settings
     }
 
     @Published var selectedTab: Tab = .feed
@@ -48,6 +50,10 @@ struct RootView: View {
             DirectoryView()
                 .tabItem { Label("Directory", systemImage: "square.grid.2x2") }
                 .tag(AppRouter.Tab.directory)
+
+            FavoritesView()
+                .tabItem { Label("Favorites", systemImage: "bookmark") }
+                .tag(AppRouter.Tab.favorites)
 
             SettingsView()
                 .tabItem { Label("Settings", systemImage: "gearshape") }

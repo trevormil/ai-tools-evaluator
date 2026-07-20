@@ -22,6 +22,9 @@ all social actions live on the website. It consumes the public JSON API
   sheet links to the website.
 - **Recap** — a "last night's recap" strip under the pick opens the full
   nightly recap (prev/next day navigation + date archive, `/api/v1/recap*`).
+- **Favorites** — bookmark AIx items from their detail page, plus a
+  free-form reading list of pasted URLs (X posts, skills, repos…). Stored
+  on-device (UserDefaults JSON) — no account, nothing leaves the phone.
 - **Daily pick reminder** — optional local notification every morning at 9;
   tapping it opens the current pick (no push infra, no data collected).
 - **Settings** — reminder toggle + backend base-URL override (persisted).
@@ -33,6 +36,7 @@ AIx/
   App/            AIxApp entry + RootView (TabView) + AppRouter + Config
   Models/         Codable structs mirrored 1:1 from the API (core + feed)
   Networking/     APIClient (async/await URLSession, typed APIError)
+  Favorites/      FavoritesStore (device-local bookmarks + saved links)
   Notifications/  DailyPickReminder (UNUserNotificationCenter, testable seam)
   Design/         Theme (verdict & score colors, light/dark friendly)
   Components/     VerdictBadge, ScoreChip, MetricBar, ItemRow, AvatarView, …
@@ -40,6 +44,7 @@ AIx/
     Feed/         FeedView + FeedViewModel (@Observable)
     Trending/     TrendingView + TrendingViewModel (GitHub / PH panes)
     Directory/    DirectoryView + DirectoryViewModel
+    Favorites/    FavoritesView (saved items + links, add-link sheet)
     Detail/       ItemDetailView + DetailViewModel (tabs, lens-aware)
     Recap/        RecapScreen + RecapViewModel (pushed from the feed strip)
     Settings/     SettingsView

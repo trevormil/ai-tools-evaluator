@@ -12,6 +12,7 @@ struct ItemDetailView: View {
     let slug: String
     @State private var vm: DetailViewModel
     @State private var tab: DetailTab = .evaluation
+    @EnvironmentObject private var favorites: FavoritesStore
 
     init(slug: String) {
         self.slug = slug
@@ -38,6 +39,16 @@ struct ItemDetailView: View {
         .navigationTitle(navTitle)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                if case .loaded(let detail) = vm.state {
+                    Button {
+                        favorites.toggle(FavoriteItem(evaluation: detail.evaluation))
+                    } label: {
+                        Image(systemName: favorites.isFavorite(slug: slug) ? "bookmark.fill" : "bookmark")
+                    }
+                    .accessibilityLabel(favorites.isFavorite(slug: slug) ? "Remove from favorites" : "Save to favorites")
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 ShareLink(item: AppConfig.baseURL.appending(path: "item/\(slug)")) {
                     Image(systemName: "square.and.arrow.up")
