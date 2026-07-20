@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { getDb, users, type User } from "@aix/db";
 import { getEnv } from "@/lib/env";
@@ -15,6 +14,16 @@ type GithubUser = {
   bio?: string | null;
 };
 
+/** Parse the request's Cookie header (kept off next/headers so bun tests can drive it). */
+function requestCookies(req: Request): Map<string, string> {
+  const jar = new Map<string, string>();
+  for (const pair of (req.headers.get("cookie") ?? "").split(";")) {
+    const idx = pair.indexOf("=");
+    if (idx > 0) jar.set(pair.slice(0, idx).trim(), pair.slice(idx + 1).trim());
+  }
+  return jar;
+}
+
 /** OAuth callback: verify state, exchange the code, upsert the user, open a session. */
 export async function GET(req: Request) {
   const url = new URL(req.url);
@@ -24,8 +33,8 @@ export async function GET(req: Request) {
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
 
-  const store = await cookies();
-  const savedState = store.get("aix_oauth_state")?.value;
+  const jar = requestCookies(req);
+  const savedState = jar.get("aix_oauth_state");
   if (!code || !state || state !== savedState) {
     return NextResponse.redirect(`${base}/?auth=error`);
   }
@@ -64,6 +73,15 @@ export async function GET(req: Request) {
 
   const user = upsertGithubUser(gh);
   const { token, expiresAt } = createSession(user.id);
+
+  // Native hand-off: the token rides the custom-scheme fragment (never logged
+  // by proxies) and no browser cookie is set.
+  if (jar.get("aix_oauth_client") === "ios") {
+    const res = NextResponse.redirect(`aix://auth#token=${token}`);
+    res.cookies.delete("aix_oauth_state");
+    res.cookies.delete("aix_oauth_client");
+    return res;
+  }
 
   const res = NextResponse.redirect(`${base}/u/${user.username}`);
   res.cookies.set(SESSION_COOKIE, token, {

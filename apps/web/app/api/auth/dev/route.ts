@@ -41,6 +41,12 @@ export async function GET(req: Request) {
       .get();
 
   const { token, expiresAt } = createSession(user.id);
+
+  // Simulator sign-in: hand the token back as JSON instead of a cookie redirect.
+  if (url.searchParams.get("client") === "ios") {
+    return NextResponse.json({ token, user: { id: user.id, username: user.username } });
+  }
+
   const res = NextResponse.redirect(new URL("/", url.origin));
   res.cookies.set(SESSION_COOKIE, token, {
     httpOnly: true,

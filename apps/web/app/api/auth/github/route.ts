@@ -30,5 +30,15 @@ export async function GET(req: Request) {
     path: "/",
     maxAge: 600,
   });
+  // Native clients (ASWebAuthenticationSession) mark the round-trip so the
+  // callback hands the session back via aix:// instead of a browser cookie.
+  if (new URL(req.url).searchParams.get("client") === "ios") {
+    res.cookies.set("aix_oauth_client", "ios", {
+      httpOnly: true,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 600,
+    });
+  }
   return res;
 }
