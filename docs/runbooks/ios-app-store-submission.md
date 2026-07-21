@@ -68,7 +68,14 @@ to TestFlight. `--bump` increments the build number first; `--dry-run` stops
 after export.
 
 Credentials come from an App Store Connect API key (Users and Access →
-Integrations → App Store Connect API, role **App Manager**). The `.p8`
+Integrations → App Store Connect API). The role must be **Admin** — App
+Manager can upload builds but *not* create the cloud-managed distribution
+certificate, so a first export fails with `Cloud signing permission error` /
+`No profiles for 'com.trevormil.aix' were found`. The real cause is only
+visible in the distribution logs (path is printed in the failure output):
+`IDEDistributionProvisioning.log` shows Apple's `403 FORBIDDEN_ERROR — you
+haven't been given access to cloud-managed distribution certificates`. A
+key's role can't be edited; revoke and issue a new one. The `.p8`
 downloads exactly once — keep it at
 `~/.appstoreconnect/private_keys/AuthKey_<KEYID>.p8`, never in the repo.
 `.testflight.env` is gitignored.
