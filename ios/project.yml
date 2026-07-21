@@ -34,12 +34,6 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        # iPad must support all four unless the app requires full screen.
-        UISupportedInterfaceOrientations~ipad:
-          - UIInterfaceOrientationPortrait
-          - UIInterfaceOrientationPortraitUpsideDown
-          - UIInterfaceOrientationLandscapeLeft
-          - UIInterfaceOrientationLandscapeRight
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         NSAppTransportSecurity:
@@ -48,7 +42,9 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.trevormil.aix
         GENERATE_INFOPLIST_FILE: NO
-        TARGETED_DEVICE_FAMILY: "1,2"
+        # iPhone only. Shipping iPad would require a separate 13" screenshot set
+        # and an iPad layout pass; add it back deliberately, not by default.
+        TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         ENABLE_USER_SCRIPT_SANDBOXING: YES
   # AIxShare (share extension, ticket 0072) is PARKED until the paid Apple
@@ -92,6 +88,21 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.trevormil.aix.tests
         GENERATE_INFOPLIST_FILE: YES
+  # Store screenshots only — drives the real app against the live API, so it is
+  # deliberately NOT in the AIx scheme's test action (slow, network-dependent).
+  AIxUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: AIxUITests
+    dependencies:
+      - target: AIx
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.trevormil.aix.uitests
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: AIx
 schemes:
   AIx:
     build:
@@ -106,3 +117,12 @@ schemes:
         - AIxTests
     archive:
       config: Release
+  AIxScreenshots:
+    build:
+      targets:
+        AIx: all
+        AIxUITests: [test]
+    test:
+      config: Debug
+      targets:
+        - AIxUITests
