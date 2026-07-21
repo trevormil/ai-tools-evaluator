@@ -81,7 +81,9 @@ const at = (daysAgo: number) => new Date((nowSec - daysAgo * DAY) * 1000).toISOS
 
 /* ------------------------------------------------------------- the evaluations */
 
-const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: number }[] = [
+// Exported so seed.test.ts can round-trip the fixtures against the schema
+// without running the seed itself (ticket 0066).
+export const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: number }[] = [
   {
     daysAgo: 1,
     upvotes: 214,
@@ -354,6 +356,8 @@ const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; comments: num
       body: {
         whatItIs:
           "ReAct is a 2022 paper showing that interleaving free-form reasoning ('thoughts') with concrete actions (tool calls) and observations lets a language model plan, act, and adjust in one loop. Instead of reasoning in a vacuum or acting blindly, the model alternates: think, do, observe the result, think again. It's the canonical formulation of the agent loop.",
+        vsPriorWork:
+          "Prior work had the two halves apart: chain-of-thought reasoned but never touched the world, and action-only agents like WebGPT and SayCan acted without an explicit trace to revise. ReAct's delta is the interleaving itself — reasoning conditions the next action, and the observation that comes back conditions the next thought. That closes the loop hallucination-prone CoT leaves open (the model can check itself against a real result) and gives blind action policies a legible plan to correct. The contribution is the coupling, not either component.",
         vsVanilla:
           "A modern base agent already does much of this implicitly — today's models reason and call tools without being prompted into a rigid ReAct scaffold. So the paper isn't a technique you bolt on anymore; it's the conceptual model that explains why your agent behaves the way it does, and what to fix when the loop breaks (bad observations, no re-planning, runaway thoughts).",
         surfaceArea:
