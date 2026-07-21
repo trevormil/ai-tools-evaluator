@@ -112,26 +112,38 @@ temporarily lower `DailyPickReminder.fireHour`).
 
 - **Keywords** (100 chars): `ai,tools,mcp,agent,llm,claude,developer,evaluations,reviews,papers,trending`
 - **Category**: Developer Tools (secondary: News)
-- **Age rating**: everything "None" → 4+ (content is developer-tool reviews;
-  the questionnaire's "unrestricted web access" answer is **No** — the app
-  only renders our own API content).
+- **Age rating**: everything "None" → 4+. `unrestrictedWebAccess` is **No**
+  (links leave to Safari; no `WKWebView`/`SFSafariViewController` in the app)
+  and `userGeneratedContent` is **No** — see the caveat in §6.
 - **Privacy nutrition label**: Data Not Collected (matches the manifest —
-  the app makes anonymous GETs only).
-- **Screenshots**: required sizes 6.9" (iPhone 17 Pro Max sim) and 6.5".
-  Take: Feed with Today's pick · Item detail Evaluation tab · Scorecard ·
-  Recap. `xcrun simctl io booted screenshot feed.png` etc.
+  the app makes anonymous GETs only). Privacy policy URL:
+  `https://aix.trevormil.com/privacy`.
+- **Screenshots**: `./scripts/screenshots.sh` captures the set on the 6.9"
+  simulator (1320×2868, the size Apple requires) into
+  `build/screenshots/`. iPhone-only since `TARGETED_DEVICE_FAMILY` is `1`, so
+  no iPad set is needed.
 - **Support URL**: https://aix.trevormil.com · **Marketing URL**: same.
 
 ## 6. Review notes (paste into App Review Information)
 
 > AIx is a read-only companion to aix.trevormil.com, a directory of
 > AI-generated evaluations of developer tools. No account is needed or
-> offered in the app. The feed displays community activity from the website
-> (read-only in the app); community content is moderated on the website by
-> the site operators. The only notification is a local daily reminder the
-> user opts into from Settings.
+> offered in the app, and the app displays no user-generated content — it
+> renders our own editorial evaluations plus public trending listings from
+> GitHub, Hacker News, Hugging Face and Product Hunt. Links to upstream pages
+> open in Safari; there is no in-app browser. The only notification is a local
+> daily reminder the user opts into from Settings.
 
 No demo account required (nothing to sign in to).
+
+**Do not describe the app as showing community activity.** An earlier draft of
+these notes did, inherited from the website's feature set. It is not true of the
+shipping app — `FeedView`/`FeedViewModel` render user posts but are dead code,
+unreferenced since `BrowseView` took over the Browse tab. Claiming UGC pulls the
+app under guideline 1.2, which requires filtering, reporting and blocking the app
+does not implement. The age-rating declaration is set accordingly:
+`userGeneratedContent: false`, `unrestrictedWebAccess: false`, everything else
+None → **4+**.
 
 ## 7. Submit + after approval
 
