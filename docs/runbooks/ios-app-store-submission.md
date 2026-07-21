@@ -41,7 +41,9 @@ xcodebuild -project AIx.xcodeproj -scheme AIx \
 ```
 
 Bump `MARKETING_VERSION` / `CURRENT_PROJECT_VERSION` in `project.yml` for
-each store upload (build number must strictly increase).
+each store upload (build number must strictly increase). `Info.plist` reads
+both through `$(...)` variables, so `project.yml` is the only place to edit —
+or pass `--bump` to the script in §3.
 
 ## 2. App Store Connect record (once)
 
@@ -54,20 +56,33 @@ appstoreconnect.apple.com → My Apps → **+ New App**:
 
 ## 3. Archive + upload
 
-Xcode: open `AIx.xcodeproj`, scheme **AIx**, destination **Any iOS Device
-(arm64)** → Product → **Archive** → Organizer → **Distribute App** →
-App Store Connect → Upload (defaults fine; automatic signing).
-
-CLI alternative:
-
 ```sh
-xcodebuild -project AIx.xcodeproj -scheme AIx -configuration Release \
-  -destination 'generic/platform=iOS' -archivePath build/AIx.xcarchive archive
-xcodebuild -exportArchive -archivePath build/AIx.xcarchive \
-  -exportOptionsPlist ExportOptions.plist -exportPath build/export
-xcrun altool --upload-app -f build/export/AIx.ipa -t ios \
-  --apiKey <key-id> --apiIssuer <issuer-id>
+cd ios
+cp .testflight.env.example .testflight.env   # once: fill in ASC_KEY_ID + ASC_ISSUER_ID
+./scripts/testflight.sh --bump               # tests → archive → upload
 ```
+
+`scripts/testflight.sh` runs the tests, archives Release, generates
+`ExportOptions.plist` (team id read from `project.yml`), and uploads straight
+to TestFlight. `--bump` increments the build number first; `--dry-run` stops
+after export.
+
+Credentials come from an App Store Connect API key (Users and Access →
+Integrations → App Store Connect API). The role must be **Admin** — App
+Manager can upload builds but *not* create the cloud-managed distribution
+certificate, so a first export fails with `Cloud signing permission error` /
+`No profiles for 'com.trevormil.aix' were found`. The real cause is only
+visible in the distribution logs (path is printed in the failure output):
+`IDEDistributionProvisioning.log` shows Apple's `403 FORBIDDEN_ERROR — you
+haven't been given access to cloud-managed distribution certificates`. A
+key's role can't be edited; revoke and issue a new one. The `.p8`
+downloads exactly once — keep it at
+`~/.appstoreconnect/private_keys/AuthKey_<KEYID>.p8`, never in the repo.
+`.testflight.env` is gitignored.
+
+Xcode GUI alternative: open `AIx.xcodeproj`, scheme **AIx**, destination
+**Any iOS Device (arm64)** → Product → **Archive** → Organizer →
+**Distribute App** → App Store Connect → Upload.
 
 ## 4. TestFlight sanity pass (recommended, ~10 min)
 
