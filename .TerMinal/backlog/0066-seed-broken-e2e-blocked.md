@@ -1,14 +1,14 @@
 ---
 id: 066
 title: "Seed script fails schema validation — Playwright e2e suite can't start (pre-existing on main)"
-status: open
+status: closed
 priority: high
 horizon: now
 hitl: false
 type: bug
 source: manual
 created: 2026-07-20
-updated: 2026-07-20
+updated: 2026-07-21
 prs: []
 refs: []
 depends_on: []

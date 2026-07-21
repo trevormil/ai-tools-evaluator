@@ -61,6 +61,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           <p className="data text-[11px] uppercase tracking-[0.2em] text-faint">
             AIx · <span className="text-brand">signal</span> over noise
           </p>
+          <p className="data mt-2 text-[11px] uppercase tracking-[0.2em] text-faint">
+            <a className="hover:text-brand" href="/privacy">
+              Privacy
+            </a>
+          </p>
         </footer>
         <MobileNav username={user?.username ?? null} />
       </body>
