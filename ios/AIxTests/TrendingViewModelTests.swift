@@ -15,7 +15,7 @@ final class TrendingViewModelTests: XCTestCase {
     private let repoJSON = #"{"source":"github","window":"weekly","repos":[{"fullName":"acme/hot","url":"https://github.com/acme/hot","description":"d","stars":42,"language":"Rust","createdAt":null,"avatarUrl":null,"forks":2,"openIssues":1,"topics":[],"homepage":null,"license":"MIT","pushedAt":null}]}"#
     private let productJSON = #"{"source":"producthunt","window":"daily","products":[{"name":"CoolLaunch","tagline":"t","url":"https://producthunt.com/posts/cool","votes":99,"topics":["AI"],"thumbnailUrl":null,"description":"story","commentsCount":4,"website":null,"mediaUrls":[]}]}"#
 
-    func testGithubPaneLoadsWithDefaultWeeklyWindow() async throws {
+    func testGithubPaneLoadsWithDefaultDailyWindow() async throws {
         let vm = makeVM()
         vm.source = .github // AIx (the feed) is the default source
         let recorder = TestSupport.stub(json: repoJSON)
@@ -27,13 +27,14 @@ final class TrendingViewModelTests: XCTestCase {
         XCTAssertEqual(repos[0].fullName, "acme/hot")
         let url = try XCTUnwrap(recorder.last?.url)
         XCTAssertEqual(url.path, "/api/v1/trending/github")
-        // This Week is the default lens.
-        XCTAssertTrue(url.query?.contains("window=weekly") == true)
+        // Today is the default lens.
+        XCTAssertTrue(url.query?.contains("window=daily") == true)
     }
 
     func testSourceAndWindowSwitchLoadSeparatePanes() async {
         let vm = makeVM()
         vm.source = .github
+        vm.window = .weekly
         TestSupport.stub(json: repoJSON)
         await vm.loadCurrent()
 
@@ -130,7 +131,7 @@ extension TrendingViewModelTests {
         XCTAssertFalse(vm.source.supportsWindow)
 
         // Same pane regardless of window — no refetch on window change.
-        vm.window = .daily
+        vm.window = .weekly
         MockURLProtocol.handler = { _ in
             XCTFail("HF pane must not refetch on window change")
             throw APIError.badURL

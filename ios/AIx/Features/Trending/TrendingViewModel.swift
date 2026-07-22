@@ -39,7 +39,7 @@ final class TrendingViewModel {
     }
 
     var source: Source = .aix
-    var window: TrendingWindow = .weekly
+    var window: TrendingWindow = .daily
     private(set) var panes: [String: LoadState<Pane>] = [:]
 
     private let client: APIClient
