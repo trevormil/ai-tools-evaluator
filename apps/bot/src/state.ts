@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, writeFile } from "node:fs/promises";
 
 /** Tiny local state so restarts don't re-post the daily digest. */
 export type DigestState = {
@@ -10,8 +10,29 @@ export type DigestState = {
   lastSubmissionPostedAt?: string;
 };
 
-/** Read the whole state object; empty object if absent/unreadable. */
-async function readState(path: string): Promise<DigestState> {
+/**
+ * Serialize all access to a given state file. writeState is a read-merge-write,
+ * and the daily-pick + submission schedulers tick at the same instants — two
+ * concurrent writes could merge from a stale snapshot and silently drop the
+ * other writer's key (this erased the once-per-day guard and double-posted the
+ * daily pick on 2026-07-23). One in-process chain per path is enough: prod
+ * runs a single bot process (Recreate deployment).
+ */
+const chains = new Map<string, Promise<void>>();
+function serialize<T>(path: string, task: () => Promise<T>): Promise<T> {
+  const prev = chains.get(path) ?? Promise.resolve();
+  const run = prev.then(task);
+  chains.set(
+    path,
+    run.then(
+      () => undefined,
+      () => undefined,
+    ),
+  );
+  return run;
+}
+
+async function readStateUnlocked(path: string): Promise<DigestState> {
   try {
     const parsed = JSON.parse(await readFile(path, "utf8")) as Partial<DigestState>;
     return parsed && typeof parsed === "object" ? parsed : {};
@@ -20,10 +41,22 @@ async function readState(path: string): Promise<DigestState> {
   }
 }
 
+/** Read the whole state object; empty object if absent/unreadable. */
+async function readState(path: string): Promise<DigestState> {
+  return serialize(path, () => readStateUnlocked(path));
+}
+
 /** Merge a patch into the state file so independent watermarks don't clobber. */
 async function writeState(path: string, patch: Partial<DigestState>): Promise<void> {
-  const next: DigestState = { ...(await readState(path)), ...patch };
-  await writeFile(path, JSON.stringify(next, null, 2));
+  await serialize(path, async () => {
+    const next: DigestState = { ...(await readStateUnlocked(path)), ...patch };
+    // Write-temp-then-rename so a concurrent reader can never observe a torn
+    // half-written file (readState swallows parse errors as {}, which would
+    // make every watermark look absent and re-trigger the daily pick).
+    const tmp = `${path}.tmp`;
+    await writeFile(tmp, JSON.stringify(next, null, 2));
+    await rename(tmp, path);
+  });
 }
 
 /** Returns the last daily-posted ISO timestamp, or null if absent/unreadable. */

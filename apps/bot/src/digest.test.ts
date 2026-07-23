@@ -284,6 +284,50 @@ describe("runDigest once-per-day guard", () => {
     expect(sent).toHaveLength(1);
   });
 
+  it("a concurrent empty submission poll never erases the day-claim (2026-07-23 double-post)", async () => {
+    // Reproduces the 2026-07-23 incident: both schedulers tick at the same
+    // instant. The daily pick posts and claims the day while the submission
+    // poller's empty run writes its own watermark to the same file. If those
+    // writes interleave, the day-claim is lost and the NEXT tick re-posts a
+    // second pick. Repeated across days to leave a lost-update race nowhere
+    // to hide.
+    const DAYS = 20;
+    let picksSent = 0;
+    const pickChannel = async () => ({
+      send: async () => {
+        picksSent++;
+        return null;
+      },
+    });
+    for (let d = 1; d <= DAYS; d++) {
+      const day = String(d).padStart(2, "0");
+      const tick1 = () => new Date(`2026-08-${day}T13:02:00.000Z`);
+      await Promise.all([
+        runDigest({
+          client: fakeClient([item({ slug: `pick-${d}`, overallScore: 80 })]).client,
+          statePath,
+          getChannel: pickChannel,
+          now: tick1,
+        }),
+        runSubmissionDigest({
+          client: fakeClient([]).client,
+          statePath,
+          getChannel: pickChannel,
+          now: tick1,
+        }),
+      ]);
+      // The next 5-min tick brings a richer pool — it must NOT post again.
+      const again = await runDigest({
+        client: fakeClient([item({ slug: `later-${d}`, overallScore: 95 })]).client,
+        statePath,
+        getChannel: pickChannel,
+        now: () => new Date(`2026-08-${day}T13:12:00.000Z`),
+      });
+      expect(again).toEqual([]);
+    }
+    expect(picksSent).toBe(DAYS); // exactly one pick per day, ever
+  });
+
   it("an empty earlier tick does not consume the day — the real pick still posts later", async () => {
     const sent: unknown[] = [];
     const getChannel = sink(sent);
