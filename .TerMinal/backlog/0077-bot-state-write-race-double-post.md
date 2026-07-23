@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-23
 updated: 2026-07-23
-prs: []
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/76"]
 refs: []
 depends_on: []
 acceptance:
