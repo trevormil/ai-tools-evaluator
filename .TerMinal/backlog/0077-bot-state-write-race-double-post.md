@@ -1,7 +1,7 @@
 ---
 id: 77
 title: "Daily digest double-posted: unserialized non-atomic .state.json writes race between the two bot schedulers"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-23
 updated: 2026-07-23
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/76"]
+prs: []
 refs: []
 depends_on: []
 acceptance:
