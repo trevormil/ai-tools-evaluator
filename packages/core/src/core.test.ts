@@ -38,6 +38,10 @@ const sample: Evaluation = {
       "Only an engineer running sandboxed/remote setups gets value; a vibe coder gains nothing over native file tools.",
   },
   scores,
+  productShape: {
+    score: 40,
+    rationale: "A server other software talks to, not an app a person opens.",
+  },
   overallScore: computeOverall(scores),
   tagline: "A tidy MCP wrapper, but Claude already reads files fine on its own.",
   body: {
@@ -136,10 +140,43 @@ describe("schema", () => {
       noiseScore: sample.noiseScore,
       audience: sample.audience,
       scores: sample.scores,
+      productShape: sample.productShape,
       tagline: sample.tagline,
       body: sample.body,
     };
     expect(() => EvaluationDraft.parse(draft)).not.toThrow();
+  });
+
+  test("productShape is required of the evaluator but optional once stored", () => {
+    // Ticket 0078: enforcing it on the draft means a model that stops emitting it
+    // fails loudly per-item, rather than silently reverting the daily pick to the
+    // old infra-favoring behavior. Stored Evaluations predate the field.
+    const { productShape: _omitted, ...draftWithout } = {
+      category: sample.category,
+      integration: sample.integration,
+      tags: sample.tags,
+      verdict: sample.verdict,
+      noiseScore: sample.noiseScore,
+      audience: sample.audience,
+      scores: sample.scores,
+      productShape: sample.productShape,
+      tagline: sample.tagline,
+      body: sample.body,
+    };
+    expect(EvaluationDraft.safeParse(draftWithout).success).toBe(false);
+
+    const { productShape: _dropped, ...storedWithout } = sample;
+    expect(Evaluation.safeParse(storedWithout).success).toBe(true);
+  });
+
+  test("productShape never moves overallScore", () => {
+    // It is a pick-only signal, deliberately not one of the ten metrics.
+    const flipped = Evaluation.parse({
+      ...sample,
+      productShape: { score: 100, rationale: "A polished app you open and use every day." },
+    });
+    expect(flipped.overallScore).toBe(sample.overallScore);
+    expect(computeOverall(flipped.scores)).toBe(computeOverall(sample.scores));
   });
 
   test("rejects out-of-range audience fit", () => {

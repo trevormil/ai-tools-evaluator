@@ -31,6 +31,10 @@ export async function GET(req: Request) {
     noiseScore: items.noiseScore,
     tagline: items.tagline,
     category: items.category,
+    // integration + dailyPickAt let the bot apply the same featuring rules the
+    // scanner did, so Discord and the site can't headline different items.
+    integration: items.integration,
+    dailyPickAt: items.dailyPickAt,
     primaryAudience: items.primaryAudience,
     aiEngineerFit: items.aiEngineerFit,
     coverImageUrl: items.coverImageUrl,
@@ -65,13 +69,13 @@ export async function GET(req: Request) {
 
   // Surface the decision layer (install one-liner + adopt-if/skip-if) that lives
   // inside the stored Evaluation, so the digest can post a genuinely useful card.
-  const enriched = rows.map(({ evaluationJson, ...rest }) => {
+  const enriched = rows.map(({ evaluationJson, dailyPickAt, ...rest }) => {
     let install: string | undefined;
     let adoptIf: string[] = [];
     let skipIf: string[] = [];
     let summary: string | undefined;
-    // Broad-appeal pick score (audience fit + utility + traction + ease); the
-    // bot features the highest, NOT the highest overallScore. Fall back to
+    // Product-appeal pick score (productShape + utility + fit + ease); the bot
+    // features the highest, NOT the highest overallScore. Fall back to
     // overallScore for older items missing the audience/metric fields.
     let pick = rest.overallScore;
     try {
@@ -80,6 +84,7 @@ export async function GET(req: Request) {
         decision?: { adoptIf?: string[]; skipIf?: string[] };
         body?: { whatItIs?: string };
         audience?: { aiEngineerFit?: number };
+        productShape?: { score?: number };
         scores?: Record<string, { score?: number }>;
       };
       install = ev.quickstart?.install;
@@ -92,14 +97,14 @@ export async function GET(req: Request) {
       if (
         typeof fit === "number" &&
         typeof s?.utility?.score === "number" &&
-        typeof s?.traction?.score === "number" &&
         typeof s?.easeOfAdoption?.score === "number" &&
         typeof s?.composability?.score === "number"
       ) {
+        // productShape is absent on pre-0078 items; pickScore renormalizes.
         pick = pickScore({
+          productShape: ev.productShape?.score,
           aiEngineerFit: fit,
           utility: s.utility.score,
-          traction: s.traction.score,
           easeOfAdoption: s.easeOfAdoption.score,
           composability: s.composability.score,
         });
@@ -107,7 +112,15 @@ export async function GET(req: Request) {
     } catch {
       // Older items may predate the decision layer — degrade gracefully.
     }
-    return { ...rest, install, adoptIf, skipIf, summary, pickScore: pick };
+    return {
+      ...rest,
+      install,
+      adoptIf,
+      skipIf,
+      summary,
+      pickScore: pick,
+      isDailyPick: dailyPickAt != null,
+    };
   });
 
   return NextResponse.json({ items: enriched });

@@ -1,4 +1,4 @@
-import { pickScoreOf, isPickEligible, type Evaluation } from "@aix/core";
+import { selectDailyPick, pickScoreOf, type Evaluation } from "@aix/core";
 import { loadEnv, requireLiveSecrets, type ScannerEnv } from "./env";
 import { createLogger, type Logger } from "./logger";
 import {
@@ -155,17 +155,21 @@ export async function run(deps: RunDeps): Promise<RunResult> {
         capLeft -= gradedFromSrc;
       }
 
-      // Exactly ONE featured daily pick — the broadest-appeal item across ALL
-      // sources by `pickScore` (audience fit + utility + traction + ease), NOT
-      // raw overallScore, so a clever-but-niche repo never gets featured. Only
-      // essential/worthwhile verdicts are eligible; fall back to all graded if a
-      // thin day has none. The rest publish as runners-up.
-      const eligible = graded.filter((g) => isPickEligible(g.evaluation.verdict));
-      const pickPool = eligible.length > 0 ? eligible : graded;
-      const pickSlug = pickPool.reduce<{ slug: string; score: number } | null>((best, g) => {
-        const score = pickScoreOf(g.evaluation);
-        return !best || score > best.score ? { slug: g.evaluation.slug, score } : best;
-      }, null)?.slug;
+      // Exactly ONE featured daily pick — the most product-shaped item across ALL
+      // sources by `pickScore` (productShape + utility + fit + ease), NOT raw
+      // overallScore, so an infra primitive or a reading list never headlines
+      // (ticket 0078). Categories featured in the last few days are penalized so
+      // the slot doesn't repeat. The rest publish as runners-up.
+      const recentCategories = await client.getRecentPickCategories();
+      if (recentCategories.length > 0) {
+        log.info(`pick cooldown: recently featured [${recentCategories.join(", ")}]`);
+      }
+      const pick = selectDailyPick(
+        graded.map((g) => g.evaluation),
+        recentCategories,
+      );
+      const pickSlug = pick?.slug;
+      if (!pickSlug) log.warn("no featurable item in this batch — publishing runners-up only");
 
       for (const { d, evaluation } of graded) {
         const isPick = evaluation.slug === pickSlug;
@@ -231,6 +235,10 @@ async function runDry(deps: RunDeps): Promise<RunResult> {
             verdict: evaluation.verdict,
             overallScore: evaluation.overallScore,
             noiseScore: evaluation.noiseScore,
+            // Surfaced so a dry run shows how the evaluator is calling
+            // product-vs-ingredient, which is what decides the daily pick.
+            productShape: evaluation.productShape?.score,
+            pickScore: pickScoreOf(evaluation),
             coverImageUrl: coverImageUrl(evaluation.media),
           },
           null,

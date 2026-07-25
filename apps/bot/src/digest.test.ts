@@ -420,6 +420,42 @@ describe("runDigest featured pick", () => {
     });
     expect(posted.map((p) => p.slug)).toEqual(["b"]); // highest pickScore of the fallback
   });
+
+  it("prefers the item the scanner stamped, so Discord matches the site", async () => {
+    // Ticket 0078: the scanner's choice applies a category cooldown the bot knows
+    // nothing about, so raw top-pickScore here would headline a different item
+    // than aix.trevormil.com is featuring.
+    const { client } = fakeClient([
+      item({ slug: "top-score", verdict: "essential", pickScore: 95, isDailyPick: false }),
+      item({ slug: "the-pick", verdict: "worthwhile", pickScore: 70, isDailyPick: true }),
+    ]);
+    const posted = await runDigest({
+      client,
+      statePath,
+      now: morning,
+      getChannel: async () => ({ send: async () => null }),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["the-pick"]);
+  });
+
+  it("never features a knowledge item — a reading list is not a daily pick", async () => {
+    const { client } = fakeClient([
+      item({
+        slug: "link-dump",
+        verdict: "worthwhile",
+        pickScore: 95,
+        integration: "knowledge",
+      }),
+      item({ slug: "real-tool", verdict: "worthwhile", pickScore: 60 }),
+    ]);
+    const posted = await runDigest({
+      client,
+      statePath,
+      now: morning,
+      getChannel: async () => ({ send: async () => null }),
+    });
+    expect(posted.map((p) => p.slug)).toEqual(["real-tool"]);
+  });
 });
 
 describe("runSubmissionDigest", () => {

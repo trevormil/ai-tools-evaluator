@@ -137,6 +137,17 @@ const EvaluationShape = z.object({
   audience: AudienceFit,
   /** Ten-metric report card, each 0–100 with a rationale. */
   scores: Scorecard,
+  /**
+   * PICK-ONLY signal (ticket 0078 / ADR-0004) — deliberately NOT one of the ten
+   * metrics, so it never moves `overallScore`. 100 = a finished thing a person
+   * uses; 0 = an ingredient other software is built from. It exists because the
+   * daily pick kept landing on infrastructure primitives and reading lists, and
+   * nothing in the schema could tell a product from a building block.
+   *
+   * Optional: the items graded before 0078 don't have it, and `pickScore`
+   * renormalizes over the remaining signals rather than treating absent as 0.
+   */
+  productShape: MetricScore.optional(),
   /** Weighted final score, 0–100. Recomputed from `scores` on write. */
   overallScore: z.number().int().min(0).max(100),
   /** One-line hook shown in feeds. Must state the verdict's reasoning tersely. */
@@ -236,6 +247,13 @@ export const EvaluationDraft = EvaluationShape.omit({
   slug: true,
   overallScore: true,
 }).extend({
+  /**
+   * REQUIRED of the evaluator even though it is optional on a stored Evaluation
+   * (old items predate it). Enforcing it here means a model that silently stops
+   * producing it fails loudly per-item instead of quietly reverting the pick to
+   * the old, infra-favoring behavior.
+   */
+  productShape: MetricScore,
   /**
    * The LLM's pick of the best SQUARE-friendly cover image URL from the README
    * (a clean logo/icon, not a banner/screenshot/GIF), or null. Best-effort and

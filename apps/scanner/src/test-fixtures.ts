@@ -20,6 +20,10 @@ export function makeDraft(overrides: Partial<EvaluationDraft> = {}): EvaluationD
       rationale: "Useful leverage for a technical engineer; little for a non-technical vibe coder.",
     },
     scores,
+    productShape: {
+      score: 45,
+      rationale: "A server you run for other software, not something a person opens and uses.",
+    },
     tagline: "A tidy wrapper, but the base agent already handles most of this itself.",
     body: {
       whatItIs:
