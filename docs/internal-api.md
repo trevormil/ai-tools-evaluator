@@ -25,6 +25,13 @@ before ranking so it never spends an eval on (or re-picks) an already-graded ite
 Daily-cap accounting. Response: `{ date, publishedToday, remaining, dailyCap:10 }`.
 Scanner uses `remaining` to bound a run.
 
+### `GET /api/internal/recent-picks?days=N`
+Categories featured as the daily pick inside the cooldown window (deduped).
+`days` defaults to `PICK_COOLDOWN_DAYS` (3), capped at 30. Response:
+`{ days, categories: string[] }`. The scanner penalizes these when choosing
+today's pick so the feature slot doesn't repeat a category (ADR-0004). Advisory
+— the scanner treats a failure here as "no cooldown" rather than aborting.
+
 ### `GET /api/internal/submissions?status=queued&limit=N`
 List queued submissions oldest-first (the drain order). Response:
 `{ submissions: Submission[] }`.
@@ -40,8 +47,11 @@ Update a submission's status during processing. Body:
 Response: `200 { submission }`.
 
 ### `GET /api/internal/digest?since=<iso>`
-Data for the bot's daily digest. Response: `{ items: Array<{slug,title,url,verdict,overallScore,tagline,category,coverImageUrl}> }`
-for items published since `since`.
+Data for the bot's daily digest. Response: `{ items: Array<{slug,title,url,verdict,overallScore,pickScore,tagline,category,integration,isDailyPick,coverImageUrl}> }`
+for items published since `since`. `pickScore` is the product-appeal ranking
+(`@aix/core`'s `pickScore`, falling back to `overallScore` for items missing the
+signals); `isDailyPick` is true for the item the scanner stamped, which the bot
+prefers so Discord features the same item as the site (ADR-0004).
 
 ### `POST /api/internal/scan-runs` and `PATCH /api/internal/scan-runs/:id`
 Open/close a `scan_runs` audit row. Open body `{ source }` → `{ id }`. Close body

@@ -15,12 +15,26 @@ let schema: typeof import("@aix/db");
 
 const nowSec = Math.floor(Date.now() / 1000);
 
-/** An evaluation whose pick signals compute to pickScore 80 (≠ overallScore). */
+/** An evaluation whose pick signals compute to pickScore 84 (≠ overallScore). */
 const richEval = JSON.stringify({
+  audience: { aiEngineerFit: 85 },
+  productShape: { score: 90, rationale: "An app you open and use." },
+  scores: {
+    utility: { score: 80 },
+    // Deliberately extreme: traction was dropped from PICK_WEIGHTS in 0078, so
+    // this must not shift the emitted pickScore at all.
+    traction: { score: 0 },
+    easeOfAdoption: { score: 75 },
+    composability: { score: 80 },
+  },
+});
+
+/** Same signals minus productShape — a pre-0078 item, which renormalizes to 81. */
+const legacyRichEval = JSON.stringify({
   audience: { aiEngineerFit: 85 },
   scores: {
     utility: { score: 80 },
-    traction: { score: 70 },
+    traction: { score: 0 },
     easeOfAdoption: { score: 75 },
     composability: { score: 80 },
   },
@@ -66,13 +80,21 @@ beforeAll(async () => {
   runMigrations();
   db = schema.getDb();
 
-  // Broad item: overallScore 78 but pick signals compute to 80.
+  // Broad item: overallScore 78 but pick signals compute to 84. Also THE pick.
   db.insert(schema.items)
-    .values(baseItem("broad", { overallScore: 78, evaluationJson: richEval }))
+    .values(baseItem("broad", { overallScore: 78, evaluationJson: richEval, dailyPickAt: nowSec }))
     .run();
   // Legacy item: no audience/scores in the eval → pickScore falls back to overallScore.
   db.insert(schema.items)
     .values(baseItem("legacy", { overallScore: 90, evaluationJson: "{}" }))
+    .run();
+  // Pre-0078 item with the other four signals but no productShape → renormalized.
+  db.insert(schema.items)
+    .values(baseItem("preshape", { overallScore: 50, evaluationJson: legacyRichEval }))
+    .run();
+  // A reading list: carried in the digest, but flagged so the bot won't feature it.
+  db.insert(schema.items)
+    .values(baseItem("link-dump", { integration: "knowledge", evaluationJson: richEval }))
     .run();
 });
 
@@ -83,7 +105,26 @@ test("each digest item carries a pickScore (computed for rich items)", async () 
     items: { slug: string; pickScore: number; overallScore: number }[];
   };
   const broad = data.items.find((i) => i.slug === "broad")!;
-  expect(broad.pickScore).toBe(80); // NOT its overallScore of 78
+  expect(broad.pickScore).toBe(84); // NOT its overallScore of 78
+});
+
+test("pickScore ignores traction and renormalizes when productShape is absent", async () => {
+  const data = (await (await GET(req())).json()) as {
+    items: { slug: string; pickScore: number }[];
+  };
+  // traction is 0 on both fixtures and neither score reflects it.
+  expect(data.items.find((i) => i.slug === "preshape")!.pickScore).toBe(81);
+});
+
+test("items carry integration + isDailyPick so the bot features what the site features", async () => {
+  const data = (await (await GET(req())).json()) as {
+    items: { slug: string; integration: string; isDailyPick: boolean }[];
+  };
+  const broad = data.items.find((i) => i.slug === "broad")!;
+  expect(broad.isDailyPick).toBe(true);
+  const dump = data.items.find((i) => i.slug === "link-dump")!;
+  expect(dump.integration).toBe("knowledge");
+  expect(dump.isDailyPick).toBe(false);
 });
 
 test("pickScore falls back to overallScore for items missing the pick signals", async () => {

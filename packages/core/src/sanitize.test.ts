@@ -23,6 +23,7 @@ function validDraft(over: Draft = {}): Draft {
       rationale: "Built for terminal-first engineers who want leverage.",
     },
     scores,
+    productShape: { score: 80, rationale: "A CLI you run yourself, not a library you import." },
     tagline: "A terse, honest hook that fits.",
     body: {
       whatItIs: para,

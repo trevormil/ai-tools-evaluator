@@ -75,6 +75,18 @@ ${readme.slice(0, 12000)}
     AIx is for AI-first ENGINEERS who want to upskill and sharpen their workflow — not vibe coders who just want a flashier tool to do the work for them. Score aiEngineerFit on depth/leverage for a technical engineer; score vibeCoderFit on accessible does-it-for-you value. They are independent (a real workflow tool can rate high on both). Set primary honestly.
 - tagline: one line, <=160 chars, states the verdict's reasoning
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
+- productShape: { score: 0-100, rationale } — is this a FINISHED THING SOMEONE USES, or an
+    INGREDIENT other software is built from? Judge the SHAPE of the thing only.
+      100-80: a real product or usable tool with its own interface and experience — an app you
+              open, a UI, a service you sign into, a CLI you run, an editor/agent surface.
+      60-40:  a runnable tool that mostly serves other software — a server, daemon, or harness.
+      20-0:   an ingredient or a reference: an engine/database/index other software is built on,
+              a library or SDK you import, a framework you build with, a curated link list or
+              awesome-list, a tutorial, notes, or a paper.
+    Score shape, NOT quality, NOT popularity, NOT usefulness — those are scored elsewhere. A
+    hugely popular, genuinely excellent vector database is a 10 because it is an ingredient. A
+    small, rough, barely-known app that a person actually opens and uses is a 75. Never let stars
+    or fame move this number.
 - body: an object with exactly these keys [${bodyKeys}]:
 ${bodyGuide}
 - quickstart (include when the README shows how to install/run): { install: THE exact one-line

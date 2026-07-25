@@ -1,4 +1,4 @@
-import { isPickEligible } from "@aix/core";
+import { isPickEligible, isFeaturableIntegration } from "@aix/core";
 import type { DigestItem, InternalClient } from "./client";
 import { buildItemEmbed } from "./embeds";
 import {
@@ -102,13 +102,19 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
     return [];
   }
 
-  // Post at most `maxPerRun` (default 1) — the "pick of the day". Featured by
-  // broad-appeal `pickScore` (audience fit + utility + traction + ease), NOT raw
-  // overallScore, so a clever-but-niche repo never headlines. Only essential/
-  // worthwhile verdicts are eligible; fall back to all if a thin day has none.
+  // Post at most `maxPerRun` (default 1) — the "pick of the day". Prefer the item
+  // the scanner already stamped as THE pick: it applied the category cooldown and
+  // productShape ranking the bot can't see, so choosing independently here would
+  // headline something different from the site (ticket 0078). Absent a stamp
+  // (submission-only window, or an older scanner), fall back to the highest
+  // `pickScore` among featurable items, then to all runnable items on a thin day.
   const max = deps.maxPerRun ?? 1;
-  const eligible = items.filter((i) => isPickEligible(i.verdict));
-  const pool = eligible.length > 0 ? eligible : items;
+  // A nullish integration means an older server that doesn't send it — treat as
+  // runnable rather than silently dropping every candidate.
+  const runnable = items.filter((i) => isFeaturableIntegration(i.integration ?? ""));
+  const stamped = runnable.filter((i) => i.isDailyPick);
+  const eligible = runnable.filter((i) => isPickEligible(i.verdict));
+  const pool = stamped.length > 0 ? stamped : eligible.length > 0 ? eligible : runnable;
   const picks = [...pool]
     .sort((a, b) => (b.pickScore ?? b.overallScore) - (a.pickScore ?? a.overallScore))
     .slice(0, max);

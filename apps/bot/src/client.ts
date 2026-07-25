@@ -13,11 +13,14 @@ export const DigestItem = z.object({
   url: z.string(),
   verdict: z.string(),
   overallScore: z.number(),
-  /** Broad-appeal daily-pick score (audience fit + utility + traction + ease). */
+  /** Product-appeal daily-pick score (productShape + utility + fit + ease). */
   pickScore: z.number().nullish(),
   noiseScore: z.number().nullish(),
   tagline: z.string(),
   category: z.string(),
+  integration: z.string().nullish(),
+  /** True when the scanner stamped this as THE featured pick (ticket 0078). */
+  isDailyPick: z.boolean().nullish(),
   primaryAudience: z.string().nullish(),
   aiEngineerFit: z.number().nullish(),
   coverImageUrl: z.string().nullish(),

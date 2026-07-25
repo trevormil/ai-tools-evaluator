@@ -49,6 +49,8 @@ const ScanRunSchema = z.object({ id: z.union([z.string(), z.number()]) });
 
 const KnownSchema = z.object({ known: z.array(z.string()) });
 
+const RecentPicksSchema = z.object({ days: z.number(), categories: z.array(z.string()) });
+
 /** A discovery candidate reduced to its identity, for pre-eval dedup. */
 export type CandidateId = { kind: string; externalId: string };
 
@@ -66,6 +68,8 @@ export type InternalClient = {
   getCap(): Promise<CapInfo>;
   /** Pre-eval dedup: returns the subset of candidate externalIds already graded. */
   filterKnown(candidates: CandidateId[]): Promise<Set<string>>;
+  /** Categories featured as the daily pick recently — penalized when picking today's. */
+  getRecentPickCategories(): Promise<string[]>;
   listQueuedSubmissions(limit: number): Promise<Submission[]>;
   publishItem(
     evaluation: Evaluation,
@@ -122,6 +126,17 @@ export function createInternalClient(opts: {
         body: JSON.stringify({ candidates }),
       });
       return new Set(KnownSchema.parse(data).known);
+    },
+
+    async getRecentPickCategories() {
+      // Advisory only — the cooldown is a nice-to-have, so an older server
+      // without this route must not abort the scan.
+      try {
+        const data = await req("/api/internal/recent-picks");
+        return RecentPicksSchema.parse(data).categories;
+      } catch {
+        return [];
+      }
     },
 
     async listQueuedSubmissions(limit) {

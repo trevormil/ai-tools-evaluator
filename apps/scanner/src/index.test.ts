@@ -32,6 +32,7 @@ function fakeClient(opts: {
   duplicates?: Set<string>; // externalIds that should report duplicate on publish
   known?: Set<string>; // externalIds already graded (pre-eval dedup)
   submissionRemaining?: number; // submission budget remaining (default: plenty)
+  recentPickCategories?: string[]; // categories on daily-pick cooldown
 }): InternalClient & { calls: ClientCall[]; publishedOrder: string[]; pickedOrder: string[] } {
   const calls: ClientCall[] = [];
   const publishedOrder: string[] = [];
@@ -55,6 +56,10 @@ function fakeClient(opts: {
     async filterKnown(candidates) {
       calls.push({ op: "filterKnown", arg: candidates.map((c) => c.externalId) });
       return new Set(candidates.map((c) => c.externalId).filter((id) => known.has(id)));
+    },
+    async getRecentPickCategories() {
+      calls.push({ op: "recentPicks" });
+      return opts.recentPickCategories ?? [];
     },
     async listQueuedSubmissions(limit) {
       calls.push({ op: "listQueued", arg: limit });
@@ -248,6 +253,108 @@ describe("run loop", () => {
     );
     expect(result.published).toBe(2);
     expect(client.pickedOrder).toEqual(["t/broad"]); // niche excluded despite higher fit
+  });
+
+  test("a knowledge item is never the daily pick, even as the thin-day fallback", async () => {
+    // Ticket 0078: the 2026-07-24 pick was a README link list (integration
+    // `knowledge`). Here it has the best signals AND the only good verdict.
+    const client = fakeClient({ remaining: 10, queued: [] });
+    await run(
+      baseDeps({
+        client,
+        trendingSources: [
+          ghSource(async () => ["t/link-dump", "t/real"].map((e) => trendingDiscovered(e)), 2),
+        ],
+        evaluate: async (d) => {
+          const e = evalFor(d.source.externalId);
+          if (d.source.externalId === "t/link-dump")
+            return {
+              ...e,
+              verdict: "essential",
+              integration: "knowledge",
+              productShape: { score: 5, rationale: "A curated list of links, not software." },
+              audience: { ...e.audience, aiEngineerFit: 99 },
+            };
+          return { ...e, verdict: "niche", audience: { ...e.audience, aiEngineerFit: 50 } };
+        },
+      }),
+    );
+    expect(client.pickedOrder).toEqual(["t/real"]);
+  });
+
+  test("the daily pick prefers product-shape over an infra primitive's better metrics", async () => {
+    const client = fakeClient({ remaining: 10, queued: [] });
+    await run(
+      baseDeps({
+        client,
+        trendingSources: [
+          ghSource(async () => ["t/vector-db", "t/app"].map((e) => trendingDiscovered(e)), 2),
+        ],
+        evaluate: async (d) => {
+          const e = evalFor(d.source.externalId);
+          const base = { ...e, verdict: "worthwhile" as const };
+          // The primitive wins fit, utility, ease AND composability…
+          if (d.source.externalId === "t/vector-db")
+            return {
+              ...base,
+              productShape: { score: 15, rationale: "An engine other software is built on." },
+              audience: { ...e.audience, aiEngineerFit: 95 },
+              scores: {
+                ...e.scores,
+                utility: { score: 100, rationale: "Genuinely useful primitive." },
+                easeOfAdoption: { score: 90, rationale: "One docker run." },
+                composability: { score: 90, rationale: "Drops into any stack." },
+              },
+            };
+          // …and still loses to the thing a person actually opens and uses.
+          return {
+            ...base,
+            productShape: { score: 90, rationale: "An app you open and use daily." },
+            audience: { ...e.audience, aiEngineerFit: 85 },
+            scores: {
+              ...e.scores,
+              utility: { score: 80, rationale: "Useful once you're in it." },
+              easeOfAdoption: { score: 40, rationale: "Heavier self-hosted lift." },
+              composability: { score: 75, rationale: "Sits alongside your tools." },
+            },
+          };
+        },
+      }),
+    );
+    expect(client.pickedOrder).toEqual(["t/app"]);
+  });
+
+  test("a category featured recently is penalized, flipping a close pick", async () => {
+    const evaluate = async (d: Discovered) => {
+      const e = evalFor(d.source.externalId);
+      const strong = d.source.externalId === "t/rag-again";
+      return {
+        ...e,
+        verdict: "worthwhile" as const,
+        category: (strong ? "rag" : "productivity") as typeof e.category,
+        productShape: { score: 60, rationale: "Comparable shape on both." },
+        audience: { ...e.audience, aiEngineerFit: strong ? 90 : 85 },
+        scores: {
+          ...e.scores,
+          utility: { score: strong ? 90 : 85, rationale: "r" },
+          easeOfAdoption: { score: strong ? 80 : 75, rationale: "r" },
+          composability: { score: strong ? 80 : 75, rationale: "r" },
+        },
+      };
+    };
+    const sources = () => [
+      ghSource(async () => ["t/rag-again", "t/other"].map((e) => trendingDiscovered(e)), 2),
+    ];
+
+    // No cooldown: the stronger `rag` item wins on score.
+    const cold = fakeClient({ remaining: 10, queued: [] });
+    await run(baseDeps({ client: cold, trendingSources: sources(), evaluate }));
+    expect(cold.pickedOrder).toEqual(["t/rag-again"]);
+
+    // `rag` featured in the last few days: the margin flips.
+    const hot = fakeClient({ remaining: 10, queued: [], recentPickCategories: ["rag"] });
+    await run(baseDeps({ client: hot, trendingSources: sources(), evaluate }));
+    expect(hot.pickedOrder).toEqual(["t/other"]);
   });
 
   test("the master trending cap bounds the total across sources", async () => {
