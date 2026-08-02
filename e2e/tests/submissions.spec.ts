@@ -17,8 +17,10 @@ test("a fresh URL creates a live 'Awaiting score…' item and lands you on it", 
   await expect(page).toHaveURL(new RegExp(`/item/${name}`));
   await expect(page.getByText("Awaiting score…").first()).toBeVisible();
   await expect(page.getByRole("button", { name: /i use this/i })).toBeVisible();
-  // Instant logo: GitHub owner avatar.
-  await expect(page.locator(`img[src="https://github.com/e2e-org.png"]`).first()).toBeVisible();
+  // Instant cover: the repo's own social-preview card (not the owner avatar).
+  await expect(
+    page.locator(`img[src*="opengraph.githubassets.com"]`).first(),
+  ).toBeVisible();
 
   // Takes are one tab over…
   await page.getByRole("tab", { name: /takes/i }).click();
@@ -32,7 +34,7 @@ test("a fresh URL creates a live 'Awaiting score…' item and lands you on it", 
   await expect(page.getByText(comment)).toBeVisible();
 
   // And it is browsable in the directory (sort by new).
-  await page.goto("/?sort=new");
+  await page.goto("/directory?sort=new");
   await expect(page.getByText(name).first()).toBeVisible();
 });
 

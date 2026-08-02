@@ -14,9 +14,11 @@ test("?tab=activity deep-links straight to the Activity tab", async ({ page }) =
 });
 
 test("switching tabs updates the URL for sharing", async ({ page }) => {
+  // Articles were removed in the Takes-centric refactor (#19); the tabs are
+  // now Takes / My Stack / Activity.
   await page.goto("/u/e2euser");
-  await page.getByRole("tab", { name: "Articles" }).click();
-  await expect(page).toHaveURL(/tab=articles/);
+  await page.getByRole("tab", { name: "My Stack" }).click();
+  await expect(page).toHaveURL(/tab=stack/);
 });
 
 test("a visitor sees the DM affordance on stack entries", async ({ page, context, baseURL }) => {

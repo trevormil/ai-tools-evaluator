@@ -2,24 +2,24 @@ import { test, expect } from "@playwright/test";
 
 /** Public, unauthenticated browsing over the seeded dataset. */
 
-test("home IS the directory: seeded tools list at /", async ({ page }) => {
+test("home feed surfaces the seeded tools", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: /ripgrep/i }).first()).toBeVisible();
   await expect(page.getByText(/zod/i).first()).toBeVisible();
 });
 
-test("directory filters to complexity-traps at /", async ({ page }) => {
-  await page.goto("/?verdict=complexity-trap");
-  // Filtering hides the recap hero, so the page is just the filtered directory.
+test("directory filters to complexity-traps at /directory", async ({ page }) => {
+  await page.goto("/directory?verdict=complexity-trap");
   await expect(page.getByText(/langchain/i).first()).toBeVisible();
   await expect(page.getByText(/ripgrep/i)).toHaveCount(0);
 });
 
-test("home leads with the nightly recap hero", async ({ page }) => {
+test("home leads with today's pick, then the feed", async ({ page }) => {
+  // The recap-hero home was replaced by the Takes-centric feed (#19, #59-61):
+  // pick of the day up top, community feed below.
   await page.goto("/");
-  await expect(page.getByText("The nightly recap")).toBeVisible();
-  await expect(page.getByText(/tools judged:/i)).toBeVisible();
-  await expect(page.getByText("Tonight's pick")).toBeVisible();
+  await expect(page.getByText("Today's pick")).toBeVisible();
+  await expect(page.getByText("The feed")).toBeVisible();
 });
 
 test("recap page + dated permalink + archive render", async ({ page }) => {
@@ -37,18 +37,20 @@ test("recap page + dated permalink + archive render", async ({ page }) => {
   await expect(page.getByText("Every verdict tonight")).toBeVisible();
 });
 
-test("nav surfaces Recap, not the feed timeline", async ({ page }) => {
+test("nav is the two-surface split: Feed, Directory, Submit", async ({ page }) => {
   await page.goto("/");
   const nav = page.locator("header").first();
-  await expect(nav.getByRole("link", { name: "Recap" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Feed" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Directory" })).toBeVisible();
+  await expect(nav.getByRole("link", { name: "Submit" })).toBeVisible();
+  // Surfaces from retired eras stay retired.
+  await expect(nav.getByRole("link", { name: "Recap" })).toHaveCount(0);
   await expect(nav.getByRole("link", { name: "Activity" })).toHaveCount(0);
 });
 
-test("old /directory URLs redirect home with filters intact", async ({ page }) => {
-  await page.goto("/directory?verdict=complexity-trap");
-  await expect(page).toHaveURL(/\/\?verdict=complexity-trap/);
-  await expect(page.getByText(/langchain/i).first()).toBeVisible();
-});
+// DELETED: "old /directory URLs redirect home with filters intact" — that
+// redirect encoded the home-is-the-directory era, which #19 reversed:
+// /directory is the canonical catalog again (covered by the filter test above).
 
 test("item detail renders verdict, sections, scorecard, audience across tabs", async ({ page }) => {
   await page.goto("/item/ripgrep");
@@ -98,16 +100,8 @@ test("leaderboard has a complexity-trap hall of shame", async ({ page }) => {
   await expect(page.getByText(/langchain/i).first()).toBeVisible();
 });
 
-test("newsletter subscribe accepts an email", async ({ page }) => {
-  await page.goto("/");
-  const email = page.getByPlaceholder(/@/).first();
-  await email.fill("e2e-subscriber@example.com");
-  await page
-    .getByRole("button", { name: /subscribe/i })
-    .first()
-    .click();
-  await expect(page.getByText(/confirm|inbox/i)).toBeVisible();
-});
+// DELETED: "newsletter subscribe accepts an email" — the newsletter UI was
+// removed in the Takes-centric refactor (#19); only the DB table remains.
 
 test("public API v1 + atom feed respond", async ({ request }) => {
   const api = await request.get("/api/v1/items?limit=5");
