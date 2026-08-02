@@ -1,7 +1,7 @@
 ---
 id: 074
 title: "e2e: 14 specs drifted from the app while the suite was dark (unblocked by 0066)"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-21
 updated: 2026-08-02
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/84"]
+prs: []
 refs: ["066"]
 depends_on: []
 acceptance:
@@ -47,3 +47,6 @@ it and say so in the commit.
 
 Worth adding once green: a CI job so the suite can't go dark again — that is the
 root cause of 14 tests rotting unnoticed.
+
+Closed 2026-08-02: PR #84 was auto-closed unmerged during the stacked-merge
+mishap; the work landed on main via roll-up PR #88 (415cd19).

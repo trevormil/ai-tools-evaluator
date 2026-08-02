@@ -1,7 +1,7 @@
 ---
 id: 76
 title: "Taglines near the 160-char cap end mid-sentence (visible in App Store screenshots)"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-21
 updated: 2026-08-02
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/82"]
+prs: []
 refs: []
 depends_on: []
 acceptance:
@@ -41,3 +41,6 @@ sentence well inside it) and validate that a tagline ends in terminal
 punctuation, so a truncated one fails instead of silently shipping. Then repair
 the stored rows. Scan for other items near the cap — `LEANN` is also 153 chars
 but ends cleanly, so length alone is not the signal.
+
+Closed 2026-08-02: PR #82 was auto-closed unmerged during the stacked-merge
+mishap; the work landed on main via roll-up PR #88 (415cd19).

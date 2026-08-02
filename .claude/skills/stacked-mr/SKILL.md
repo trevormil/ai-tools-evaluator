@@ -21,6 +21,13 @@ main
 
 Each PR/MR diff is against its parent branch. The human merges bottom-up.
 
+> **Merging caution (learning 0002):** squash-merging the stack in a tight
+> loop races GitHub's retargeting — children get auto-closed when a parent
+> branch is deleted, or merge INTO the parent instead of main. Before each
+> merge, wait until the PR's `baseRefName` is main and it is `MERGEABLE`
+> (or retarget it explicitly with `gh pr edit N --base main`). See
+> `docs/learnings/0002-stacked-squash-merge-race.md`.
+
 ## Phase 1 — Build Stack
 
 For each runnable ticket:
