@@ -1,15 +1,15 @@
 ---
 id: 074
 title: "e2e: 14 specs drifted from the app while the suite was dark (unblocked by 0066)"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false
 type: bug
 source: manual
 created: 2026-07-21
-updated: 2026-07-21
-prs: []
+updated: 2026-08-02
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/84"]
 refs: ["066"]
 depends_on: []
 acceptance:
