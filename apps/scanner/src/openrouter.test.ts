@@ -31,6 +31,20 @@ describe("createOpenRouterModel", () => {
     expect(headers.Authorization).toBe("Bearer sk-or-test");
   });
 
+  test("default completion budget fits an evaluation WITH a deepDive (0087)", async () => {
+    // 4096 truncated deep-dive drafts mid-JSON in prod (poirot: 'Expected ]'
+    // after 3 attempts; qwen: repair shrank the draft by dropping deepDive).
+    let body: { max_tokens?: number } | undefined;
+    const fetchImpl = (async (_url: string, init: RequestInit) => {
+      body = JSON.parse(init.body as string);
+      return new Response(JSON.stringify({ choices: [{ message: { content: "{}" } }] }), {
+        status: 200,
+      });
+    }) as unknown as typeof fetch;
+    await createOpenRouterModel({ apiKey: "k", model: "m", fetchImpl }).complete("s", "u");
+    expect(body!.max_tokens).toBeGreaterThanOrEqual(8192);
+  });
+
   test("throws with status + body on a non-2xx response", async () => {
     const fetchImpl = (async () =>
       new Response("rate limited", { status: 429 })) as unknown as typeof fetch;
