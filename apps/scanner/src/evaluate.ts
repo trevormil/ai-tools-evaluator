@@ -7,6 +7,7 @@ import {
   sanitizeEvaluationDraft,
   EvaluationDraft,
   Evaluation,
+  DeepDive,
   computeOverall,
   type ItemSource,
   type MediaAsset,
@@ -128,6 +129,10 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
   const basePrompt = buildEvaluatorPrompt(d.source, d.readme);
   const maxRetries = opts.maxRetries ?? 2;
   let lastError = "";
+  // A repair round tends to regenerate the whole draft and drop optional
+  // blocks; keep the best deepDive seen on ANY attempt and graft it back if
+  // the final valid draft lacks one (0088) — deterministic, not prompt-hope.
+  let salvagedDeepDive: DeepDive | undefined;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     const user =
@@ -138,11 +143,18 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
     const raw = await opts.model.complete(system, user);
 
     let draft: z.infer<typeof EvaluationDraft>;
+    let cleaned: unknown;
     try {
       // Clean the model's minor slips (junk tags, over-length fields) to the
       // schema bounds before validating, so they don't hard-fail the eval (0055).
-      draft = EvaluationDraft.parse(sanitizeEvaluationDraft(extractJson(raw)));
+      cleaned = sanitizeEvaluationDraft(extractJson(raw));
+      draft = EvaluationDraft.parse(cleaned);
     } catch (err) {
+      const dd = (cleaned as { deepDive?: unknown } | undefined)?.deepDive;
+      if (dd && !salvagedDeepDive) {
+        const parsed = DeepDive.safeParse(dd);
+        if (parsed.success) salvagedDeepDive = parsed.data;
+      }
       lastError =
         err instanceof z.ZodError
           ? JSON.stringify(err.issues.slice(0, 8))
@@ -152,6 +164,7 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
       continue;
     }
 
+    if (!draft.deepDive && salvagedDeepDive) draft = { ...draft, deepDive: salvagedDeepDive };
     return assembleEvaluation(d, draft, opts);
   }
 
@@ -177,6 +190,13 @@ function assembleEvaluation(
     audience: draft.audience,
     scores: draft.scores,
     overallScore: computeOverall(draft.scores),
+    // Optional evaluator-owned blocks — forward EVERY one. Omitting a field
+    // here silently discards it at the last step (0088: deepDive, quickstart,
+    // decision, and productShape — the 0078 pick signal — were all dropped).
+    productShape: draft.productShape,
+    quickstart: draft.quickstart,
+    decision: draft.decision,
+    deepDive: draft.deepDive,
     tagline: draft.tagline,
     body: draft.body,
     media: opts.deriveMedia

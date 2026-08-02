@@ -34,6 +34,9 @@ describe("evaluateItem", () => {
     expect(() => Evaluation.parse(evaluation)).not.toThrow();
     // overallScore is recomputed, not trusted from the model.
     expect(evaluation.overallScore).toBe(computeOverall(draft.scores));
+    // Optional evaluator-owned blocks survive assembly (0088 dropped them all;
+    // productShape is the 0078 daily-pick signal).
+    expect(evaluation.productShape?.score).toBe(draft.productShape.score);
     // Provenance + assembled fields.
     expect(evaluation.evaluatedBy).toBe("ai");
     expect(evaluation.model).toBe("claude-opus-4-8");
@@ -72,6 +75,61 @@ describe("evaluateItem", () => {
     const evaluation = await evaluateItem(makeDiscovered(), { model, modelName: "m" });
     expect(() => Evaluation.parse(evaluation)).not.toThrow();
     expect(model.calls).toBe(2);
+  });
+
+  test("a deepDive from a failed attempt is grafted into a repair that dropped it (0088)", async () => {
+    // Prod shape (kaas, qwen): attempt 1 carries a full deepDive but fails
+    // validation on an unrelated field; the model's repaired output is valid
+    // but regenerated WITHOUT the optional block. Preservation must be
+    // deterministic, not prompt-obedience.
+    const deepDive = {
+      howItWorks:
+        "The service accepts webhook events, verifies signatures, and fans work out to per-tenant queues. " +
+        "Workers process each job with idempotency keys so retries never double-apply, and results stream " +
+        "back over server-sent events to the dashboard.",
+      architecture: {
+        components: [
+          { id: "ingest", label: "Webhook ingest", role: "verifies + enqueues events" },
+          { id: "workers", label: "Worker pool", role: "idempotent per-tenant processing" },
+        ],
+        flows: [{ from: "ingest", to: "workers", label: "jobs" }],
+      },
+      internals: [{ title: "Idempotency keys", detail: "Retries can never double-apply a job." }],
+    };
+    const withDeepDiveButBadVerdict = { ...makeDraft(), deepDive, verdict: "not-a-verdict" };
+    const repairedWithoutDeepDive = makeDraft(); // valid, but the block is gone
+    const model = scriptedModel([
+      JSON.stringify(withDeepDiveButBadVerdict),
+      JSON.stringify(repairedWithoutDeepDive),
+    ]);
+
+    const evaluation = await evaluateItem(makeDiscovered(), { model, modelName: "m" });
+    expect(model.calls).toBe(2);
+    expect(() => Evaluation.parse(evaluation)).not.toThrow();
+    expect(evaluation.deepDive?.howItWorks).toContain("idempotency keys");
+    expect(evaluation.deepDive?.architecture?.components).toHaveLength(2);
+  });
+
+  test("a repair that KEEPS its own deepDive is not overwritten by the graft (0088)", async () => {
+    const earlier = {
+      howItWorks: "e".repeat(250),
+      architecture: {
+        components: [
+          { id: "a", label: "Old A", role: "the earlier attempt's component" },
+          { id: "b", label: "Old B", role: "the earlier attempt's component" },
+        ],
+        flows: [{ from: "a", to: "b" }],
+      },
+    };
+    const final = {
+      howItWorks: "f".repeat(250),
+    };
+    const model = scriptedModel([
+      JSON.stringify({ ...makeDraft(), deepDive: earlier, verdict: "nope" }),
+      JSON.stringify({ ...makeDraft(), deepDive: final }),
+    ]);
+    const evaluation = await evaluateItem(makeDiscovered(), { model, modelName: "m" });
+    expect(evaluation.deepDive?.howItWorks).toBe("f".repeat(250));
   });
 
   test("rejects invalid output that never repairs (never returns unvalidated)", async () => {
