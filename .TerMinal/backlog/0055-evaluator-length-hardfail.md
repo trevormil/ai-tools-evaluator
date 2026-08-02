@@ -1,15 +1,15 @@
 ---
 id: 055
 title: "Evaluator robustness: over-length model output hard-fails scoring"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false
 type: bug
 source: manual
 created: 2026-07-10
-updated: 2026-07-10
-prs: []
+updated: 2026-08-02
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/80"]
 refs: []
 depends_on: []
 acceptance: []
