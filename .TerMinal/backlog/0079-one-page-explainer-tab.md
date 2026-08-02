@@ -1,15 +1,15 @@
 ---
 id: 79
 title: "Add an AI-generated one-page explainer as a new site tab"
-status: open
+status: in-progress
 priority: medium
 horizon: next
 hitl: false
 type: feature
 source: manual
 created: 2026-08-01
-updated: 2026-08-01
-prs: []
+updated: 2026-08-02
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/85"]
 refs: []
 depends_on: []
 acceptance:
