@@ -17,7 +17,16 @@ export function sanitizeEvaluationDraft(raw: unknown): unknown {
   // tagline: hard cap at 160 (the most common overflow). Cut at a sentence
   // boundary when one exists so the result stays a complete sentence (0076);
   // otherwise word-cut and let the schema reject it into the repair loop.
-  if (typeof o.tagline === "string") o.tagline = clampSentence(o.tagline, 160);
+  if (typeof o.tagline === "string") {
+    o.tagline = clampSentence(o.tagline, 160);
+    // Style omission vs truncation (0085): a tagline comfortably under the cap
+    // that just lacks final punctuation is a complete sentence the model chose
+    // to end — punctuate it, don't burn a repair round (which regenerates the
+    // whole draft and tends to drop optional blocks like deepDive). Near the
+    // cap we leave it invalid: that's the mid-sentence-truncation shape.
+    const t = o.tagline as string;
+    if (t.length <= 150 && !/[.!?]["')\]]?$/.test(t)) o.tagline = `${t}.`;
+  }
 
   const q = o.quickstart;
   if (q && typeof q === "object") {

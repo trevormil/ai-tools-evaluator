@@ -71,6 +71,26 @@ describe("sanitizeEvaluationDraft", () => {
     expect(EvaluationDraft.safeParse(clean).success).toBe(true);
   });
 
+  test("a short tagline missing terminal punctuation gains a period — style, not truncation (0085)", () => {
+    // The QM failure: a complete, well-under-cap tagline without a final "."
+    // hard-failed into the repair loop, and the repaired output dropped the
+    // optional deepDive. Style omission is fixable deterministically.
+    const clean = sanitizeEvaluationDraft(
+      validDraft({ tagline: "A turnkey multiplayer agent platform for teams" }),
+    ) as Draft;
+    expect(clean.tagline).toBe("A turnkey multiplayer agent platform for teams.");
+    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+  });
+
+  test("near-cap punctuation-less taglines still fail — truncation is not style (0076 guard)", () => {
+    // 153 chars, no terminal punctuation — the qdrant shape. Appending "." here
+    // would bless a mid-sentence cut, so it must still go to the repair loop.
+    const nearCap =
+      "The de facto vector database for production RAG and semantic search - a Rust-based engine with rich filtering, quantization, and distributed scaling that";
+    const clean = sanitizeEvaluationDraft(validDraft({ tagline: nearCap })) as Draft;
+    expect(EvaluationDraft.safeParse(clean).success).toBe(false);
+  });
+
   test("a punctuation-less overflow is NOT silently word-cut valid — it goes to repair (0076)", () => {
     const long = "word ".repeat(60); // ~300 chars, no sentence boundary anywhere
     const clean = sanitizeEvaluationDraft(validDraft({ tagline: long })) as Draft;

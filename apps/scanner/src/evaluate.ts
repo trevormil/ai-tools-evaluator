@@ -130,7 +130,7 @@ export async function evaluateItem(d: Discovered, opts: EvaluateOptions): Promis
     const user =
       attempt === 0
         ? basePrompt
-        : `${basePrompt}\n\n## Repair\nYour previous response was rejected: ${lastError}\nReturn ONLY corrected raw JSON that matches the schema — no code fences, no commentary.`;
+        : `${basePrompt}\n\n## Repair\nYour previous response was rejected: ${lastError}\nFix ONLY the offending fields named above. Keep every other field of your previous answer — including optional blocks like deepDive, quickstart, and decision — present and unchanged; do not drop or regenerate them (0085). Return ONLY corrected raw JSON that matches the schema — no code fences, no commentary.`;
 
     const raw = await opts.model.complete(system, user);
 
