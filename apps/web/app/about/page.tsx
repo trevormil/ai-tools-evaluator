@@ -18,7 +18,7 @@ const STATIONS = [
   {
     code: "ST-01",
     title: "Scan",
-    body: "Every day the scanner sweeps GitHub trending, Product Hunt, and arXiv — and drains the link-drop queue, where anyone can submit a repo from the site or Discord.",
+    body: "Every day the scanner sweeps GitHub trending and Product Hunt — and drains the link-drop queue, where anyone can submit a repo or arXiv paper from the site or Discord.",
   },
   {
     code: "ST-02",
