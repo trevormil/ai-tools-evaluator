@@ -42,15 +42,32 @@ test("the deep dive renders: how-it-works prose, a real architecture diagram, in
   await expect(page.getByText("No-backtracking guarantee")).toBeVisible();
 });
 
-test("items without a stored deep dive simply omit those sections", async ({ page }) => {
-  // zod (seeded without deepDive) still renders its one-pager, minus the deep sections.
-  await page.goto("/item/zod/onepager");
-  await expect(page.getByText("/100 overall")).toBeVisible();
-  await expect(page.getByText("How it works")).toHaveCount(0);
-  await expect(page.getByTestId("arch-diagram")).toHaveCount(0);
+test("no deep dive means NO one-pager: no tab, no link, route 404s (0084)", async ({ page }) => {
+  // zod is seeded without a deepDive — it has no generated one-pager yet, so
+  // the surface is absent entirely (a rescore backfills it later).
+  await page.goto("/item/zod");
+  await expect(page.getByRole("tab", { name: "Scorecard" })).toBeVisible();
+  await expect(page.getByRole("tab", { name: "One-pager" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /one-pager/i })).toHaveCount(0);
+  const res = await page.goto("/item/zod/onepager");
+  expect(res?.status()).toBe(404);
 });
 
-test("the item page links to its one-pager", async ({ page }) => {
+test("the one-pager is a tab on the item page, deep-linkable via ?tab=onepager (0084)", async ({
+  page,
+}) => {
+  await page.goto("/item/ripgrep");
+  await page.getByRole("tab", { name: "One-pager" }).click();
+  await expect(page).toHaveURL(/tab=onepager/);
+  await expect(page.getByText("/100 overall")).toBeVisible();
+  await expect(page.getByText("How it works")).toBeVisible();
+  await expect(page.getByTestId("arch-diagram")).toBeVisible();
+  // Deep link straight into the tab.
+  await page.goto("/item/ripgrep?tab=onepager");
+  await expect(page.getByText("Adopt if")).toBeVisible();
+});
+
+test("the item page readout still links to the standalone one-pager", async ({ page }) => {
   await page.goto("/item/ripgrep");
   await page.getByRole("link", { name: /one-pager/i }).click();
   await expect(page).toHaveURL(/\/item\/ripgrep\/onepager/);

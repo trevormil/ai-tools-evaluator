@@ -10,6 +10,7 @@ import { repostCount, hasReposted } from "@/lib/reposts";
 import { toCommentViews } from "@/lib/comment-view";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { Scorecard } from "@/components/scorecard";
+import { OnePagerView } from "@/components/onepager-view";
 import { AudienceFit } from "@/components/audience-fit";
 import { MediaGallery } from "@/components/media-gallery";
 import { CoverImage } from "@/components/cover-image";
@@ -165,6 +166,15 @@ export default async function ItemPage({
           </section>
         ),
       });
+      // One-pager exists only once a deepDive was generated (0084) — older
+      // evaluations get it on rescore, not a hollow tab.
+      if (evaluation!.deepDive) {
+        tabs.push({
+          key: "onepager",
+          label: "One-pager",
+          content: <OnePagerView item={item} evaluation={evaluation!} hero={false} />,
+        });
+      }
     }
 
     if (readmeHtml) {
@@ -405,12 +415,14 @@ export default async function ItemPage({
                     </a>
                   </SpecRow>
                 </dl>
-                <Link
-                  href={`/item/${item.slug}/onepager`}
-                  className="data mt-1 text-xs text-brand hover:underline"
-                >
-                  One-pager →
-                </Link>
+                {evaluation?.deepDive && (
+                  <Link
+                    href={`/item/${item.slug}/onepager`}
+                    className="data mt-1 text-xs text-brand hover:underline"
+                  >
+                    One-pager →
+                  </Link>
+                )}
               </div>
             )}
           </div>
