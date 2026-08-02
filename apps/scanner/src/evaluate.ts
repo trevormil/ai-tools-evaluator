@@ -33,7 +33,9 @@ export function createAnthropicModel(opts: {
     async complete(system, user) {
       const msg = await client.messages.create({
         model: opts.model,
-        max_tokens: opts.maxTokens ?? 4096,
+        // 8192: a full evaluation WITH a deepDive doesn't fit in 4096 — the
+        // completion truncated mid-JSON and hard-failed the eval (0087).
+        max_tokens: opts.maxTokens ?? 8192,
         system,
         messages: [{ role: "user", content: user }],
       });
@@ -68,7 +70,8 @@ export function createOpenRouterModel(opts: {
         },
         body: JSON.stringify({
           model: opts.model,
-          max_tokens: opts.maxTokens ?? 4096,
+          // See createAnthropicModel: 4096 truncated deep-dive drafts (0087).
+          max_tokens: opts.maxTokens ?? 8192,
           messages: [
             { role: "system", content: system },
             { role: "user", content: user },
