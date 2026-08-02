@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-08-02
 updated: 2026-08-02
-prs: []
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/87"]
 refs: ["079"]
 depends_on: ["079"]
 acceptance:
