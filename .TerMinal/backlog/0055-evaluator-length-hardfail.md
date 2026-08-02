@@ -1,7 +1,7 @@
 ---
 id: 055
 title: "Evaluator robustness: over-length model output hard-fails scoring"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-10
 updated: 2026-08-02
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/80"]
+prs: []
 refs: []
 depends_on: []
 acceptance: []
@@ -44,3 +44,6 @@ Fixes to consider:
 Also harden `runDry` (scanner `index.ts`): unlike the real run loop, the dry-run
 path does NOT wrap `evaluate()` in try/catch, so a single bad eval aborts the
 whole dry run. Wrap it so a dry run skips-and-continues like production.
+
+Closed 2026-08-02: PR #80 was auto-closed unmerged during the stacked-merge
+mishap; the work landed on main via roll-up PR #88 (415cd19).

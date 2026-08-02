@@ -1,7 +1,7 @@
 ---
 id: 075
 title: "seed: add a product-lens fixture so all three lenses are drift-guarded"
-status: in-progress
+status: closed
 priority: medium
 horizon: next
 hitl: false
@@ -9,7 +9,7 @@ type: chore
 source: manual
 created: 2026-07-21
 updated: 2026-08-02
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/83"]
+prs: []
 refs: ["066"]
 depends_on: []
 acceptance:

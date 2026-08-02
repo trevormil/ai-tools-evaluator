@@ -1,7 +1,7 @@
 ---
 id: 083
 title: "One-pagers: deep-dive sections — how it works + real architecture diagrams"
-status: in-progress
+status: closed
 priority: medium
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: feature
 source: manual
 created: 2026-08-02
 updated: 2026-08-02
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/88"]
+prs: []
 refs: ["081"]
 depends_on: ["081"]
 acceptance:
