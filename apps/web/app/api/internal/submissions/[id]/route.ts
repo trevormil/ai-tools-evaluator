@@ -27,14 +27,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   }
   const db = getDb();
 
-  const terminal = ["published", "duplicate", "rejected", "failed"].includes(parsed.data.status);
+  // processedAt doubles as the "processing" pickup time so a run that dies
+  // mid-flight leaves a measurable staleness marker for reclaim (0056).
   const submission = db
     .update(submissions)
     .set({
       status: parsed.data.status,
       reason: parsed.data.reason ?? null,
       itemId: parsed.data.itemId ?? null,
-      processedAt: terminal ? Math.floor(Date.now() / 1000) : null,
+      processedAt: Math.floor(Date.now() / 1000),
     })
     .where(eq(submissions.id, id))
     .returning()
