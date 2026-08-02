@@ -33,7 +33,7 @@ function patch(id: string, body: unknown) {
 
 function insertSubmission(opts: {
   id: string;
-  status: string;
+  status: (typeof import("@aix/db").submissions.$inferInsert)["status"];
   createdAt?: number;
   processedAt?: number | null;
 }) {
