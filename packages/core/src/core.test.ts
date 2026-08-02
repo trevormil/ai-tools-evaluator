@@ -87,6 +87,57 @@ describe("schema", () => {
     expect(() => Evaluation.parse(sample)).not.toThrow();
   });
 
+  test("deepDive is optional — evaluations without it stay valid (0083 back-compat)", () => {
+    expect(Evaluation.safeParse(sample).success).toBe(true);
+  });
+
+  test("a valid deepDive block parses: howItWorks + architecture graph + internals (0083)", () => {
+    const deep = structuredClone(sample);
+    (deep as Record<string, unknown>).deepDive = {
+      howItWorks:
+        "The binary walks the directory tree with a parallel recursive iterator that consults " +
+        "gitignore rules at every level. Matching is delegated to a finite-automata regex engine " +
+        "that compiles the pattern once and streams file contents through it, falling back to " +
+        "literal-string SIMD search when the pattern has no meta-characters.",
+      architecture: {
+        components: [
+          { id: "walker", label: "Parallel dir walker", role: "produces candidate files" },
+          { id: "ignore", label: "Ignore engine", role: "prunes via .gitignore rules" },
+          { id: "regex", label: "Regex core", role: "finite-automata matcher" },
+        ],
+        flows: [
+          { from: "walker", to: "ignore" },
+          { from: "ignore", to: "regex", label: "surviving files" },
+        ],
+      },
+      internals: [
+        { title: "SIMD literal fast path", detail: "Plain-string patterns skip the regex engine." },
+      ],
+    };
+    expect(Evaluation.safeParse(deep).success).toBe(true);
+  });
+
+  test("deepDive flows must reference declared component ids (0083)", () => {
+    const bad = structuredClone(sample);
+    (bad as Record<string, unknown>).deepDive = {
+      howItWorks: "x".repeat(250),
+      architecture: {
+        components: [
+          { id: "a", label: "A", role: "does a" },
+          { id: "b", label: "B", role: "does b" },
+        ],
+        flows: [{ from: "a", to: "ghost" }],
+      },
+    };
+    expect(Evaluation.safeParse(bad).success).toBe(false);
+  });
+
+  test("deepDive.howItWorks must be substantial, not a stub (0083)", () => {
+    const bad = structuredClone(sample);
+    (bad as Record<string, unknown>).deepDive = { howItWorks: "It greps fast." };
+    expect(Evaluation.safeParse(bad).success).toBe(false);
+  });
+
   test("rejects a tagline that ends mid-sentence (0076, the qdrant truncation)", () => {
     const bad = structuredClone(sample);
     bad.tagline =

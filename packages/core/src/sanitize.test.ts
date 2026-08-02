@@ -96,6 +96,39 @@ describe("sanitizeEvaluationDraft", () => {
     expect(dec.adoptIf[0]!.length).toBeLessThanOrEqual(140);
   });
 
+  test("deepDive: flows to unknown components are pruned, stub prose drops the block (0083)", () => {
+    const prose = "p".repeat(300);
+    const clean = sanitizeEvaluationDraft(
+      validDraft({
+        deepDive: {
+          howItWorks: prose,
+          architecture: {
+            components: [
+              { id: "a", label: "Walker", role: "does the a things" },
+              { id: "b", label: "Matcher", role: "does the b things" },
+            ],
+            flows: [
+              { from: "a", to: "b" },
+              { from: "a", to: "ghost" }, // pruned — undeclared endpoint
+            ],
+          },
+        },
+      }),
+    ) as Draft;
+    const dd = clean.deepDive as {
+      architecture: { flows: unknown[] };
+    };
+    expect(dd.architecture.flows).toHaveLength(1);
+    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+
+    // A stub howItWorks means no deep dive at all, not a schema failure.
+    const stub = sanitizeEvaluationDraft(
+      validDraft({ deepDive: { howItWorks: "It greps." } }),
+    ) as Draft;
+    expect(stub.deepDive).toBeUndefined();
+    expect(EvaluationDraft.safeParse(stub).success).toBe(true);
+  });
+
   test("leaves already-valid drafts untouched and non-objects alone", () => {
     const ok = validDraft();
     expect(EvaluationDraft.safeParse(sanitizeEvaluationDraft(ok)).success).toBe(true);

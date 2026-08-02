@@ -6,6 +6,7 @@ import { getItemBySlug, parseEvaluation } from "@/lib/queries";
 import { SegMeter } from "@/components/seg-meter";
 import { VerdictBadge } from "@/components/verdict-badge";
 import { CopyButton } from "@/components/copy-button";
+import { ArchDiagram } from "@/components/arch-diagram";
 
 export const dynamic = "force-dynamic";
 
@@ -70,6 +71,41 @@ export default async function OnePagerPage({ params }: { params: Params }) {
         <section className="flex flex-col gap-3">
           <h2 className="eyebrow !text-[12px]">What it is</h2>
           <p className="text-sm leading-relaxed text-muted">{body.whatItIs}</p>
+        </section>
+      )}
+
+      {/* Deep dive (0083): learn it without installing it. */}
+      {evaluation.deepDive && (
+        <section className="flex flex-col gap-3">
+          <h2 className="eyebrow !text-[12px]">How it works</h2>
+          {evaluation.deepDive.howItWorks.split(/\n\n+/).map((para, i) => (
+            <p key={i} className="text-sm leading-relaxed text-muted">
+              {para}
+            </p>
+          ))}
+        </section>
+      )}
+
+      {evaluation.deepDive?.architecture && (
+        <section className="flex flex-col gap-4">
+          <h2 className="eyebrow !text-[12px]">Architecture</h2>
+          <div className="card p-5">
+            <ArchDiagram architecture={evaluation.deepDive.architecture} />
+          </div>
+        </section>
+      )}
+
+      {evaluation.deepDive?.internals && evaluation.deepDive.internals.length > 0 && (
+        <section className="flex flex-col gap-4">
+          <h2 className="eyebrow !text-[12px]">Under the hood</h2>
+          <div className="card grid grid-cols-1 gap-x-8 gap-y-4 p-5 sm:grid-cols-2">
+            {evaluation.deepDive.internals.map((n) => (
+              <div key={n.title} className="flex flex-col gap-1">
+                <p className="text-sm font-semibold">{n.title}</p>
+                <p className="text-xs leading-relaxed text-faint">{n.detail}</p>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
@@ -173,23 +209,25 @@ export default async function OnePagerPage({ params }: { params: Params }) {
         </section>
       )}
 
-      {/* Who it's for. */}
-      <section className="flex flex-col gap-4">
-        <h2 className="eyebrow !text-[12px]">Who it&apos;s for</h2>
-        <div className="card flex flex-col gap-3 p-5">
-          <div className="flex items-center gap-3">
-            <span className="w-28 shrink-0 text-sm font-semibold">AI engineer</span>
-            <SegMeter score={evaluation.audience.aiEngineerFit} size="sm" className="flex-1" />
-            <span className="data text-xs">{evaluation.audience.aiEngineerFit}</span>
+      {/* Who it's for. Guarded: pre-2026-07 legacy rows may lack audience (PR #87 finding 3f1f6a02). */}
+      {evaluation.audience && (
+        <section className="flex flex-col gap-4">
+          <h2 className="eyebrow !text-[12px]">Who it&apos;s for</h2>
+          <div className="card flex flex-col gap-3 p-5">
+            <div className="flex items-center gap-3">
+              <span className="w-28 shrink-0 text-sm font-semibold">AI engineer</span>
+              <SegMeter score={evaluation.audience.aiEngineerFit} size="sm" className="flex-1" />
+              <span className="data text-xs">{evaluation.audience.aiEngineerFit}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="w-28 shrink-0 text-sm font-semibold">Vibe coder</span>
+              <SegMeter score={evaluation.audience.vibeCoderFit} size="sm" className="flex-1" />
+              <span className="data text-xs">{evaluation.audience.vibeCoderFit}</span>
+            </div>
+            <p className="text-xs text-faint">{evaluation.audience.rationale}</p>
           </div>
-          <div className="flex items-center gap-3">
-            <span className="w-28 shrink-0 text-sm font-semibold">Vibe coder</span>
-            <SegMeter score={evaluation.audience.vibeCoderFit} size="sm" className="flex-1" />
-            <span className="data text-xs">{evaluation.audience.vibeCoderFit}</span>
-          </div>
-          <p className="text-xs text-faint">{evaluation.audience.rationale}</p>
-        </div>
-      </section>
+        </section>
+      )}
 
       {/* Route back to the living page. */}
       <section className="flex flex-wrap items-center gap-3 pb-4">

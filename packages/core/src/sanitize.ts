@@ -46,6 +46,68 @@ export function sanitizeEvaluationDraft(raw: unknown): unknown {
     }
   }
 
+  // deepDive (0083): clean rather than fail — the block is optional, so a
+  // malformed one is dropped (or its bad parts pruned), never a hard reject.
+  const dd = o.deepDive;
+  if (dd && typeof dd === "object") {
+    const d = dd as Record<string, unknown>;
+    if (typeof d.howItWorks !== "string" || d.howItWorks.trim().length < 200) {
+      delete o.deepDive; // stub or missing prose — the whole block goes
+    } else {
+      d.howItWorks = d.howItWorks.trim().slice(0, 4000);
+      const arch = d.architecture;
+      if (arch && typeof arch === "object") {
+        const a = arch as { components?: unknown; flows?: unknown };
+        const components = (Array.isArray(a.components) ? a.components : [])
+          .filter(
+            (c): c is { id: string; label: string; role: string } =>
+              !!c &&
+              typeof (c as Record<string, unknown>).id === "string" &&
+              typeof (c as Record<string, unknown>).label === "string" &&
+              typeof (c as Record<string, unknown>).role === "string",
+          )
+          .slice(0, 10)
+          .map((c) => ({
+            id: c.id.slice(0, 24),
+            label: c.label.slice(0, 48),
+            role: c.role.slice(0, 120),
+          }));
+        const ids = new Set(components.map((c) => c.id));
+        const flows = (Array.isArray(a.flows) ? a.flows : [])
+          .filter(
+            (f): f is { from: string; to: string; label?: string } =>
+              !!f &&
+              typeof (f as Record<string, unknown>).from === "string" &&
+              typeof (f as Record<string, unknown>).to === "string" &&
+              ids.has((f as { from: string }).from) &&
+              ids.has((f as { to: string }).to),
+          )
+          .slice(0, 14)
+          .map((f) => ({
+            from: f.from,
+            to: f.to,
+            ...(typeof f.label === "string" ? { label: f.label.slice(0, 60) } : {}),
+          }));
+        if (components.length >= 2 && flows.length >= 1) {
+          d.architecture = { components, flows };
+        } else {
+          delete d.architecture;
+        }
+      }
+      if (Array.isArray(d.internals)) {
+        d.internals = d.internals
+          .filter(
+            (n): n is { title: string; detail: string } =>
+              !!n &&
+              typeof (n as Record<string, unknown>).title === "string" &&
+              typeof (n as Record<string, unknown>).detail === "string",
+          )
+          .slice(0, 6)
+          .map((n) => ({ title: n.title.slice(0, 80), detail: n.detail.slice(0, 500) }));
+      }
+    }
+  }
+
   return o;
 }
 

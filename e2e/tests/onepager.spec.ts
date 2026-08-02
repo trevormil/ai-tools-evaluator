@@ -23,6 +23,33 @@ test("an item's one-pager renders its evaluation as a spec sheet", async ({ page
   await expect(page.getByRole("link", { name: /full evaluation/i })).toBeVisible();
 });
 
+test("the deep dive renders: how-it-works prose, a real architecture diagram, internals (0083)", async ({
+  page,
+}) => {
+  await page.goto("/item/ripgrep/onepager");
+
+  await expect(page.getByText("How it works")).toBeVisible();
+  await expect(page.getByText(/work-stealing queue/)).toBeVisible();
+
+  // The diagram is generated from the evaluation's validated component graph.
+  await expect(page.getByText("Architecture", { exact: true })).toBeVisible();
+  const diagram = page.getByTestId("arch-diagram");
+  await expect(diagram).toBeVisible();
+  await expect(diagram.getByText("Ignore engine")).toBeVisible();
+  await expect(diagram.getByText("Regex core")).toBeVisible();
+
+  await expect(page.getByText("Under the hood")).toBeVisible();
+  await expect(page.getByText("No-backtracking guarantee")).toBeVisible();
+});
+
+test("items without a stored deep dive simply omit those sections", async ({ page }) => {
+  // zod (seeded without deepDive) still renders its one-pager, minus the deep sections.
+  await page.goto("/item/zod/onepager");
+  await expect(page.getByText("/100 overall")).toBeVisible();
+  await expect(page.getByText("How it works")).toHaveCount(0);
+  await expect(page.getByTestId("arch-diagram")).toHaveCount(0);
+});
+
 test("the item page links to its one-pager", async ({ page }) => {
   await page.goto("/item/ripgrep");
   await page.getByRole("link", { name: /one-pager/i }).click();

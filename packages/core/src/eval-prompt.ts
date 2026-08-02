@@ -97,6 +97,17 @@ ${bodyGuide}
     skipIf: 1-4 concrete situations where it is noise for the reader, insteadOf?: the incumbent
     it replaces ("grep", "joi", "raw SDK + a loop") }. Write these for a reader deciding in ten
     seconds — situational and specific, never marketing.
+- deepDive (include whenever the README gives you enough substance): {
+    howItWorks: 2-4 short paragraphs (200-4000 chars total) on how it ACTUALLY works behind the
+      scenes — the runtime model, the data flow, what happens end-to-end when a user invokes it.
+      Grounded strictly in the README and signals; NEVER invent internals it does not describe.
+    architecture (optional): { components: 2-10 of { id: short slug, label: <=48 chars,
+      role: <=120 chars }, flows: 1-14 of { from: component id, to: component id, label?: <=60 } }
+      — the real moving parts and how data moves between them. Every flow endpoint MUST be a
+      declared component id. Skip architecture entirely if the README doesn't reveal structure.
+    internals (optional): up to 6 { title: <=80, detail: <=500 } — the load-bearing mechanisms
+      (storage engine, protocol, concurrency model, caching) worth knowing before adopting. }
+    The reader's goal is to learn the tool WITHOUT installing it — write for that.
 - coverImageUrl (optional): from the images embedded in the README above, the single best
     SQUARE-friendly cover for a small thumbnail — a clean logo, icon, or mark that crops well to a
     square. AVOID wide banners, screenshots, diagrams, and animated GIFs. Copy the image URL EXACTLY

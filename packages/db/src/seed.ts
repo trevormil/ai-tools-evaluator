@@ -52,6 +52,7 @@ function make(input: {
   body: Eval["body"];
   quickstart?: Eval["quickstart"];
   decision?: Eval["decision"];
+  deepDive?: Eval["deepDive"];
   evaluatedAt: string;
 }): Eval {
   const overallScore = computeOverall(input.scores);
@@ -71,6 +72,7 @@ function make(input: {
     body: input.body,
     quickstart: input.quickstart,
     decision: input.decision,
+    deepDive: input.deepDive,
     media: [],
     evaluatedBy: "human",
     evaluatedAt: input.evaluatedAt,
@@ -165,6 +167,44 @@ export const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; commen
           "Nothing about rg itself needs fixing; the real win is upstream — distros and locked-down base images shipping it as grep's default, so the 'install another binary' friction disappears.",
         steelman:
           "But the gitignore-awareness alone changes agent behavior for the better, and the speed removes a real reason to under-search. It's the rare tool that's both boring and genuinely load-bearing. Adopt it and forget about it.",
+      },
+      deepDive: {
+        howItWorks:
+          "A search starts with a parallel directory walker: worker threads pull directories off a shared work-stealing queue, so a deep monorepo saturates every core instead of crawling one directory at a time. Every candidate path is checked against the ignore engine — a compiled matcher built from .gitignore, .ignore, and global git excludes at each level of the tree — before the file is ever opened, which is why node_modules and build output cost nothing.\n\nMatching itself runs on Rust's finite-automata regex engine: patterns compile once into a DFA/lazy-DFA, so there is no backtracking and worst-case time stays linear in the input. When the pattern is a plain literal (or has a literal prefix), the engine sidesteps regex entirely and hands the scan to SIMD-accelerated memchr routines, which is where most of the headline speed comes from.\n\nPer file, ripgrep decides between memory-mapping and buffered reads based on file size and platform quirks, detects binary files early and skips them, and transcodes UTF-16 when a BOM says so. Matches stream to a printer that aggregates per-file results, so output stays grouped even though the search itself is unordered and parallel.",
+        architecture: {
+          components: [
+            { id: "walker", label: "Parallel walker", role: "work-stealing directory traversal across threads" },
+            { id: "ignore", label: "Ignore engine", role: "compiled .gitignore/.ignore matcher, prunes before open" },
+            { id: "searcher", label: "Searcher", role: "per-file strategy: mmap vs buffered, binary detection" },
+            { id: "regex", label: "Regex core", role: "finite-automata engine — no backtracking, linear time" },
+            { id: "literal", label: "SIMD literal path", role: "memchr fast path for plain-string patterns" },
+            { id: "printer", label: "Printer", role: "aggregates matches into grouped, colored output" },
+          ],
+          flows: [
+            { from: "walker", to: "ignore", label: "candidate paths" },
+            { from: "ignore", to: "searcher", label: "surviving files" },
+            { from: "searcher", to: "regex", label: "file contents" },
+            { from: "regex", to: "literal", label: "literal patterns delegate" },
+            { from: "regex", to: "printer", label: "matches" },
+          ],
+        },
+        internals: [
+          {
+            title: "No-backtracking guarantee",
+            detail:
+              "The finite-automata engine means pathological patterns can't blow up to exponential time — worst case stays linear in input size.",
+          },
+          {
+            title: "Ignore rules as compiled matchers",
+            detail:
+              "Gitignore semantics (per-directory, precedence, negation) compile into one matcher per directory level, checked before any file I/O.",
+          },
+          {
+            title: "mmap heuristics",
+            detail:
+              "Large files memory-map when the platform makes that a win; small files use buffered reads — chosen per file, not globally.",
+          },
+        ],
       },
       quickstart: {
         install: "brew install ripgrep",
