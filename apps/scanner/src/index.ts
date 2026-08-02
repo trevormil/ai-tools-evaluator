@@ -219,7 +219,14 @@ async function runDry(deps: RunDeps): Promise<RunResult> {
     const ranked = src.rank(await src.discover(20), deps.now());
     for (const d of ranked.slice(0, src.budget)) {
       discovered++;
-      const evaluation = await evaluate(d);
+      let evaluation: Evaluation;
+      try {
+        evaluation = await evaluate(d);
+      } catch (err) {
+        // Skip-and-continue like the real loop — one bad eval must not abort the dry run (0055).
+        log.warn(`[dry-run:${src.name}] eval failed for ${d.source.externalId}, skipping: ${String(err)}`);
+        continue;
+      }
       evaluated++;
       log.info(
         `[dry-run:${src.name}] ${evaluation.slug} — ${evaluation.verdict} (${evaluation.overallScore}) — ${evaluation.tagline}`,
