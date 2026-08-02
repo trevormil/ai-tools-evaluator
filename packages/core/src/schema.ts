@@ -150,8 +150,14 @@ const EvaluationShape = z.object({
   productShape: MetricScore.optional(),
   /** Weighted final score, 0–100. Recomputed from `scores` on write. */
   overallScore: z.number().int().min(0).max(100),
-  /** One-line hook shown in feeds. Must state the verdict's reasoning tersely. */
-  tagline: z.string().min(10).max(160),
+  /** One-line hook shown in feeds. Must state the verdict's reasoning tersely.
+   *  Must be a COMPLETE sentence — a tagline that fills the cap and stops
+   *  mid-sentence renders as a visible bug on every listing surface (0076). */
+  tagline: z
+    .string()
+    .min(10)
+    .max(160)
+    .regex(/[.!?]["')\]]?$/, "tagline must be a complete sentence ending in . ! or ?"),
 
   /**
    * The write-up. Three sections are common to every lens (whatItIs,

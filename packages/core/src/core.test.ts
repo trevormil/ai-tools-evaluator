@@ -87,6 +87,26 @@ describe("schema", () => {
     expect(() => Evaluation.parse(sample)).not.toThrow();
   });
 
+  test("rejects a tagline that ends mid-sentence (0076, the qdrant truncation)", () => {
+    const bad = structuredClone(sample);
+    bad.tagline =
+      "A Rust-based engine with rich filtering, quantization, and distributed scaling that";
+    expect(Evaluation.safeParse(bad).success).toBe(false);
+  });
+
+  test("accepts taglines ending in ., !, ? — with or without a closing quote/paren", () => {
+    for (const t of [
+      "The one search tool you reach for first.",
+      "Is this just complexity in a trench coat?",
+      "Skip the wrapper — the base agent already does this!",
+      'They call it "essential" (it is not).',
+    ]) {
+      const ok = structuredClone(sample);
+      ok.tagline = t;
+      expect(Evaluation.safeParse(ok).success).toBe(true);
+    }
+  });
+
   test("rejects out-of-range metric score", () => {
     const bad = structuredClone(sample);
     (bad.scores.novelty as { score: number }).score = 130;

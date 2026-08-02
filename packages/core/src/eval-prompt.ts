@@ -73,7 +73,8 @@ ${readme.slice(0, 12000)}
 - noiseScore: 0 (pure signal) .. 100 (pure noise)
 - audience: { primary: ai-engineer | vibe-coder | both | neither, aiEngineerFit: 0-100, vibeCoderFit: 0-100, rationale }
     AIx is for AI-first ENGINEERS who want to upskill and sharpen their workflow — not vibe coders who just want a flashier tool to do the work for them. Score aiEngineerFit on depth/leverage for a technical engineer; score vibeCoderFit on accessible does-it-for-you value. They are independent (a real workflow tool can rate high on both). Set primary honestly.
-- tagline: one line, <=160 chars, states the verdict's reasoning
+- tagline: ONE complete sentence ending in . ! or ?, states the verdict's reasoning. Hard cap
+    160 chars — write to ~130 so it never runs out of room mid-sentence
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
 - productShape: { score: 0-100, rationale } — is this a FINISHED THING SOMEONE USES, or an
     INGREDIENT other software is built from? Judge the SHAPE of the thing only.

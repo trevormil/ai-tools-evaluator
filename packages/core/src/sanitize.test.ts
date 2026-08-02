@@ -57,11 +57,27 @@ describe("sanitizeEvaluationDraft", () => {
     expect(tags.length).toBeLessThanOrEqual(12);
   });
 
-  test("an over-length tagline is clamped to 160 (was the smoke-test failure)", () => {
-    const long = "word ".repeat(60); // ~300 chars
+  test("an over-length tagline is clamped at a sentence boundary, not mid-sentence (0076)", () => {
+    // The qdrant failure shape: complete first sentence, overflow after it.
+    const long =
+      "The de facto vector database for production RAG and semantic search with rich filtering. " +
+      "A second sentence about quantization and distributed scaling pushes it well past the cap entirely.";
+    const clean = sanitizeEvaluationDraft(validDraft({ tagline: long })) as Draft;
+    const tagline = clean.tagline as string;
+    expect(tagline.length).toBeLessThanOrEqual(160);
+    expect(tagline).toBe(
+      "The de facto vector database for production RAG and semantic search with rich filtering.",
+    );
+    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+  });
+
+  test("a punctuation-less overflow is NOT silently word-cut valid — it goes to repair (0076)", () => {
+    const long = "word ".repeat(60); // ~300 chars, no sentence boundary anywhere
     const clean = sanitizeEvaluationDraft(validDraft({ tagline: long })) as Draft;
     expect((clean.tagline as string).length).toBeLessThanOrEqual(160);
-    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+    // The clamp can't make this a complete sentence; the schema must reject it so
+    // the repair loop asks the model to shorten it, instead of shipping "… that".
+    expect(EvaluationDraft.safeParse(clean).success).toBe(false);
   });
 
   test("decision.insteadOf clamps to 120 and bullets to 4×140", () => {

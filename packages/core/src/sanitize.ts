@@ -14,8 +14,10 @@ export function sanitizeEvaluationDraft(raw: unknown): unknown {
   // (empty strings, 1-char, punctuation) the model sometimes emits.
   if (Array.isArray(o.tags)) o.tags = cleanTags(o.tags);
 
-  // tagline: hard cap at 160 (the most common overflow), trimmed at a word.
-  if (typeof o.tagline === "string") o.tagline = clamp(o.tagline, 160);
+  // tagline: hard cap at 160 (the most common overflow). Cut at a sentence
+  // boundary when one exists so the result stays a complete sentence (0076);
+  // otherwise word-cut and let the schema reject it into the repair loop.
+  if (typeof o.tagline === "string") o.tagline = clampSentence(o.tagline, 160);
 
   const q = o.quickstart;
   if (q && typeof q === "object") {
@@ -65,10 +67,17 @@ function cleanTags(tags: unknown[]): string[] {
   return out;
 }
 
-/** Truncate to `max`, avoiding an obvious mid-word cut when there's a nearby space. */
-function clamp(s: string, max: number): string {
-  if (s.length <= max) return s;
-  const cut = s.slice(0, max);
+/** Truncate to `max`, preferring the last sentence end (. ! ?) inside the cap;
+ *  falls back to a word cut when the text has no usable sentence boundary. */
+function clampSentence(s: string, max: number): string {
+  const t = s.trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max);
+  const sentence = cut.match(/^[\s\S]*[.!?](?=["')\]]?)/);
+  if (sentence && sentence[0].length > max * 0.3) {
+    const end = cut.slice(0, sentence[0].length + 1);
+    return /["')\]]$/.test(end) ? end : sentence[0];
+  }
   const sp = cut.lastIndexOf(" ");
   return sp > max * 0.6 ? cut.slice(0, sp) : cut;
 }
