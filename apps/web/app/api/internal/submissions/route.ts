@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { and, asc, eq, inArray } from "drizzle-orm";
+import { and, asc, eq, inArray, lt, sql } from "drizzle-orm";
 import { getDb, submissions } from "@aix/db";
 import { validateGithubRepoUrl } from "@aix/core";
 import { isInternalAuthorized } from "@/lib/internal-auth";
@@ -17,6 +17,9 @@ const SUB_STATUSES = [
   "failed",
 ] as const;
 
+/** A `processing` submission older than this is presumed orphaned and re-queued. */
+const STALE_PROCESSING_SECONDS = 30 * 60;
+
 /** List submissions (default queued, oldest-first — the scanner's drain order). */
 export async function GET(req: Request) {
   if (!isInternalAuthorized(req)) {
@@ -26,6 +29,24 @@ export async function GET(req: Request) {
   const statusParam = url.searchParams.get("status") ?? "queued";
   const status = (SUB_STATUSES as readonly string[]).includes(statusParam) ? statusParam : "queued";
   const limit = Math.min(Math.max(Number(url.searchParams.get("limit") ?? "20"), 1), 100);
+
+  // Self-heal on every drain: a submission left in `processing` by a run that
+  // died mid-flight would otherwise never be retried, since the scanner only
+  // drains `queued` (0056). Older rows have no pickup timestamp, so staleness
+  // falls back to createdAt.
+  if (status === "queued") {
+    const staleBefore = Math.floor(Date.now() / 1000) - STALE_PROCESSING_SECONDS;
+    getDb()
+      .update(submissions)
+      .set({ status: "queued", processedAt: null, reason: "reclaimed: stale processing" })
+      .where(
+        and(
+          eq(submissions.status, "processing"),
+          lt(sql`coalesce(${submissions.processedAt}, ${submissions.createdAt})`, staleBefore),
+        ),
+      )
+      .run();
+  }
 
   const rows = getDb()
     .select()

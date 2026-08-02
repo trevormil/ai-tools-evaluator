@@ -25,8 +25,8 @@ test("signed-in user adds a take and it leads their profile + the activity feed"
   // …on the profile's Takes tab…
   await page.goto("/u/e2euser?tab=takes");
   await expect(page.getByText(unique)).toBeVisible();
-  // …and in the activity feed, labeled as a take.
-  await page.goto("/activity");
+  // …and in the home feed, labeled as a take.
+  await page.goto("/");
   await expect(page.getByText(/shared a take on zod/i).first()).toBeVisible();
 });
 

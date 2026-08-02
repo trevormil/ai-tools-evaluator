@@ -1,15 +1,15 @@
 ---
 id: 76
 title: "Taglines near the 160-char cap end mid-sentence (visible in App Store screenshots)"
-status: open
+status: in-progress
 priority: medium
 horizon: now
 hitl: false
 type: bug
 source: manual
 created: 2026-07-21
-updated: 2026-07-21
-prs: []
+updated: 2026-08-02
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/82"]
 refs: []
 depends_on: []
 acceptance:

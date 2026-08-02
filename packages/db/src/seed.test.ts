@@ -29,12 +29,10 @@ describe("seed fixtures satisfy the current @aix/core schema", () => {
     expect(missing).toEqual([]);
   });
 
-  // NOTE: fixtures currently cover `agent-tool` and `research` only. A
-  // `product`-lens fixture would let this guard catch drift in that lens too —
-  // tracked separately rather than smuggled into an unrelated PR.
-  test("fixtures cover more than one lens", () => {
+  // Full coverage: a required section added to ANY lens must break a fixture
+  // here, in `bun test` — not in a dead e2e web server (tickets 0066/0075).
+  test("fixtures cover every lens", () => {
     const covered = new Set(EVALUATIONS.map(({ eval: e }) => lensFor(e.source)));
-    expect(covered.size).toBeGreaterThan(1);
-    for (const lens of covered) expect(LENSES).toContain(lens);
+    expect([...covered].sort()).toEqual([...LENSES].sort());
   });
 });

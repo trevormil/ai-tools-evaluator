@@ -52,6 +52,7 @@ function make(input: {
   body: Eval["body"];
   quickstart?: Eval["quickstart"];
   decision?: Eval["decision"];
+  deepDive?: Eval["deepDive"];
   evaluatedAt: string;
 }): Eval {
   const overallScore = computeOverall(input.scores);
@@ -71,6 +72,7 @@ function make(input: {
     body: input.body,
     quickstart: input.quickstart,
     decision: input.decision,
+    deepDive: input.deepDive,
     media: [],
     evaluatedBy: "human",
     evaluatedAt: input.evaluatedAt,
@@ -165,6 +167,44 @@ export const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; commen
           "Nothing about rg itself needs fixing; the real win is upstream — distros and locked-down base images shipping it as grep's default, so the 'install another binary' friction disappears.",
         steelman:
           "But the gitignore-awareness alone changes agent behavior for the better, and the speed removes a real reason to under-search. It's the rare tool that's both boring and genuinely load-bearing. Adopt it and forget about it.",
+      },
+      deepDive: {
+        howItWorks:
+          "A search starts with a parallel directory walker: worker threads pull directories off a shared work-stealing queue, so a deep monorepo saturates every core instead of crawling one directory at a time. Every candidate path is checked against the ignore engine — a compiled matcher built from .gitignore, .ignore, and global git excludes at each level of the tree — before the file is ever opened, which is why node_modules and build output cost nothing.\n\nMatching itself runs on Rust's finite-automata regex engine: patterns compile once into a DFA/lazy-DFA, so there is no backtracking and worst-case time stays linear in the input. When the pattern is a plain literal (or has a literal prefix), the engine sidesteps regex entirely and hands the scan to SIMD-accelerated memchr routines, which is where most of the headline speed comes from.\n\nPer file, ripgrep decides between memory-mapping and buffered reads based on file size and platform quirks, detects binary files early and skips them, and transcodes UTF-16 when a BOM says so. Matches stream to a printer that aggregates per-file results, so output stays grouped even though the search itself is unordered and parallel.",
+        architecture: {
+          components: [
+            { id: "walker", label: "Parallel walker", role: "work-stealing directory traversal across threads" },
+            { id: "ignore", label: "Ignore engine", role: "compiled .gitignore/.ignore matcher, prunes before open" },
+            { id: "searcher", label: "Searcher", role: "per-file strategy: mmap vs buffered, binary detection" },
+            { id: "regex", label: "Regex core", role: "finite-automata engine — no backtracking, linear time" },
+            { id: "literal", label: "SIMD literal path", role: "memchr fast path for plain-string patterns" },
+            { id: "printer", label: "Printer", role: "aggregates matches into grouped, colored output" },
+          ],
+          flows: [
+            { from: "walker", to: "ignore", label: "candidate paths" },
+            { from: "ignore", to: "searcher", label: "surviving files" },
+            { from: "searcher", to: "regex", label: "file contents" },
+            { from: "regex", to: "literal", label: "literal patterns delegate" },
+            { from: "regex", to: "printer", label: "matches" },
+          ],
+        },
+        internals: [
+          {
+            title: "No-backtracking guarantee",
+            detail:
+              "The finite-automata engine means pathological patterns can't blow up to exponential time — worst case stays linear in input size.",
+          },
+          {
+            title: "Ignore rules as compiled matchers",
+            detail:
+              "Gitignore semantics (per-directory, precedence, negation) compile into one matcher per directory level, checked before any file I/O.",
+          },
+          {
+            title: "mmap heuristics",
+            detail:
+              "Large files memory-map when the platform makes that a win; small files use buffered reads — chosen per file, not globally.",
+          },
+        ],
       },
       quickstart: {
         install: "brew install ripgrep",
@@ -989,6 +1029,92 @@ export const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; commen
           "Its genuine value is historical and pedagogical: AutoGPT ran the 'full autonomy' experiment loudly and in public, and the field's move toward scoped, supervised, human-in-the-loop agents is largely a reaction to watching it fail. As an artifact that taught everyone what not to build, it more than earned its place.",
       },
       evaluatedAt: at(10),
+    }),
+  },
+  {
+    daysAgo: 6,
+    upvotes: 142,
+    comments: 11,
+    eval: make({
+      slug: "cursor",
+      source: {
+        kind: "producthunt",
+        externalId: "cursor",
+        url: "https://cursor.com",
+        title: "Cursor",
+        author: "Anysphere",
+        description: "The AI code editor — a VS Code fork with the model wired into every surface.",
+        upvotes: 3400,
+      },
+      category: "devtools",
+      integration: "standalone-app",
+      tags: ["editor", "ai-coding", "vscode-fork", "agents"],
+      verdict: "worthwhile",
+      noiseScore: 25,
+      audience: {
+        primary: "both",
+        aiEngineerFit: 78,
+        vibeCoderFit: 90,
+        rationale:
+          "The lowest-friction on-ramp to AI-assisted coding there is — which is exactly why engineers who already live in a terminal-first agent workflow feel less pull. If the editor is where you want the model, this is the polished version of that bet.",
+      },
+      scores: {
+        novelty: s(
+          48,
+          "A VS Code fork with the model wired in deeper than an extension can reach. The integration depth is real; the ideas mostly aren't new.",
+        ),
+        utility: s(
+          82,
+          "Tab-completion that predicts multi-line edits, inline chat with repo context, and an agent mode that actually applies diffs. Daily-driver value if you live in an editor.",
+        ),
+        deltaVsBaseline: s(
+          58,
+          "Against VS Code + Copilot the gap is integration polish, not capability. Against a terminal agent with editor-agnostic access to the same models, the gap narrows further.",
+        ),
+        easeOfAdoption: s(
+          90,
+          "Import your VS Code settings and extensions, sign in, and it works. The migration cost is nearly zero, which is most of the product's genius.",
+        ),
+        maturity: s(
+          72,
+          "Shipping fast with real production users, but the fork chases upstream VS Code and the fast release cadence shows seams.",
+        ),
+        leanness: s(
+          45,
+          "An entire forked editor as the delivery vehicle for AI features — a heavy footprint for what is, structurally, a model client.",
+        ),
+        traction: s(
+          90,
+          "One of the fastest-growing dev tools ever shipped; enormous paying user base and mindshare.",
+        ),
+        composability: s(
+          40,
+          "A closed product, not a platform: your workflow moves into Cursor, not Cursor into your workflow. Model choice and internals are theirs, not yours.",
+        ),
+        longevity: s(
+          55,
+          "The war for the AI-editor surface is unresolved — upstream VS Code, terminal agents, and the model vendors themselves are all converging on the same territory.",
+        ),
+        clarity: s(
+          85,
+          "The product explains itself in one session; that immediacy is the pitch and it lands.",
+        ),
+      },
+      tagline:
+        "The polished way to put a frontier model inside your editor — worthwhile if the editor is where you want it, replaceable if it isn't.",
+      body: {
+        whatItIs:
+          "Cursor is a commercial code editor from Anysphere, built as a VS Code fork so AI can be wired into surfaces an extension API can't reach: multi-line predictive tab-completion, inline chat grounded in repo-wide context, and an agent mode that plans and applies multi-file edits. You bring your existing VS Code settings and extensions; it brings the models.",
+        vsAlternatives:
+          "The incumbents are VS Code + Copilot on one side and terminal-first agents on the other. Against Copilot, Cursor's edge is depth of integration — the editor itself predicts your next edit rather than autocompleting your current line, and its agent applies real diffs instead of pasting suggestions. Against a terminal agent, the comparison inverts: the agent is editor-agnostic, scriptable, and composable with your whole toolchain, while Cursor's intelligence lives only inside Cursor. Doing it yourself — raw model API plus an editor plugin — recreates maybe 70% of the experience with none of the polish and all of the glue code.",
+        devilsAdvocate:
+          "Structurally, Cursor is a thin-ish wrapper with excellent fit and finish: the capability lives in frontier models it doesn't own, rented from vendors who also sell it to every competitor — including the editor it forked. Upstream VS Code plus Copilot absorbs more of its differentiation every quarter, and the model vendors' own agent surfaces attack it from the other side. You're paying a subscription for integration UX on top of models you could call directly, and betting your muscle memory on the fork keeping pace with upstream. If your workflow is already terminal-agent-first, Cursor adds an editor between you and the model, not capability on top of it.",
+        whatWouldMakeItBetter:
+          "Real extensibility for its AI surfaces — let the agent, context engine, and completion layer be scripted and composed from outside the editor — plus first-class bring-your-own-model support, so the product is a platform you build on rather than a sealed client you rent.",
+        steelman:
+          "Integration depth is a real moat in daily use: the difference between a model you consult and a model threaded through every keystroke compounds over thousands of edits. Cursor made AI-assisted editing feel native a year before the incumbents, keeps shipping faster than they do, and for the enormous population of developers who live in a GUI editor it is the best version of this workflow you can buy today.",
+      },
+      evaluatedAt: at(6),
     }),
   },
 ];

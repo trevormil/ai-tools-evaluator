@@ -73,7 +73,8 @@ ${readme.slice(0, 12000)}
 - noiseScore: 0 (pure signal) .. 100 (pure noise)
 - audience: { primary: ai-engineer | vibe-coder | both | neither, aiEngineerFit: 0-100, vibeCoderFit: 0-100, rationale }
     AIx is for AI-first ENGINEERS who want to upskill and sharpen their workflow — not vibe coders who just want a flashier tool to do the work for them. Score aiEngineerFit on depth/leverage for a technical engineer; score vibeCoderFit on accessible does-it-for-you value. They are independent (a real workflow tool can rate high on both). Set primary honestly.
-- tagline: one line, <=160 chars, states the verdict's reasoning
+- tagline: ONE complete sentence ending in . ! or ?, states the verdict's reasoning. Hard cap
+    160 chars — write to ~130 so it never runs out of room mid-sentence
 - scores: object with keys [${METRICS.map((m) => m.key).join(", ")}], each { score: 0-100, rationale: string }
 - productShape: { score: 0-100, rationale } — is this a FINISHED THING SOMEONE USES, or an
     INGREDIENT other software is built from? Judge the SHAPE of the thing only.
@@ -96,6 +97,17 @@ ${bodyGuide}
     skipIf: 1-4 concrete situations where it is noise for the reader, insteadOf?: the incumbent
     it replaces ("grep", "joi", "raw SDK + a loop") }. Write these for a reader deciding in ten
     seconds — situational and specific, never marketing.
+- deepDive (include whenever the README gives you enough substance): {
+    howItWorks: 2-4 short paragraphs (200-4000 chars total) on how it ACTUALLY works behind the
+      scenes — the runtime model, the data flow, what happens end-to-end when a user invokes it.
+      Grounded strictly in the README and signals; NEVER invent internals it does not describe.
+    architecture (optional): { components: 2-10 of { id: short slug, label: <=48 chars,
+      role: <=120 chars }, flows: 1-14 of { from: component id, to: component id, label?: <=60 } }
+      — the real moving parts and how data moves between them. Every flow endpoint MUST be a
+      declared component id. Skip architecture entirely if the README doesn't reveal structure.
+    internals (optional): up to 6 { title: <=80, detail: <=500 } — the load-bearing mechanisms
+      (storage engine, protocol, concurrency model, caching) worth knowing before adopting. }
+    The reader's goal is to learn the tool WITHOUT installing it — write for that.
 - coverImageUrl (optional): from the images embedded in the README above, the single best
     SQUARE-friendly cover for a small thumbnail — a clean logo, icon, or mark that crops well to a
     square. AVOID wide banners, screenshots, diagrams, and animated GIFs. Copy the image URL EXACTLY

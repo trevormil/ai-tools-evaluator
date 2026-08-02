@@ -551,4 +551,26 @@ describe("run loop", () => {
     expect(result.published).toBe(0);
     expect(client.calls).toHaveLength(0); // no client interaction at all in dry-run
   });
+
+  test("dry-run skips a failed evaluation and continues, like the real loop (0055)", async () => {
+    const evaluated: string[] = [];
+    const result = await run(
+      baseDeps({
+        dryRun: true,
+        trendingSources: [
+          ghSource(async () =>
+            ["t/good1", "t/bad", "t/good2"].map((e) => trendingDiscovered(e)),
+          ),
+        ],
+        evaluate: async (d: Discovered) => {
+          if (d.source.externalId === "t/bad") throw new Error("schema never repaired");
+          evaluated.push(d.source.externalId);
+          return evalFor(d.source.externalId);
+        },
+      }),
+    );
+    // The bad item is skipped, not fatal — the remaining candidates still evaluate.
+    expect(evaluated).toEqual(["t/good1", "t/good2"]);
+    expect(result.discovered).toBe(3);
+  });
 });

@@ -1,15 +1,15 @@
 ---
 id: 056
 title: "Queue: reclaim orphaned 'processing' submissions (never retried)"
-status: open
+status: in-progress
 priority: high
 horizon: now
 hitl: false
 type: bug
 source: manual
 created: 2026-07-10
-updated: 2026-07-10
-prs: []
+updated: 2026-08-02
+prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/81"]
 refs: []
 depends_on: []
 acceptance: []

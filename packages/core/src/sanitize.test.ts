@@ -57,11 +57,27 @@ describe("sanitizeEvaluationDraft", () => {
     expect(tags.length).toBeLessThanOrEqual(12);
   });
 
-  test("an over-length tagline is clamped to 160 (was the smoke-test failure)", () => {
-    const long = "word ".repeat(60); // ~300 chars
+  test("an over-length tagline is clamped at a sentence boundary, not mid-sentence (0076)", () => {
+    // The qdrant failure shape: complete first sentence, overflow after it.
+    const long =
+      "The de facto vector database for production RAG and semantic search with rich filtering. " +
+      "A second sentence about quantization and distributed scaling pushes it well past the cap entirely.";
+    const clean = sanitizeEvaluationDraft(validDraft({ tagline: long })) as Draft;
+    const tagline = clean.tagline as string;
+    expect(tagline.length).toBeLessThanOrEqual(160);
+    expect(tagline).toBe(
+      "The de facto vector database for production RAG and semantic search with rich filtering.",
+    );
+    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+  });
+
+  test("a punctuation-less overflow is NOT silently word-cut valid — it goes to repair (0076)", () => {
+    const long = "word ".repeat(60); // ~300 chars, no sentence boundary anywhere
     const clean = sanitizeEvaluationDraft(validDraft({ tagline: long })) as Draft;
     expect((clean.tagline as string).length).toBeLessThanOrEqual(160);
-    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+    // The clamp can't make this a complete sentence; the schema must reject it so
+    // the repair loop asks the model to shorten it, instead of shipping "… that".
+    expect(EvaluationDraft.safeParse(clean).success).toBe(false);
   });
 
   test("decision.insteadOf clamps to 120 and bullets to 4×140", () => {
@@ -78,6 +94,39 @@ describe("sanitizeEvaluationDraft", () => {
     expect(dec.insteadOf.length).toBeLessThanOrEqual(120);
     expect(dec.adoptIf.length).toBeLessThanOrEqual(4);
     expect(dec.adoptIf[0]!.length).toBeLessThanOrEqual(140);
+  });
+
+  test("deepDive: flows to unknown components are pruned, stub prose drops the block (0083)", () => {
+    const prose = "p".repeat(300);
+    const clean = sanitizeEvaluationDraft(
+      validDraft({
+        deepDive: {
+          howItWorks: prose,
+          architecture: {
+            components: [
+              { id: "a", label: "Walker", role: "does the a things" },
+              { id: "b", label: "Matcher", role: "does the b things" },
+            ],
+            flows: [
+              { from: "a", to: "b" },
+              { from: "a", to: "ghost" }, // pruned — undeclared endpoint
+            ],
+          },
+        },
+      }),
+    ) as Draft;
+    const dd = clean.deepDive as {
+      architecture: { flows: unknown[] };
+    };
+    expect(dd.architecture.flows).toHaveLength(1);
+    expect(EvaluationDraft.safeParse(clean).success).toBe(true);
+
+    // A stub howItWorks means no deep dive at all, not a schema failure.
+    const stub = sanitizeEvaluationDraft(
+      validDraft({ deepDive: { howItWorks: "It greps." } }),
+    ) as Draft;
+    expect(stub.deepDive).toBeUndefined();
+    expect(EvaluationDraft.safeParse(stub).success).toBe(true);
   });
 
   test("leaves already-valid drafts untouched and non-objects alone", () => {

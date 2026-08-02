@@ -405,6 +405,12 @@ export default async function ItemPage({
                     </a>
                   </SpecRow>
                 </dl>
+                <Link
+                  href={`/item/${item.slug}/onepager`}
+                  className="data mt-1 text-xs text-brand hover:underline"
+                >
+                  One-pager →
+                </Link>
               </div>
             )}
           </div>

@@ -17,6 +17,63 @@ export const AudienceFit = z.object({
 });
 export type AudienceFit = z.infer<typeof AudienceFit>;
 
+/**
+ * The deep-dive block (ticket 0083): substance over marketing. `howItWorks`
+ * is multi-paragraph prose grounded in the README; `architecture` is a small
+ * validated graph (components + flows between them) rendered as a diagram;
+ * `internals` are the load-bearing mechanisms worth knowing before adopting.
+ */
+export const DeepDive = z
+  .object({
+    /** Behind the scenes, in prose. Substantial by construction — no stubs. */
+    howItWorks: z.string().min(200).max(4000),
+    architecture: z
+      .object({
+        components: z
+          .array(
+            z.object({
+              /** Stable slug used by flows (kebab or word, ≤24 chars). */
+              id: z.string().min(1).max(24),
+              label: z.string().min(2).max(48),
+              role: z.string().min(4).max(120),
+            }),
+          )
+          .min(2)
+          .max(10),
+        flows: z
+          .array(
+            z.object({
+              from: z.string().min(1).max(24),
+              to: z.string().min(1).max(24),
+              label: z.string().min(2).max(60).optional(),
+            }),
+          )
+          .min(1)
+          .max(14),
+      })
+      .superRefine((arch, ctx) => {
+        const ids = new Set(arch.components.map((c) => c.id));
+        arch.flows.forEach((f, i) => {
+          for (const end of ["from", "to"] as const) {
+            if (!ids.has(f[end])) {
+              ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                path: ["flows", i, end],
+                message: `flow ${end} "${f[end]}" is not a declared component id`,
+              });
+            }
+          }
+        });
+      })
+      .optional(),
+    /** Key mechanisms worth knowing before adopting. */
+    internals: z
+      .array(z.object({ title: z.string().min(3).max(80), detail: z.string().min(10).max(500) }))
+      .max(6)
+      .optional(),
+  });
+export type DeepDive = z.infer<typeof DeepDive>;
+
 /** A single scorecard metric: a number 0–100 plus a one-line justification. */
 export const MetricScore = z.object({
   score: z.number().int().min(0).max(100),
@@ -150,8 +207,14 @@ const EvaluationShape = z.object({
   productShape: MetricScore.optional(),
   /** Weighted final score, 0–100. Recomputed from `scores` on write. */
   overallScore: z.number().int().min(0).max(100),
-  /** One-line hook shown in feeds. Must state the verdict's reasoning tersely. */
-  tagline: z.string().min(10).max(160),
+  /** One-line hook shown in feeds. Must state the verdict's reasoning tersely.
+   *  Must be a COMPLETE sentence — a tagline that fills the cap and stops
+   *  mid-sentence renders as a visible bug on every listing surface (0076). */
+  tagline: z
+    .string()
+    .min(10)
+    .max(160)
+    .regex(/[.!?]["')\]]?$/, "tagline must be a complete sentence ending in . ! or ?"),
 
   /**
    * The write-up. Three sections are common to every lens (whatItIs,
@@ -206,6 +269,15 @@ const EvaluationShape = z.object({
       insteadOf: z.string().min(2).max(120).optional(),
     })
     .optional(),
+
+  /**
+   * Deep dive (optional, ticket 0083) — the "read this instead of installing
+   * it" layer of the one-pager. Extracted from the README by the evaluator:
+   * how it actually works behind the scenes, plus a machine-renderable
+   * architecture graph the UI turns into a real diagram. Older evaluations
+   * don't have it; a rescore backfills.
+   */
+  deepDive: DeepDive.optional(),
 
   media: z.array(MediaAsset).max(6).default([]),
 
