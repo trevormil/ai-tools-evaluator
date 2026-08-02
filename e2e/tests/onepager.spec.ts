@@ -1,0 +1,43 @@
+import { test, expect } from "@playwright/test";
+
+/** Per-item one-pagers (ticket 0081): a spec sheet generated from the stored evaluation. */
+
+test("an item's one-pager renders its evaluation as a spec sheet", async ({ page }) => {
+  await page.goto("/item/ripgrep/onepager");
+
+  // Hero: identity + verdict + overall readout.
+  await expect(page.getByRole("heading", { name: /ripgrep/i })).toBeVisible();
+  await expect(page.getByText("essential").first()).toBeVisible();
+  await expect(page.getByText("/100 overall")).toBeVisible();
+
+  // The full ten-metric scorecard with real scores.
+  await expect(page.getByText("Novelty", { exact: true })).toBeVisible();
+  await expect(page.getByText("Leanness", { exact: true })).toBeVisible();
+
+  // Decision layer + the devil's advocate.
+  await expect(page.getByText("Adopt if")).toBeVisible();
+  await expect(page.getByText("Skip if")).toBeVisible();
+  await expect(page.getByText("Devil's advocate")).toBeVisible();
+
+  // Route back to the full evaluation.
+  await expect(page.getByRole("link", { name: /full evaluation/i })).toBeVisible();
+});
+
+test("the item page links to its one-pager", async ({ page }) => {
+  await page.goto("/item/ripgrep");
+  await page.getByRole("link", { name: /one-pager/i }).click();
+  await expect(page).toHaveURL(/\/item\/ripgrep\/onepager/);
+  await expect(page.getByText("/100 overall")).toBeVisible();
+});
+
+test("a pending (unscored) item has no one-pager", async ({ page, context, baseURL }) => {
+  // Seeded pending items don't exist by slug we control; create one via submit flow instead.
+  await context.addCookies([{ name: "aix_session", value: "e2e-token", url: baseURL! }]);
+  const name = `onepager-pending-${Date.now()}`;
+  await page.goto("/submit");
+  await page.getByPlaceholder(/github.com/).fill(`https://github.com/e2e-org/${name}`);
+  await page.getByRole("button", { name: /submit/i }).click();
+  await expect(page).toHaveURL(new RegExp(`/item/${name}`));
+  const res = await page.goto(`/item/${name}/onepager`);
+  expect(res?.status()).toBe(404);
+});
