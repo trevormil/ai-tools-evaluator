@@ -991,6 +991,92 @@ export const EVALUATIONS: { eval: Eval; daysAgo: number; upvotes: number; commen
       evaluatedAt: at(10),
     }),
   },
+  {
+    daysAgo: 6,
+    upvotes: 142,
+    comments: 11,
+    eval: make({
+      slug: "cursor",
+      source: {
+        kind: "producthunt",
+        externalId: "cursor",
+        url: "https://cursor.com",
+        title: "Cursor",
+        author: "Anysphere",
+        description: "The AI code editor — a VS Code fork with the model wired into every surface.",
+        upvotes: 3400,
+      },
+      category: "devtools",
+      integration: "standalone-app",
+      tags: ["editor", "ai-coding", "vscode-fork", "agents"],
+      verdict: "worthwhile",
+      noiseScore: 25,
+      audience: {
+        primary: "both",
+        aiEngineerFit: 78,
+        vibeCoderFit: 90,
+        rationale:
+          "The lowest-friction on-ramp to AI-assisted coding there is — which is exactly why engineers who already live in a terminal-first agent workflow feel less pull. If the editor is where you want the model, this is the polished version of that bet.",
+      },
+      scores: {
+        novelty: s(
+          48,
+          "A VS Code fork with the model wired in deeper than an extension can reach. The integration depth is real; the ideas mostly aren't new.",
+        ),
+        utility: s(
+          82,
+          "Tab-completion that predicts multi-line edits, inline chat with repo context, and an agent mode that actually applies diffs. Daily-driver value if you live in an editor.",
+        ),
+        deltaVsBaseline: s(
+          58,
+          "Against VS Code + Copilot the gap is integration polish, not capability. Against a terminal agent with editor-agnostic access to the same models, the gap narrows further.",
+        ),
+        easeOfAdoption: s(
+          90,
+          "Import your VS Code settings and extensions, sign in, and it works. The migration cost is nearly zero, which is most of the product's genius.",
+        ),
+        maturity: s(
+          72,
+          "Shipping fast with real production users, but the fork chases upstream VS Code and the fast release cadence shows seams.",
+        ),
+        leanness: s(
+          45,
+          "An entire forked editor as the delivery vehicle for AI features — a heavy footprint for what is, structurally, a model client.",
+        ),
+        traction: s(
+          90,
+          "One of the fastest-growing dev tools ever shipped; enormous paying user base and mindshare.",
+        ),
+        composability: s(
+          40,
+          "A closed product, not a platform: your workflow moves into Cursor, not Cursor into your workflow. Model choice and internals are theirs, not yours.",
+        ),
+        longevity: s(
+          55,
+          "The war for the AI-editor surface is unresolved — upstream VS Code, terminal agents, and the model vendors themselves are all converging on the same territory.",
+        ),
+        clarity: s(
+          85,
+          "The product explains itself in one session; that immediacy is the pitch and it lands.",
+        ),
+      },
+      tagline:
+        "The polished way to put a frontier model inside your editor — worthwhile if the editor is where you want it, replaceable if it isn't.",
+      body: {
+        whatItIs:
+          "Cursor is a commercial code editor from Anysphere, built as a VS Code fork so AI can be wired into surfaces an extension API can't reach: multi-line predictive tab-completion, inline chat grounded in repo-wide context, and an agent mode that plans and applies multi-file edits. You bring your existing VS Code settings and extensions; it brings the models.",
+        vsAlternatives:
+          "The incumbents are VS Code + Copilot on one side and terminal-first agents on the other. Against Copilot, Cursor's edge is depth of integration — the editor itself predicts your next edit rather than autocompleting your current line, and its agent applies real diffs instead of pasting suggestions. Against a terminal agent, the comparison inverts: the agent is editor-agnostic, scriptable, and composable with your whole toolchain, while Cursor's intelligence lives only inside Cursor. Doing it yourself — raw model API plus an editor plugin — recreates maybe 70% of the experience with none of the polish and all of the glue code.",
+        devilsAdvocate:
+          "Structurally, Cursor is a thin-ish wrapper with excellent fit and finish: the capability lives in frontier models it doesn't own, rented from vendors who also sell it to every competitor — including the editor it forked. Upstream VS Code plus Copilot absorbs more of its differentiation every quarter, and the model vendors' own agent surfaces attack it from the other side. You're paying a subscription for integration UX on top of models you could call directly, and betting your muscle memory on the fork keeping pace with upstream. If your workflow is already terminal-agent-first, Cursor adds an editor between you and the model, not capability on top of it.",
+        whatWouldMakeItBetter:
+          "Real extensibility for its AI surfaces — let the agent, context engine, and completion layer be scripted and composed from outside the editor — plus first-class bring-your-own-model support, so the product is a platform you build on rather than a sealed client you rent.",
+        steelman:
+          "Integration depth is a real moat in daily use: the difference between a model you consult and a model threaded through every keystroke compounds over thousands of edits. Cursor made AI-assisted editing feel native a year before the incumbents, keeps shipping faster than they do, and for the enormous population of developers who live in a GUI editor it is the best version of this workflow you can buy today.",
+      },
+      evaluatedAt: at(6),
+    }),
+  },
 ];
 
 /* --------------------------------------------------------------------- runner */
