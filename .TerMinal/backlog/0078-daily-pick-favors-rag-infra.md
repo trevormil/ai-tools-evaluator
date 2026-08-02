@@ -1,7 +1,7 @@
 ---
 id: 78
 title: "Daily pick skews to RAG/vector infra: pickScore rewards fame + easy install, has no product-shape signal"
-status: in-progress
+status: closed
 priority: high
 horizon: now
 hitl: false
@@ -9,7 +9,7 @@ type: bug
 source: manual
 created: 2026-07-25
 updated: 2026-07-25
-prs: ["https://github.com/trevormil/ai-tools-evaluator/pull/78"]
+prs: []
 refs: []
 depends_on: []
 acceptance:
