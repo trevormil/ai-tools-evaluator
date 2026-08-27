@@ -6,8 +6,18 @@ metadata:
   labels:
     app: aix-scanner
 spec:
-  # Daily at 13:00 UTC. Runs the discovery + evaluation pipeline once.
-  schedule: "0 13 * * *"
+  # Daily at 12:30 UTC. Runs the discovery + evaluation pipeline once.
+  #
+  # This must finish BEFORE the bot's 13:00 UTC digest gate
+  # (DEFAULT_DIGEST_UTC_HOUR), so the pick is already published when the gate
+  # opens and the post lands at 13:0x UTC — 6:02am PT — every day. The 30-min
+  # lead matches this job's own activeDeadlineSeconds. Enforced by
+  # apps/bot/src/schedule-contract.test.ts.
+  schedule: "30 12 * * *"
+  # Explicit — without it k8s resolves the schedule in kube-controller-manager's
+  # local time, which on single-node k3s is the host clock (America/New_York).
+  # That silently ran this job at 17:00 UTC until 2026-08-27.
+  timeZone: "Etc/UTC"
   # Never overlap a previous run (rate-limit + daily-cap accounting rely on it).
   concurrencyPolicy: Forbid
   startingDeadlineSeconds: 300
