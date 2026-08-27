@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { DEFAULT_DIGEST_UTC_HOUR } from "./digest";
 
 /** Bot config, parsed once at startup. Fail fast if anything is missing. */
 export const EnvSchema = z.object({
@@ -25,7 +26,7 @@ export const EnvSchema = z.object({
    * 9am EDT / 8am EST) — just after the 13:00 UTC scan. Set 14 for ~9am EST in
    * winter. Blocks the 00:00-UTC (≈8pm ET) boundary post after a bot restart.
    */
-  AIX_DIGEST_UTC_HOUR: z.coerce.number().int().min(0).max(23).default(13),
+  AIX_DIGEST_UTC_HOUR: z.coerce.number().int().min(0).max(23).default(DEFAULT_DIGEST_UTC_HOUR),
 });
 
 export type Env = z.infer<typeof EnvSchema>;

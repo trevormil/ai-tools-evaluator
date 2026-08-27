@@ -20,6 +20,13 @@ const HOUR_MS = 60 * 60 * 1000;
  */
 const DIGEST_POLL_MS = 5 * 60 * 1000;
 
+/**
+ * Earliest UTC hour the daily pick may post. The scanner CronJob must publish
+ * *before* this hour — see apps/bot/src/schedule-contract.test.ts, which pins
+ * that coupling against k8s/scanner-cronjob.yaml.
+ */
+export const DEFAULT_DIGEST_UTC_HOUR = 13;
+
 /** Minimal channel surface we need — kept narrow so digest logic stays testable. */
 export type SendableChannel = { send: (payload: unknown) => Promise<unknown> };
 
@@ -81,7 +88,7 @@ export async function runDigest(deps: DigestDeps): Promise<DigestItem[]> {
   // the daily pick to the morning-ET window and blocks the 00:00-UTC boundary
   // post. Returns without touching state, so the pick still lands once the hour
   // arrives (the scan at 13:00 UTC has published by then).
-  if (now.getUTCHours() < (deps.postAfterUtcHour ?? 13)) return [];
+  if (now.getUTCHours() < (deps.postAfterUtcHour ?? DEFAULT_DIGEST_UTC_HOUR)) return [];
 
   // Once-per-day guard: a pick posts at most once per UTC calendar day. The
   // marker is set only after a real post (below), so an earlier *empty* poll —
